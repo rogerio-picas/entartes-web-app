@@ -1,0 +1,31 @@
+{
+  "name": "entartes-web-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rogerio-picas/entartes-web-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/rogerio-picas/entartes-web-app/issues"
+  },
+  "homepage": "https://github.com/rogerio-picas/entartes-web-app#readme",
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "nodemon": "^3.1.14",
+    "prisma": "^7.7.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.2"
+  }
+}
