@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model aluno {
+  id_utilizador          Int                      @id
+  coaching               Boolean?                 @default(false)
+  id_aluno_estado        Int?
+  aluno_estado           aluno_estado?            @relation(fields: [id_aluno_estado], references: [id_aluno_estado], onDelete: NoAction, onUpdate: NoAction)
+  utilizador             utilizador               @relation(fields: [id_utilizador], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  aluno_grupo            aluno_grupo[]
+  aluno_marcacoes        aluno_marcacoes[]
+  evento_aluno           evento_aluno[]
+  participacao_conclusao participacao_conclusao[]
+}
+
+model aluno_estado {
+  id_aluno_estado Int     @id @default(autoincrement())
+  nome            String  @db.VarChar(50)
+  descricao       String?
+  aluno           aluno[]
+}
+
+model aluno_grupo {
+  id_grupo Int
+  id_aluno Int
+  aluno    aluno @relation(fields: [id_aluno], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  grupo    grupo @relation(fields: [id_grupo], references: [id_grupo], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id_grupo, id_aluno])
+}
+
+model aluno_marcacoes {
+  id_aluno_marcacoes Int        @id @default(autoincrement())
+  id_aluno           Int?
+  id_marcacoes       Int?
+  data_resposta      DateTime?  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  aluno              aluno?     @relation(fields: [id_aluno], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  marcacoes          marcacoes? @relation(fields: [id_marcacoes], references: [id_marcacoes], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model anuncio {
+  id_anuncio      Int           @id @default(autoincrement())
+  id_grupo        Int?
+  id_evento       Int?
+  id_coordenadora Int?
+  titulo          String?       @db.VarChar(100)
+  mensagem        String?
+  data_envio      DateTime?     @default(now()) @db.Timestamp(6)
+  coordenadora    coordenadora? @relation(fields: [id_coordenadora], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  evento          evento?       @relation(fields: [id_evento], references: [id_evento], onDelete: Cascade, onUpdate: NoAction)
+  grupo           grupo?        @relation(fields: [id_grupo], references: [id_grupo], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model coordenadora {
+  id_utilizador       Int                   @id
+  data_inicio_funcao  DateTime?             @default(dbgenerated("CURRENT_DATE")) @db.Date
+  anuncio             anuncio[]
+  utilizador          utilizador            @relation(fields: [id_utilizador], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  coordenadora_evento coordenadora_evento[]
+}
+
+model coordenadora_evento {
+  id_utilizador Int
+  id_evento     Int
+  evento        evento       @relation(fields: [id_evento], references: [id_evento], onDelete: Cascade, onUpdate: NoAction)
+  coordenadora  coordenadora @relation(fields: [id_utilizador], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id_utilizador, id_evento])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model disponibilidade {
+  id_disponibilidade Int       @id @default(autoincrement())
+  id_docente         Int?
+  dia_semana         Int?
+  data_especifica    DateTime? @db.Date
+  hora_inicio        DateTime? @db.Time(6)
+  hora_fim           DateTime? @db.Time(6)
+  docente            docente?  @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model docente {
+  id_utilizador          Int                      @id
+  estado_atividade       Boolean?                 @default(true)
+  disponibilidade        disponibilidade[]
+  utilizador             utilizador               @relation(fields: [id_utilizador], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  docente_grupo          docente_grupo[]
+  docente_modalidade     docente_modalidade[]
+  evento_docente         evento_docente[]
+  horario_letivo         horario_letivo[]
+  marcacoes              marcacoes[]
+  participacao_conclusao participacao_conclusao[]
+}
+
+model docente_grupo {
+  id_docente      Int
+  id_grupo        Int
+  data_atribuicao DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  docente         docente   @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  grupo           grupo     @relation(fields: [id_grupo], references: [id_grupo], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id_docente, id_grupo])
+}
+
+model docente_modalidade {
+  id_docente    Int
+  id_modalidade Int
+  docente       docente    @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  modalidade    modalidade @relation(fields: [id_modalidade], references: [id_modalidade], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id_docente, id_modalidade])
+}
+
+model estado_marcacoes {
+  id_estado                  Int                          @id @default(autoincrement())
+  nome                       String                       @db.VarChar(50)
+  marcacoes                  marcacoes[]
+  marcacoes_estado_historico marcacoes_estado_historico[]
+}
+
+model evento {
+  id_evento           Int                   @id @default(autoincrement())
+  nome                String                @db.VarChar(100)
+  descricao           String?
+  data_de_realizacao  DateTime?             @db.Date
+  anuncio             anuncio[]
+  coordenadora_evento coordenadora_evento[]
+  evento_aluno        evento_aluno[]
+  evento_docente      evento_docente[]
+  grupo               grupo[]
+}
+
+model evento_aluno {
+  id_evento     Int
+  id_utilizador Int
+  evento        evento @relation(fields: [id_evento], references: [id_evento], onDelete: Cascade, onUpdate: NoAction)
+  aluno         aluno  @relation(fields: [id_utilizador], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id_evento, id_utilizador])
+}
+
+model evento_docente {
+  id_evento  Int
+  id_docente Int
+  docente    docente @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  evento     evento  @relation(fields: [id_evento], references: [id_evento], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id_evento, id_docente])
+}
+
+model grupo {
+  id_grupo      Int             @id @default(autoincrement())
+  id_evento     Int?
+  nome          String          @db.VarChar(100)
+  descricao     String?
+  hora_atuacao  DateTime?       @db.Time(6)
+  aluno_grupo   aluno_grupo[]
+  anuncio       anuncio[]
+  docente_grupo docente_grupo[]
+  evento        evento?         @relation(fields: [id_evento], references: [id_evento], onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model horario_letivo {
+  id_horario  Int       @id @default(autoincrement())
+  id_docente  Int?
+  dia_semana  Int?
+  hora_inicio DateTime? @db.Time(6)
+  hora_fim    DateTime? @db.Time(6)
+  docente     docente?  @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model marcacoes {
+  id_marcacoes               Int                          @id @default(autoincrement())
+  id_docente                 Int?
+  id_modalidade              Int?
+  id_estado                  Int?
+  id_sala                    Int?
+  data_a_realizar            DateTime?                    @db.Date
+  hora_inicio                DateTime?                    @db.Time(6)
+  duracao_minutos            Int?
+  data_criacao               DateTime?                    @default(now()) @db.Timestamp(6)
+  numero_alunos_pretendidos  Int?
+  id_user_criador            Int?
+  aluno_marcacoes            aluno_marcacoes[]
+  docente                    docente?                     @relation(fields: [id_docente], references: [id_utilizador], onDelete: NoAction, onUpdate: NoAction)
+  estado_marcacoes           estado_marcacoes?            @relation(fields: [id_estado], references: [id_estado], onDelete: NoAction, onUpdate: NoAction)
+  modalidade                 modalidade?                  @relation(fields: [id_modalidade], references: [id_modalidade], onDelete: NoAction, onUpdate: NoAction)
+  sala                       sala?                        @relation(fields: [id_sala], references: [id_sala], onDelete: NoAction, onUpdate: NoAction)
+  utilizador                 utilizador?                  @relation(fields: [id_user_criador], references: [id_utilizador], onDelete: NoAction, onUpdate: NoAction)
+  marcacoes_estado_historico marcacoes_estado_historico[]
+  participacao_conclusao     participacao_conclusao[]
+}
+
+model marcacoes_estado_historico {
+  id_marcacoes_estado_historico Int               @id @default(autoincrement())
+  id_estado                     Int?
+  id_marcacoes                  Int?
+  data_alteracao                DateTime?         @default(now()) @db.Timestamp(6)
+  estado_marcacoes              estado_marcacoes? @relation(fields: [id_estado], references: [id_estado], onDelete: NoAction, onUpdate: NoAction)
+  marcacoes                     marcacoes?        @relation(fields: [id_marcacoes], references: [id_marcacoes], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model modalidade {
+  id_modalidade      Int                  @id @default(autoincrement())
+  nome               String               @db.VarChar(100)
+  docente_modalidade docente_modalidade[]
+  marcacoes          marcacoes[]
+}
+
+model notificacoes {
+  id_notificacao Int         @id @default(autoincrement())
+  id_user        Int?
+  titulo         String?     @db.VarChar(100)
+  mensagem       String?
+  data_envio     DateTime?   @default(now()) @db.Timestamp(6)
+  lida           Boolean?    @default(false)
+  utilizador     utilizador? @relation(fields: [id_user], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model participacao_conclusao {
+  id_participacao_conclusao Int        @id @default(autoincrement())
+  id_marcacoes              Int?
+  id_aluno                  Int?
+  id_docente                Int?
+  data_confirmacao          DateTime?  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  confirmou_conclusao       Boolean?   @default(false)
+  aluno                     aluno?     @relation(fields: [id_aluno], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  docente                   docente?   @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  marcacoes                 marcacoes? @relation(fields: [id_marcacoes], references: [id_marcacoes], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model sala {
+  id_sala   Int         @id @default(autoincrement())
+  nome      String      @db.VarChar(100)
+  descricao String?
+  marcacoes marcacoes[]
+}
+
+model tipo_utilizador {
+  id_tipo    Int          @id @default(autoincrement())
+  nome       String       @db.VarChar(50)
+  utilizador utilizador[]
+}
+
+model utilizador {
+  id_utilizador   Int              @id @default(autoincrement())
+  codigo_username String           @unique @db.VarChar(50)
+  pass            String           @db.VarChar(100)
+  id_tipo         Int?
+  nome            String?          @db.VarChar(100)
+  apelido         String?          @db.VarChar(100)
+  data_nascimento DateTime?        @db.Date
+  nif             String?          @unique @db.VarChar(20)
+  email           String?          @unique @db.VarChar(100)
+  telemovel       String?          @unique @db.VarChar(10)
+  aluno           aluno?
+  coordenadora    coordenadora?
+  docente         docente?
+  marcacoes       marcacoes[]
+  notificacoes    notificacoes[]
+  tipo_utilizador tipo_utilizador? @relation(fields: [id_tipo], references: [id_tipo], onDelete: NoAction, onUpdate: NoAction)
+}
