@@ -9,8 +9,22 @@ const prisma = new PrismaClient();
 const getUsers = async (req, res) => {
   try 
   {
-    const users = await prisma.utilizador.findMany();
+    const users = await prisma.utilizador.findMany({
+    select: {
+      id_utilizador: true,
+      codigo_username: true,
+      nome: true,
+      apelido: true,
+      email: true,
+      telemovel: true,
+      data_nascimento: true,
+      nif: true,
+      estado: true      
+      },
+    });
+
     res.status(200).json(users);
+
   } 
   catch (error) 
   {
@@ -34,8 +48,17 @@ const getUser = async (req, res) => {
       where:{
         id_utilizador: id_utilizador_int, 
       },
-      include: {
-        tipo_utilizador: true 
+      select: {
+          id_utilizador: true,
+          codigo_username: true,
+          nome: true,
+          apelido: true,
+          email: true,
+          telemovel: true,
+          data_nascimento: true,
+          nif: true,
+          estado: true,      
+          tipo_utilizador: true
       }
     });
     
