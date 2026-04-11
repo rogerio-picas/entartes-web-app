@@ -91,4 +91,40 @@ async function createUser(req, res)
   }
 }
 
-module.exports = { getUsers, getUser, createUser };
+const updateUser = async (req, res) => {
+  try {
+    const { id_utilizador } = req.params;
+    const dataToUpdate = req.body;
+
+    const updatedUser = await prisma.utilizador.update({
+      where: {
+        id_utilizador: parseInt(id_utilizador),
+      },
+      data: dataToUpdate,
+    });
+
+    res.status(200).json({
+      message: 'Utilizador atualizado com sucesso',
+      user: updatedUser
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao atualizar', error: error.message });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  try {
+    const { id_utilizador } = req.params;
+
+    await prisma.utilizador.delete({
+      where: {
+        id_utilizador: parseInt(id_utilizador),
+      },
+    });
+
+    res.status(200).json({ message: 'Utilizador removido com sucesso' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao eliminar utilizador', error: error.message });
+  }
+};
+module.exports = { getUsers, getUser, createUser, updateUser, deleteUser };

@@ -13,7 +13,6 @@ app.use('/api/users', userRoutes);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor a correr na porta ${PORT}`);
-  // console.log(`Teste a rota em: http://localhost:${PORT}/api/users/4`);
 });
 
 

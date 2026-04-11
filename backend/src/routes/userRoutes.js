@@ -15,6 +15,8 @@ const authorize = require('../middlewares/userMiddleware');
 // Apenas a Coordenação pode listar todos os utilizadores ou criar novos
 router.get('/', userController.getUsers);
 router.post('/', userController.createUser);
+router.put('/:id_utilizador', userController.updateUser);
+router.delete('/:id_utilizador', userController.deleteUser);
 router.get('/:id_utilizador', userController.getUser);
 
 // Obter dados de um utilizador específico
