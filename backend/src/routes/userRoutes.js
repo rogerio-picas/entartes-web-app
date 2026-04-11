@@ -12,13 +12,13 @@ const authorize = require('../middlewares/userMiddleware');
 
 // --- ROTAS PROTEGIDAS (RBAC) ---
 
-// Apenas a Coordenação pode listar todos os utilizadores ou criar novos (RF-SEC-01, RF-SEC-02)
+// Apenas a Coordenação pode listar todos os utilizadores ou criar novos
 router.get('/', userController.getUsers);
 router.post('/', userController.createUser);
-router.get('/:id', userController.getUser);
+router.get('/:id_utilizador', userController.getUser);
 
 // Obter dados de um utilizador específico
-// Pode ser acedido pela Coordenação ou pelo próprio Docente/Aluno (para o perfil)
-// router.get('/:id', authorize(['COORDENACAO', 'DOCENTE', 'ALUNO']), userController.getUser);
+// Pode ser acedido pela Coordenação ou pelo próprio Docente/Aluno
+// router.get('/id', authorize(['COORDENACAO', 'DOCENTE', 'ALUNO']), userController.getUser);
 
 module.exports = router;

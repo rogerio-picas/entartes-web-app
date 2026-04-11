@@ -5,6 +5,7 @@ const prisma = new PrismaClient();
 
 // const userModel = require('../models/userModel');
 
+
 const getUsers = async (req, res) => {
   try 
   {
@@ -20,8 +21,23 @@ const getUsers = async (req, res) => {
 const getUser = async (req, res) => {
   try 
   {
-    const { id } = req.params;
-    const user = await prisma.utilizador.findUnique(id);
+    const { id_utilizador } = req.params;
+    const id_utilizador_int = parseInt(id_utilizador);
+
+    if (isNaN(id_utilizador_int)) {
+      return res.status(400).json({ 
+        message: 'O ID fornecido não possui um formato válido.' 
+      });
+    }
+
+    const user = await prisma.utilizador.findUnique({
+      where:{
+        id_utilizador: id_utilizador_int, 
+      },
+      include: {
+        tipo_utilizador: true 
+      }
+    });
     
     if (!user) {
       return res.status(404).json({ message: 'Utilizador não encontrado' });
