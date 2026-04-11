@@ -26,23 +26,23 @@ git clone [https://github.com/rogerio-picas/entartes-web-app.git](https://github
 
 cd entartes-web-app/backend
 
-### 2. Instalar Dependências
+### - 2. Instalar Dependências
 Dentro da pasta backend, executa:
 
 npm install
 
-3. Variáveis de Ambiente
+### - 3. Variáveis de Ambiente
 Cria um ficheiro .env na pasta backend/ e adiciona a tua connection string do neonDB:
 
 DATABASE_URL="postgresql://neondb_owner:npg_[password]-lively-band-al5iq8o4-pooler.."
 
-4. Gerar o Prisma Client
+### - 4. Gerar o Prisma Client
 Para que o teu código reconheça os modelos da base de dados
 
 npx prisma generate
 
-Comandos Úteis
-ComandoDescrição
+### - Comandos Úteis
+
 npm start - Inicia o servidor Node.js.
 
 npx prisma db pull
