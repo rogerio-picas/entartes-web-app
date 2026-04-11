@@ -1,23 +1,32 @@
-// Importa a instância de ligação ao NeonDB
-const sql = require('../config/db');
+// const { PrismaClient } = require('@prisma/client');
+// const prisma = new PrismaClient();
+// const bcrypt = require('bcryptjs');
 
-const getAllUsers = async () => {
-  // Executa uma query real na base de dados
-  // (Certifique-se de que a tabela 'users' já existe no NeonDB)
-  const result = await sql`SELECT * FROM utilizador`;
-  return result;
-};
+// const User = {
+//   // Criar utilizador com password cifrada (RF-SEC-02, RNF-01)
+//   create: async (data) => {
+//     const salt = await bcrypt.genSalt(10);
+//     const hashedPassword = await bcrypt.hash(data.password, salt);
+    
+//     return await prisma.user.create({
+//       data: { ...data, password: hashedPassword }
+//     });
+//   },
 
-const getUserById = async (id) => {
-  // Busca um utilizador específico pelo seu ID
-  const result = await sql`SELECT * FROM utilizador WHERE id = ${id}`;
-  return result[0];
-};
+//   findByEmail: async (email) => {
+//     return await prisma.user.findUnique({
+//       where: { email },
+//       include: { tipo: true }
+//   });
+//   },
 
-const createUser = async (nome, email) => {
-  // Executa o comando de inserção e retorna o utilizador recém-criado
-  const result = await sql`INSERT INTO utilizador (nome, email) VALUES (${nome}, ${email}) RETURNING *`;
-  return result[0];
-};
+//   // Incrementar tentativas de login (RNF-01)
+//   incrementLoginAttempts: async (id) => {
+//     return await prisma.user.update({
+//     where: { id: userId },
+//     data: { login_attempts: attempts }
+//   });
+//   }
+// };
 
-module.exports = { getAllUsers, getUserById, createUser };
+// module.exports = User;

@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model aluno {
@@ -250,20 +250,23 @@ model tipo_utilizador {
 }
 
 model utilizador {
-  id_utilizador   Int              @id @default(autoincrement())
-  codigo_username String           @unique @db.VarChar(50)
-  pass            String           @db.VarChar(100)
-  id_tipo         Int?
-  nome            String?          @db.VarChar(100)
-  apelido         String?          @db.VarChar(100)
-  data_nascimento DateTime?        @db.Date
-  nif             String?          @unique @db.VarChar(20)
-  email           String?          @unique @db.VarChar(100)
-  telemovel       String?          @unique @db.VarChar(10)
-  aluno           aluno?
-  coordenadora    coordenadora?
-  docente         docente?
-  marcacoes       marcacoes[]
-  notificacoes    notificacoes[]
-  tipo_utilizador tipo_utilizador? @relation(fields: [id_tipo], references: [id_tipo], onDelete: NoAction, onUpdate: NoAction)
+  id_utilizador    Int              @id @default(autoincrement())
+  codigo_username  String           @unique @db.VarChar(50)
+  pass             String           @db.VarChar(100)
+  id_tipo          Int?
+  nome             String?          @db.VarChar(100)
+  apelido          String?          @db.VarChar(100)
+  data_nascimento  DateTime?        @db.Date
+  nif              String?          @unique @db.VarChar(20)
+  email            String?          @unique @db.VarChar(100)
+  telemovel        String?          @db.VarChar(10)
+  tentativas_login Int?             @default(0)
+  ultimo_login     DateTime?        @default(dbgenerated("CURRENT_DATE")) @db.Date
+  estado           String?          @db.VarChar(20)
+  aluno            aluno?
+  coordenadora     coordenadora?
+  docente          docente?
+  marcacoes        marcacoes[]
+  notificacoes     notificacoes[]
+  tipo_utilizador  tipo_utilizador? @relation(fields: [id_tipo], references: [id_tipo], onDelete: NoAction, onUpdate: NoAction)
 }
