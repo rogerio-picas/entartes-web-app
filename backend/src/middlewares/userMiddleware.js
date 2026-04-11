@@ -2,9 +2,10 @@ const jwt = require ('jsonwebtoken');
 
 function authorize (allowedRoles = []){
     return (req, res, next) => {
-        const token = req.headers['authorization'];
+        const authHeader = req.headers['authorization'];
+        if (!authHeader) return res.status(401).json({ message: "Token não fornecido" });
 
-        if(!token) return res.status(401).json({ message: "Token não fornecido"});
+        const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
 
         jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
             if(err) return res.status(401).json({ message: "Token inválido ou Sessão Expirada"});
