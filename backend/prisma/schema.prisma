@@ -14,7 +14,7 @@ model aluno {
   aluno_estado           aluno_estado?            @relation(fields: [id_aluno_estado], references: [id_aluno_estado], onDelete: NoAction, onUpdate: NoAction)
   utilizador             utilizador               @relation(fields: [id_utilizador], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
   aluno_grupo            aluno_grupo[]
-  aluno_marcacoes        aluno_marcacoes[]
+  aluno_marcacao         aluno_marcacao[]
   evento_aluno           evento_aluno[]
   participacao_conclusao participacao_conclusao[]
 }
@@ -33,15 +33,6 @@ model aluno_grupo {
   grupo    grupo @relation(fields: [id_grupo], references: [id_grupo], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([id_grupo, id_aluno])
-}
-
-model aluno_marcacoes {
-  id_aluno_marcacoes Int        @id @default(autoincrement())
-  id_aluno           Int?
-  id_marcacoes       Int?
-  data_resposta      DateTime?  @default(dbgenerated("CURRENT_DATE")) @db.Date
-  aluno              aluno?     @relation(fields: [id_aluno], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
-  marcacoes          marcacoes? @relation(fields: [id_marcacoes], references: [id_marcacoes], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model anuncio {
@@ -94,7 +85,7 @@ model docente {
   docente_modalidade     docente_modalidade[]
   evento_docente         evento_docente[]
   horario_letivo         horario_letivo[]
-  marcacoes              marcacoes[]
+  marcacao               marcacao[]
   participacao_conclusao participacao_conclusao[]
 }
 
@@ -115,13 +106,6 @@ model docente_modalidade {
   modalidade    modalidade @relation(fields: [id_modalidade], references: [id_modalidade], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([id_docente, id_modalidade])
-}
-
-model estado_marcacoes {
-  id_estado                  Int                          @id @default(autoincrement())
-  nome                       String                       @db.VarChar(50)
-  marcacoes                  marcacoes[]
-  marcacoes_estado_historico marcacoes_estado_historico[]
 }
 
 model evento {
@@ -176,71 +160,30 @@ model horario_letivo {
   docente     docente?  @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
 }
 
-model marcacoes {
-  id_marcacoes               Int                          @id @default(autoincrement())
-  id_docente                 Int?
-  id_modalidade              Int?
-  id_estado                  Int?
-  id_sala                    Int?
-  data_a_realizar            DateTime?                    @db.Date
-  hora_inicio                DateTime?                    @db.Time(6)
-  duracao_minutos            Int?
-  data_criacao               DateTime?                    @default(now()) @db.Timestamp(6)
-  numero_alunos_pretendidos  Int?
-  id_user_criador            Int?
-  aluno_marcacoes            aluno_marcacoes[]
-  docente                    docente?                     @relation(fields: [id_docente], references: [id_utilizador], onDelete: NoAction, onUpdate: NoAction)
-  estado_marcacoes           estado_marcacoes?            @relation(fields: [id_estado], references: [id_estado], onDelete: NoAction, onUpdate: NoAction)
-  modalidade                 modalidade?                  @relation(fields: [id_modalidade], references: [id_modalidade], onDelete: NoAction, onUpdate: NoAction)
-  sala                       sala?                        @relation(fields: [id_sala], references: [id_sala], onDelete: NoAction, onUpdate: NoAction)
-  utilizador                 utilizador?                  @relation(fields: [id_user_criador], references: [id_utilizador], onDelete: NoAction, onUpdate: NoAction)
-  marcacoes_estado_historico marcacoes_estado_historico[]
-  participacao_conclusao     participacao_conclusao[]
-}
-
-model marcacoes_estado_historico {
-  id_marcacoes_estado_historico Int               @id @default(autoincrement())
-  id_estado                     Int?
-  id_marcacoes                  Int?
-  data_alteracao                DateTime?         @default(now()) @db.Timestamp(6)
-  estado_marcacoes              estado_marcacoes? @relation(fields: [id_estado], references: [id_estado], onDelete: NoAction, onUpdate: NoAction)
-  marcacoes                     marcacoes?        @relation(fields: [id_marcacoes], references: [id_marcacoes], onDelete: Cascade, onUpdate: NoAction)
-}
-
 model modalidade {
   id_modalidade      Int                  @id @default(autoincrement())
   nome               String               @db.VarChar(100)
   docente_modalidade docente_modalidade[]
-  marcacoes          marcacoes[]
-}
-
-model notificacoes {
-  id_notificacao Int         @id @default(autoincrement())
-  id_user        Int?
-  titulo         String?     @db.VarChar(100)
-  mensagem       String?
-  data_envio     DateTime?   @default(now()) @db.Timestamp(6)
-  lida           Boolean?    @default(false)
-  utilizador     utilizador? @relation(fields: [id_user], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  marcacao           marcacao[]
 }
 
 model participacao_conclusao {
-  id_participacao_conclusao Int        @id @default(autoincrement())
+  id_participacao_conclusao Int       @id @default(autoincrement())
   id_marcacoes              Int?
   id_aluno                  Int?
   id_docente                Int?
-  data_confirmacao          DateTime?  @default(dbgenerated("CURRENT_DATE")) @db.Date
-  confirmou_conclusao       Boolean?   @default(false)
-  aluno                     aluno?     @relation(fields: [id_aluno], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
-  docente                   docente?   @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
-  marcacoes                 marcacoes? @relation(fields: [id_marcacoes], references: [id_marcacoes], onDelete: Cascade, onUpdate: NoAction)
+  data_confirmacao          DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  confirmou_conclusao       Boolean?  @default(false)
+  aluno                     aluno?    @relation(fields: [id_aluno], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  docente                   docente?  @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
+  marcacoes                 marcacao? @relation(fields: [id_marcacoes], references: [id_marcacoes], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model sala {
-  id_sala   Int         @id @default(autoincrement())
-  nome      String      @db.VarChar(100)
+  id_sala   Int        @id @default(autoincrement())
+  nome      String     @db.VarChar(100)
   descricao String?
-  marcacoes marcacoes[]
+  marcacao  marcacao[]
 }
 
 model tipo_utilizador {
@@ -266,7 +209,64 @@ model utilizador {
   aluno            aluno?
   coordenadora     coordenadora?
   docente          docente?
-  marcacoes        marcacoes[]
-  notificacoes     notificacoes[]
+  marcacao         marcacao[]
+  notificacao      notificacao[]
   tipo_utilizador  tipo_utilizador? @relation(fields: [id_tipo], references: [id_tipo], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model aluno_marcacao {
+  id_aluno_marcacoes Int       @id(map: "aluno_marcacoes_pkey") @default(autoincrement())
+  id_aluno           Int?
+  id_marcacoes       Int?
+  data_resposta      DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  aluno              aluno?    @relation(fields: [id_aluno], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction, map: "aluno_marcacoes_id_aluno_fkey")
+  marcacao           marcacao? @relation(fields: [id_marcacoes], references: [id_marcacoes], onDelete: Cascade, onUpdate: NoAction, map: "aluno_marcacoes_id_marcacoes_fkey")
+}
+
+model estado_marcacao {
+  id_estado                 Int                         @id(map: "estado_marcacoes_pkey") @default(autoincrement())
+  nome                      String                      @db.VarChar(50)
+  marcacao                  marcacao[]
+  marcacao_estado_historico marcacao_estado_historico[]
+}
+
+model marcacao {
+  id_marcacoes              Int                         @id(map: "marcacoes_pkey") @default(autoincrement())
+  id_docente                Int?
+  id_modalidade             Int?
+  id_estado                 Int?
+  id_sala                   Int?
+  data_a_realizar           DateTime?                   @db.Date
+  hora_inicio               DateTime?                   @db.Time(6)
+  duracao_minutos           Int?
+  data_criacao              DateTime?                   @default(now()) @db.Timestamp(6)
+  numero_alunos_pretendidos Int?
+  id_user_criador           Int?
+  aluno_marcacao            aluno_marcacao[]
+  docente                   docente?                    @relation(fields: [id_docente], references: [id_utilizador], onDelete: NoAction, onUpdate: NoAction, map: "marcacoes_id_docente_fkey")
+  estado_marcacao           estado_marcacao?            @relation(fields: [id_estado], references: [id_estado], onDelete: NoAction, onUpdate: NoAction, map: "marcacoes_id_estado_fkey")
+  modalidade                modalidade?                 @relation(fields: [id_modalidade], references: [id_modalidade], onDelete: NoAction, onUpdate: NoAction, map: "marcacoes_id_modalidade_fkey")
+  sala                      sala?                       @relation(fields: [id_sala], references: [id_sala], onDelete: NoAction, onUpdate: NoAction, map: "marcacoes_id_sala_fkey")
+  utilizador                utilizador?                 @relation(fields: [id_user_criador], references: [id_utilizador], onDelete: NoAction, onUpdate: NoAction, map: "marcacoes_id_user_criador_fkey")
+  marcacao_estado_historico marcacao_estado_historico[]
+  participacao_conclusao    participacao_conclusao[]
+}
+
+model marcacao_estado_historico {
+  id_marcacoes_estado_historico Int              @id(map: "marcacoes_estado_historico_pkey") @default(autoincrement())
+  id_estado                     Int?
+  id_marcacoes                  Int?
+  data_alteracao                DateTime?        @default(now()) @db.Timestamp(6)
+  estado_marcacao               estado_marcacao? @relation(fields: [id_estado], references: [id_estado], onDelete: NoAction, onUpdate: NoAction, map: "marcacoes_estado_historico_id_estado_fkey")
+  marcacao                      marcacao?        @relation(fields: [id_marcacoes], references: [id_marcacoes], onDelete: Cascade, onUpdate: NoAction, map: "marcacoes_estado_historico_id_marcacoes_fkey")
+}
+
+model notificacao {
+  id_notificacao Int         @id(map: "notificacoes_pkey") @default(autoincrement())
+  id_user        Int?
+  titulo         String?     @db.VarChar(100)
+  mensagem       String?
+  data_envio     DateTime?   @default(now()) @db.Timestamp(6)
+  lida           Boolean?    @default(false)
+  utilizador     utilizador? @relation(fields: [id_user], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction, map: "notificacoes_id_user_fkey")
 }
