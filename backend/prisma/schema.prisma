@@ -252,7 +252,7 @@ model tipo_utilizador {
 model utilizador {
   id_utilizador    Int              @id @default(autoincrement())
   codigo_username  String           @unique @db.VarChar(50)
-  pass             String           @db.VarChar(100)
+  password         String           @db.VarChar(100)
   id_tipo          Int?
   nome             String?          @db.VarChar(100)
   apelido          String?          @db.VarChar(100)

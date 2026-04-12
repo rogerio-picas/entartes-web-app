@@ -76,20 +76,20 @@ const getUser = async (req, res) => {
 
 async function createUser(req, res) 
 {
-  const { codigo_username, pass, id_tipo, nome, apelido, data_nascimento, email, telemovel, nif } = req.body;
+  const { codigo_username, password, id_tipo, nome, apelido, data_nascimento, email, telemovel, nif } = req.body;
 
   const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(pass,salt);
+  const hashedPassword = await bcrypt.hash(password,salt);
   
   try
   {
-    if (!pass) return res.status(400).json({ error: "A password é obrigatória" });
+    if (!password) return res.status(400).json({ error: "A password é obrigatória" });
     
 
     const newUser = await prisma.utilizador.create({
       data: {
         codigo_username,
-        pass: hashedPassword,
+        password: hashedPassword,
         id_tipo: id_tipo ? parseInt(id_tipo) : null,
         nome,
         apelido,
