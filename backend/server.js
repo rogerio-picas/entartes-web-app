@@ -25,7 +25,7 @@ const swaggerOptions = {
       },
     },
   },
-  // O Swagger vai procurar os comentários JSDoc nestes caminhos:
+  // DIRETÓRIO ONDE O SWAGGER VAI PROCURAR AS ANOTAÇÕES NAS ROTAS
   apis: ['./src/routes/*.js'], 
 };
 

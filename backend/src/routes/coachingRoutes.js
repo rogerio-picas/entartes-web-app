@@ -42,6 +42,9 @@ const tokenValidation = require('../middlewares/authMiddleware');
  */
 router.post('/', tokenValidation, coachingController.createNewCoaching);
 router.get('/', tokenValidation, coachingController.getAllCoachings);
+router.get('/:id_utilizador', tokenValidation, coachingController.getCoachingById);
+router.put('/:id_utilizador', tokenValidation, coachingController.updateCoaching);
+router.delete('/:id_utilizador', tokenValidation, coachingController.deleteCoaching);
 
-// GARANTE QUE ESTA LINHA EXISTE E ESTÁ NO FINAL
+
 module.exports = router;

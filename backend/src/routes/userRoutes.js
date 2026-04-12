@@ -4,10 +4,6 @@ const userController = require('../controllers/userController');
 const authorize = require('../middlewares/userMiddleware');
 
 
-
-// router.get('/', userController.getUsers);
-// router.get('/:id_utilizador', userController.getUser);
-
 // --- ROTAS DE ACESSO APENAS A COORDENAÇÃO/DIREÇÃO ---
 
 /**
@@ -98,6 +94,8 @@ const authorize = require('../middlewares/userMiddleware');
  *       200:
  *         description: Sucesso
  */
+
+
 router.get('/', authorize([1]), userController.getUsers); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
 router.post('/', userController.createUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
 router.put('/:id_utilizador', authorize([1]), userController.updateUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
