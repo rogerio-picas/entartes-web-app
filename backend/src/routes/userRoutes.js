@@ -10,6 +10,94 @@ const authorize = require('../middlewares/userMiddleware');
 
 // --- ROTAS DE ACESSO APENAS A COORDENAÇÃO/DIREÇÃO ---
 
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Lista todos os utilizadores
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ *   post:
+ *     summary: Cria um novo utilizador
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               apelido:
+ *                 type: string
+ *               codigo_username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               id_tipo_utilizador:
+ *                 type: integer
+ *                 description: 1 - Coordenadora, 2 - Docente, 3 - Aluno
+ *             example:
+ *               nome: "João"
+ *               apelido: "Silva"
+ *               codigo_username: "jsilva"
+ *               password: "password123"
+ *               id_tipo_utilizador: 3
+ *     responses:
+ *       201:
+ *         description: Criado com sucesso
+ * 
+ * /api/users/{id_utilizador}:
+ *   get:
+ *     summary: Retorna os detalhes de um utilizador específico
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_utilizador
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ *   put:
+ *     summary: Atualiza um utilizador
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_utilizador
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ *   delete:
+ *     summary: Apaga um utilizador
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_utilizador
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ */
 router.get('/', authorize([1]), userController.getUsers); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
 router.post('/', userController.createUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
 router.put('/:id_utilizador', authorize([1]), userController.updateUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
