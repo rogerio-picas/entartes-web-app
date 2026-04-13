@@ -15,6 +15,8 @@ Antes de começares, garante que tens instalado na tua máquina:
 
 ---
 
+Para mais info sobre login e testes com o Postman -> ficheiro startConfiguration.ms
+
 ## Configuração Inicial (Setup)
 
 Segue estes passos para configurar o ambiente de desenvolvimento local:
