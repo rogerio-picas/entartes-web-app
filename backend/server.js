@@ -34,7 +34,7 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 const userRoutes = require('./src/routes/userRoutes');
 const authRoutes = require('./src/routes/authRoutes');
-// const eventRoutes = require('../deletedfiles/eventRoutes');
+const eventRoutes = require('./src/routes/eventRoutes');
 const coachingRoutes = require('./src/routes/coachingRoutes');
 
 app.use(cors());
@@ -45,7 +45,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
-// app.use('/api/events', eventRoutes);
+app.use('/api/events', eventRoutes);
 app.use('/api/coaching', coachingRoutes);
 
 const PORT = process.env.PORT || 3000;

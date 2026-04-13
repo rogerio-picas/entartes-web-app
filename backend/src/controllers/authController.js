@@ -1,45 +1,34 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const authService = require('../services/authService');
 
 const login = async (req, res) => {
-    try
-    {
-        const {codigo_username, password} = req.body;
-        console.log("Dados recebidos no Backend:", req.body);
-
-        const user = await prisma.utilizador.findUnique({
-            where: { codigo_username: codigo_username }
-        });
-
-        if(!user) return res.status(401).json({message: "Credenciais inválidas."});
-
-
-        const passwordMatch = await bcrypt.compare(password, user.password);
-        if(!passwordMatch) return res.status(401).json({ message: "Credenciais inválidas."});
-
-        const token = jwt.sign(
-            { id: user.id_utilizador, role: user.id_tipo },
-            process.env.JWT_SECRET,
-            { expiresIn: '8h' }
-        );
+    try {
+        const { codigo_username, password } = req.body;
         
-    
-        console.log("Password vinda do form:", password);
-        console.log("Password (hash) vinda da BD:", user.password); // Ou user.pass?
+        console.log("Tentativa de login para utilizador:", codigo_username);
 
+        // Chama o serviço que contém a lógica de negócio (Prisma, bcrypt, JWT)
+        const result = await authService.login(codigo_username, password);
+
+        // Se o serviço não lançar erro, o login foi um sucesso
         res.status(200).json({
             message: "Login efetuado com sucesso.",
-            token,
-            user: {nomes: user.nome, role: user.id_tipo}
+            token: result.token,
+            user: {
+                nome: result.user.nome,
+                role: result.user.role
+            }
         });
-    }
-    catch(error){
-        console.log("======= ERRO DETETADO NO LOGIN =======");
-        console.error(error); 
-        console.log("======================================")
-        res.status(500).json({ message: "Erro no servidor", error: error.message});
+
+    } catch (error) {
+        // Captura os "throws" do service (ex: "Credenciais inválidas")
+        console.error("Erro no processo de login:", error.message);
+        
+        // Devolvemos 401 para erros de credenciais e 500 para erros inesperados
+        const statusCode = error.message === "Credenciais inválidas." ? 401 : 500;
+        
+        res.status(statusCode).json({ 
+            message: error.message || "Erro interno no servidor." 
+        });
     }
 };
 
