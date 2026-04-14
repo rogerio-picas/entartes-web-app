@@ -36,6 +36,7 @@ const userRoutes = require('./src/routes/userRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const eventRoutes = require('./src/routes/eventRoutes');
 const coachingRoutes = require('./src/routes/coachingRoutes');
+const relatorioRoutes = require('./src/routes/relatorioRoutes');
 
 app.use(cors());
 app.use(express.json());
@@ -45,8 +46,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/events', eventRoutes);
+app.use('/api/event', eventRoutes);
 app.use('/api/coaching', coachingRoutes);
+app.use('/api/relatorio', relatorioRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

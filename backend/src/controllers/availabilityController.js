@@ -1,3 +1,7 @@
+
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
 const { checkScheduleConflict, checkScheduleConflictUpdate } = require('../services/agendaService');
 
 const createAvailabiliby = async (req, res) =>{

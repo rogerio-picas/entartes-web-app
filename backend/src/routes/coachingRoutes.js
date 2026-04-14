@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const coachingController = require('../controllers/coachingController');
 const tokenValidation = require('../middlewares/authMiddleware');
+const authorize = require('../middlewares/roleCheckMiddleware');
 
 /**
  * @swagger
@@ -40,11 +41,13 @@ const tokenValidation = require('../middlewares/authMiddleware');
  *       200:
  *         description: Sucesso
  */
-router.post('/', tokenValidation, coachingController.createNewCoaching);
-router.get('/', tokenValidation, coachingController.getAllCoachings);
-router.get('/:id_utilizador', tokenValidation, coachingController.getCoachingById);
-router.put('/:id_utilizador', tokenValidation, coachingController.updateCoaching);
-router.delete('/:id_utilizador', tokenValidation, coachingController.deleteCoaching);
+router.post('/', authorize([1]), tokenValidation, coachingController.createNewCoaching);
+router.get('/', authorize([1]), tokenValidation, coachingController.getAllCoachings);
+router.get('/:id_utilizador', authorize([1,2,3]), tokenValidation, coachingController.getCoachingById);
+router.put('/:id_utilizador', authorize([1]), tokenValidation, coachingController.updateCoaching);
+router.delete('/:id_utilizador', authorize([1]), tokenValidation, coachingController.deleteCoaching);
 
+
+// Faltam Funções específicas para aluno/docente como getMyCoachings, cancelCoaching
 
 module.exports = router;

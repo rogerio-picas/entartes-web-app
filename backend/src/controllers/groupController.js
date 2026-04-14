@@ -1,3 +1,7 @@
+
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
 const groupService = require("../services/groupService");
 
 const criarGrupo = async (req, res) => {
