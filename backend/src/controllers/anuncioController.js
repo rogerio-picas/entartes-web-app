@@ -21,3 +21,4 @@ const createAnuncio = async (req, res) => {
 }
 
 module.exports = { createAnuncio };
+
