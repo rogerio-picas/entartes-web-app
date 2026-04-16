@@ -12,7 +12,7 @@ const swaggerOptions = {
     info: {
       title: 'Entartes API Documentation',
       version: '1.0.0',
-      description: 'Documentação interativa da API Entartes (Módulos: Auth, Users, Events, Coaching)',
+      description: 'Documentação interativa da API Entartes (Módulos: Auth, Users, Events, Coaching, Relatorios, Notificações, Salas, Anúncios)',
     },
     servers: [{ url: 'http://localhost:3000' }],
     components: {

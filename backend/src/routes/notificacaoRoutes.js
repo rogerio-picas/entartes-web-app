@@ -3,6 +3,36 @@ const router = express.Router();
 const authorize = require('../controllers/roleCheckMiddleware');
 const tokenValidation = require('../middlewares/authMiddleware');
 
+/**
+ * @swagger
+ * /api/notificacoes:
+ *   get:
+ *     summary: Lista todas as notificações do utilizador autenticado
+ *     tags: [Notificações]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ *
+ * /api/notificacoes/{id}/lida:
+ *   patch:
+ *     summary: Marca uma notificação como lida
+ *     tags: [Notificações]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Notificação marcada como lida
+ *       404:
+ *         description: Notificação não encontrada
+ */
 
 router.use(authorize([1,2,3]), tokenValidation);
 router.get('/', authorize([1,2,3]), tokenValidation, notificacaoController.listNotificacoes);
