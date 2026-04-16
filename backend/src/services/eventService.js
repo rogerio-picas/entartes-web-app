@@ -189,10 +189,84 @@ const listarParticipantes = async (id_evento) => {
   };
 };
 
+const cancelarEvento = async (id_evento) => {
+  const eventoId = parseInt(id_evento);
+
+  // 1. Verificar se o evento existe
+  const evento = await prisma.evento.findUnique({
+    where: { id_evento: eventoId },
+    include: {
+      evento_aluno: true,
+      evento_docente: true,
+    },
+  });
+
+  if (!evento) throw new Error("Evento não encontrado.");
+
+  // 2. Procurar o ID do estado "Cancelado"
+  const estadoCancelado = await prisma.evento_estado.findFirst({
+    where: { nome: "Cancelado" },
+  });
+
+  if (!estadoCancelado) throw new Error("Estado 'Cancelado' não encontrado na Base de Dados.");
+
+  // CORREÇÃO BUGS: Usar 'id_evento_estado' em vez de 'id_estado'
+  if (evento.id_evento_estado === estadoCancelado.id_evento_estado) {
+    throw new Error("O evento já está cancelado.");
+  }
+
+  // Recolher IDs dos participantes antes da transação para as notificações
+  const idsAlunos = evento.evento_aluno.map((ea) => ea.id_utilizador);
+  const idsDocentes = evento.evento_docente.map((ed) => ed.id_docente);
+
+  // 3. Tudo numa transação atómica
+  await prisma.$transaction(async (tx) => {
+    
+    // --- DECISÃO DE NEGÓCIO ---
+    // A melhor prática é NÃO apagar as inscrições para manter o histórico.
+    // Como o evento mudou para 'Cancelado', o Frontend já sabe que não vai acontecer.
+    // Se quiseres MESMO apagar, retira os comentários abaixo:
+    // await tx.evento_aluno.deleteMany({ where: { id_evento: eventoId } });
+    // await tx.evento_docente.deleteMany({ where: { id_evento: eventoId } });
+
+    // 4. Atualizar estado do evento para Cancelado
+    await tx.evento.update({
+      where: { id_evento: eventoId },
+      data: { id_evento_estado: estadoCancelado.id_evento_estado }, // Correção aqui!
+    });
+
+    // 5. Criar notificações para todos os participantes
+    const mensagem = `O evento "${evento.nome}" foi cancelado.`;
+
+    const notificacoes = [...idsAlunos, ...idsDocentes].map((id_user) => ({
+      id_user,
+      titulo: "Evento Cancelado",
+      mensagem,
+    }));
+
+    // createMany é muito mais eficiente do que criar um a um
+    if (notificacoes.length > 0) {
+      await tx.notificacao.createMany({ data: notificacoes });
+    }
+  });
+
+  // 6. Devolver sucesso com relatório do que aconteceu
+  return {
+    mensagem: "Evento cancelado com sucesso.",
+    participantes_notificados: idsAlunos.length + idsDocentes.length,
+  };
+};
+
+
+
+
+
 module.exports = {
   criarEvento,
   listarEventos,
   buscarEventoPorId,
   adicionarParticipante,
   listarParticipantes,
+  cancelarEvento,
+
 };
