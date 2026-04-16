@@ -40,6 +40,50 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *     responses:
  *       200:
  *         description: Sucesso
+ *
+ * /api/coaching/{id_utilizador}:
+ *   get:
+ *     summary: Retorna agendamentos de coaching de um utilizador
+ *     tags: [Coaching]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_utilizador
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ *   put:
+ *     summary: Atualiza um agendamento de coaching
+ *     tags: [Coaching]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_utilizador
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ *   delete:
+ *     summary: Elimina um agendamento de coaching
+ *     tags: [Coaching]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_utilizador
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Sucesso
  */
 router.post('/', authorize([1]), tokenValidation, coachingController.createNewCoaching);
 router.get('/', authorize([1]), tokenValidation, coachingController.getAllCoachings);
