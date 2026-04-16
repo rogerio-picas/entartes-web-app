@@ -41,19 +41,19 @@ const adicionarParticipante = async (req, res) => {
     const { id } = req.params;
 
     // id do utilizador e tipo vêm no body
-    // { "id_utilizador": 3, "tipo": "aluno" }
-    const { id_utilizador, tipo } = req.body;
+    // { "id_utilizador": 3, "tipo": 3 }
+    const { codigo_username, id_tipo } = req.body;
 
-    if (!id_utilizador || !tipo) {
+    if (!codigo_username || id_tipo) {
       return res.status(400).json({
-        error: "id_utilizador e tipo são obrigatórios.",
+        error: "O código ou tipo de utilizador é obrigatório.",
       });
     }
 
     const resultado = await eventService.adicionarParticipante(
       id,
-      id_utilizador,
-      tipo
+      codigo_username,
+      id_tipo
     );
 
     return res.status(201).json(resultado);

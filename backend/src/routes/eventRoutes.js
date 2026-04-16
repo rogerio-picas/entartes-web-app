@@ -4,7 +4,7 @@ const tokenValidation = require("../middlewares/authMiddleware");
 const authorize = require('../middlewares/roleCheckMiddleware');
 
 const eventController = require("../controllers/eventController");
-const groupController = require("../controllers/groupController");
+const groupRoutes = require("../routes/groupRoutes");
 
 /**
  * @swagger
@@ -80,8 +80,10 @@ const groupController = require("../controllers/groupController");
  *           schema:
  *             type: object
  *             properties:
- *               id_utilizador:
- *                 type: integer
+ *               codigo_username:
+ *                 type: string
+ *               tipo_utilizador:
+ *                  type: integer
  *     responses:
  *       201:
  *         description: Participante adicionado com sucesso
@@ -259,13 +261,15 @@ const groupController = require("../controllers/groupController");
  *         description: Sucesso
  */
 
+
 // --- ROTAS DE EVENTOS ---
-router.get("/", authorize([1,2,3]), tokenValidation, eventController.listarEventos);
-router.get("/:id", authorize([1,2,3]), tokenValidation, eventController.buscarEventoPorId);
-router.post("/", authorize([1]), tokenValidation, eventController.criarEvento);
-router.post("/:id/participantes", authorize([1]), tokenValidation, eventController.adicionarParticipante);
-router.get("/:id/participantes", authorize([1]), tokenValidation, eventController.listarParticipantes);
+router.get("/", tokenValidation, authorize([1,2,3]), eventController.listarEventos);
+router.get("/:id", tokenValidation, authorize([1,2,3]), eventController.buscarEventoPorId);
+router.post("/", tokenValidation, authorize([1]), eventController.criarEvento);
+router.post("/:id/participantes", tokenValidation, authorize([1]), eventController.adicionarParticipante);
+router.get("/:id/participantes", tokenValidation, authorize([1]), eventController.listarParticipantes);
 
-
+// --- ROTAS DE GRUPOS (Dentro de Eventos) ---
+router.use('/:id_evento/grupos', groupRoutes);
 
 module.exports = router;

@@ -1,22 +1,28 @@
 const express = require("express");
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 const tokenValidation = require("../middlewares/authMiddleware");
 const authorize = require('../middlewares/roleCheckMiddleware');
+const groupController = require('../controllers/groupController')
 
 // --- ROTAS DE GRUPOS (Dentro de Eventos) ---
-// Criar um grupo para um evento específico
-router.post("/:id_evento/grupos", authorize([1]), tokenValidation, groupController.criarGrupo);
+// Obs: mergeParams: true permite aceder a parâmetros da rota pai (id_evento)
 
-// Listar grupos de um evento
-router.get("/:id_evento/grupos", authorize([1,2,3]), tokenValidation, groupController.listarGruposDoEvento);
+// Criar: POST /api/event/:id_evento/grupos
+router.post("/", tokenValidation, authorize([1]), groupController.criarGrupo);
 
-// Gerir alunos e docentes nos grupos
-router.post("/grupos/:id_grupo/alunos/:id_aluno", authorize([1,2]), tokenValidation, groupController.adicionarAlunoAoGrupo);
-router.delete("/grupos/:id_grupo/alunos/:id_aluno", authorize([1,2]), tokenValidation, groupController.removerAlunoDoGrupo);
+// Listar: GET /api/event/:id_evento/grupos
+router.get("/", tokenValidation, authorize([1,2,3]), groupController.listarGruposDoEvento);
 
-router.post("/grupos/:id_grupo/docentes/:id_docente", authorize([1]), tokenValidation, groupController.adicionarDocenteAoGrupo);
-router.delete("/grupos/:id_grupo/docentes/:id_docente", authorize([1]), tokenValidation, groupController.removerDocenteDoGrupo);
+// Alunos: POST /api/event/:id_evento/grupos/:id_grupo/alunos/:id_aluno
+router.post("/:id_grupo/alunos/:id_aluno", tokenValidation, authorize([1,2]), groupController.adicionarAlunoAoGrupo);
+router.delete("/:id_grupo/alunos/:id_aluno", tokenValidation, authorize([1,2]), groupController.removerAlunoDoGrupo);
 
-// Editar e Eliminar Grupos
-router.put("/grupos/:id_grupo", authorize([1]), tokenValidation, groupController.editarGrupo);
-router.delete("/grupos/:id_grupo", authorize([1]), tokenValidation, groupController.eliminarGrupo);
+// Docentes: POST /api/event/:id_evento/grupos/:id_grupo/docentes/:id_docente
+router.post("/:id_grupo/docentes/:id_docente", tokenValidation, authorize([1]), groupController.adicionarDocenteAoGrupo);
+router.delete("/:id_grupo/docentes/:id_docente", tokenValidation, authorize([1]), groupController.removerDocenteDoGrupo);
+
+// Editar/Eliminar: PUT /api/event/:id_evento/grupos/:id_grupo
+router.put("/:id_grupo", tokenValidation, authorize([1]), groupController.editarGrupo);
+router.delete("/:id_grupo", tokenValidation, authorize([1]), groupController.eliminarGrupo);
+
+module.exports = router;

@@ -89,68 +89,80 @@ const buscarEventoPorId = async (id_evento) => {
   return evento;
 };
 
-const adicionarParticipante = async (id_evento, id_utilizador, tipo) => {
+const adicionarParticipante = async (id_evento, codigo_username) => {
+  // 1. Validar se o evento existe
   const evento = await prisma.evento.findUnique({
     where: { id_evento: parseInt(id_evento) },
   });
 
   if (!evento) throw new Error("Evento não encontrado.");
 
-  if (tipo === "aluno") {
-    const aluno = await prisma.aluno.findUnique({
-      where: { id_utilizador: parseInt(id_utilizador) },
-    });
+  // 2. Procurar o utilizador pelo codigo_username
+  // Incluímos o 'aluno' e 'docente' para garantir que eles existem nas tabelas específicas
+  const user = await prisma.utilizador.findUnique({
+    where: { codigo_username: codigo_username },
+    include: {
+      aluno: true,
+      docente: true
+    }
+  });
 
-    if (!aluno) throw new Error("Aluno não encontrado.");
+  if (!user) throw new Error(`Utilizador com o código ${codigo_username} não encontrado.`);
 
-    const jaExiste = await prisma.evento_aluno.findUnique({
-      where: {
-        id_evento_id_utilizador: {
-          id_evento: parseInt(id_evento),
-          id_utilizador: parseInt(id_utilizador),
+  const id_utilizador = user.id_utilizador;
+
+  // 3. Decidir o destino com base no id_tipo (1: Admin, 2: Docente, 3: Aluno)
+  switch (user.id_tipo) {
+    case 3: // ALUNO
+      if (!user.aluno) throw new Error("Utilizador marcado como Aluno mas sem registo na tabela Aluno.");
+
+      const alunoNoEvento = await prisma.evento_aluno.findUnique({
+        where: {
+          id_evento_id_utilizador: {
+            id_evento: parseInt(id_evento),
+            id_utilizador: id_utilizador,
+          },
         },
-      },
-    });
+      });
 
-    if (jaExiste) throw new Error("Este aluno já está no evento.");
+      if (alunoNoEvento) throw new Error("Este aluno já está inscrito no evento.");
 
-    await prisma.evento_aluno.create({
-      data: {
-        id_evento: parseInt(id_evento),
-        id_utilizador: parseInt(id_utilizador),
-      },
-    });
-
-  } else if (tipo === "docente") {
-    const docente = await prisma.docente.findUnique({
-      where: { id_utilizador: parseInt(id_utilizador) },
-    });
-
-    if (!docente) throw new Error("Docente não encontrado.");
-
-    const jaExiste = await prisma.evento_docente.findUnique({
-      where: {
-        id_evento_id_docente: {
+      return await prisma.evento_aluno.create({
+        data: {
           id_evento: parseInt(id_evento),
-          id_docente: parseInt(id_utilizador),
+          id_utilizador: id_utilizador,
         },
-      },
-    });
+      });
 
-    if (jaExiste) throw new Error("Este docente já está no evento.");
+    case 2: // DOCENTE
+      if (!user.docente) throw new Error("Utilizador marcado como Docente mas sem registo na tabela Docente.");
 
-    await prisma.evento_docente.create({
-      data: {
-        id_evento: parseInt(id_evento),
-        id_docente: parseInt(id_utilizador),
-      },
-    });
-  } else {
-    throw new Error("Tipo inválido. Use 'aluno' ou 'docente'.");
+      const docenteNoEvento = await prisma.evento_docente.findUnique({
+        where: {
+          id_evento_id_docente: {
+            id_evento: parseInt(id_evento),
+            id_docente: id_utilizador,
+          },
+        },
+      });
+
+      if (docenteNoEvento) throw new Error("Este docente já está inscrito no evento.");
+
+      return await prisma.evento_docente.create({
+        data: {
+          id_evento: parseInt(id_evento),
+          id_docente: id_utilizador,
+        },
+      });
+
+    case 1: // COORDENADORA / ADMIN
+      throw new Error("Administradores/Coordenadores gerem o evento, não participam como inscritos.");
+
+    default:
+      throw new Error("Tipo de utilizador inválido para participação em eventos.");
   }
-
-  return { mensagem: "Participante adicionado com sucesso." };
 };
+
 
 const listarParticipantes = async (id_evento) => {
   const evento = await prisma.evento.findUnique({

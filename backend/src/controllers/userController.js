@@ -2,6 +2,7 @@
 const bcrypt = require('bcryptjs');
 const {PrismaClient} = require('@prisma/client');
 const prisma = new PrismaClient();
+const userService = require('../services/userService');
 
 // const userModel = require('../models/userModel');
 
@@ -74,45 +75,51 @@ const getUser = async (req, res) => {
   }
 };
 
-async function createUser(req, res) 
-{
-  const { codigo_username, password, id_tipo, nome, apelido, data_nascimento, email, telemovel, nif } = req.body;
+const createUser = async (req, res) => {
+    try {
+        // 1. Extração de dados do corpo da requisição
+        const { codigo_username, password, id_tipo, email } = req.body;
 
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password,salt);
-  
-  try
-  {
-    if (!password) return res.status(400).json({ error: "A password é obrigatória" });
-    
+        // 2. Validação básica de presença de campos obrigatórios
+        // (A validação de negócio profunda é feita no Service ou em Middlewares)
+        if (!codigo_username || !password || !id_tipo || !email) {
+            return res.status(400).json({ 
+                error: "Dados insuficientes. 'codigo_username', 'email', 'password' e 'id_tipo' são obrigatórios." 
+            });
+        }
 
-    const newUser = await prisma.utilizador.create({
-      data: {
-        codigo_username,
-        password: hashedPassword,
-        id_tipo: id_tipo ? parseInt(id_tipo) : null,
-        nome,
-        apelido,
-        data_nascimento: data_nascimento ? new Date(data_nascimento) : null,
-        email,
-        telemovel,
-        nif,
-        tentativas_login: 0,
-        estado: "ATIVO"
-      }
-    });
+        // 3. Chamada ao Service
+        // Passamos o req.body completo para o Service tratar todos os campos opcionais
+        const novoUtilizador = await userService.criarUtilizador(req.body);
 
-    res.status(201).json({ message: "Utilizador criado com sucesso"});
-  }
-  catch (error) 
-  {
-    console.error("DETALHE DO ERRO NO TERMINAL:", error);
-    res.status(400).json({ 
-      error: "Erro ao criar utilizador", 
-      detalhe: error.message
-    });
-  }
-}
+        return res.status(201).json({
+            status: "Success",
+            message: "Utilizador criado com sucesso.",
+            data: {
+                id_utilizador: novoUtilizador.id_utilizador,
+                codigo_username: novoUtilizador.codigo_username,
+                id_tipo: novoUtilizador.id_tipo,
+                email: novoUtilizador.email
+            }
+        });
+
+    } catch (error) {
+        console.error("Erro no Controller [createUser]:", error);
+
+        // 5. Tratamento de erros específicos do Prisma
+        if (error.code === 'P2002') {
+            return res.status(400).json({ 
+                error: "Erro de duplicação: O nome de utilizador, email ou NIF já existe." 
+            });
+        }
+
+        // Erro genérico (ex: falha na base de dados ou erro de lógica no Service)
+        return res.status(400).json({ 
+            error: "Não foi possível criar o utilizador.",
+            detalhe: error.message 
+        });
+    }
+};
 
 const updateUser = async (req, res) => {
   try {

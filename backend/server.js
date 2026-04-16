@@ -35,6 +35,7 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 const userRoutes = require('./src/routes/userRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const eventRoutes = require('./src/routes/eventRoutes');
+const groupRoutes = require('./src/routes/groupRoutes');
 const coachingRoutes = require('./src/routes/coachingRoutes');
 const relatorioRoutes = require('./src/routes/relatorioRoutes');
 const anuncioRoutes = require('./src/routes/anuncioRoutes');
@@ -47,10 +48,13 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
+
+// app.use('/api/event/anuncios', anuncioRoutes);
+// app.use('/api/event/group', groupRoutes);
 app.use('/api/event', eventRoutes);
+
 app.use('/api/coaching', coachingRoutes);
 app.use('/api/relatorio', relatorioRoutes);
-app.use('/api/anuncios', anuncioRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
