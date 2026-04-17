@@ -60,86 +60,106 @@ const listarGruposDoEvento = async (id_evento) => {
 };
 
 // Adicionar aluno a um grupo
-const adicionarAlunoAoGrupo = async (id_grupo, id_aluno) => {
-  const grupo = await prisma.grupo.findUnique({ 
-    where: { id_grupo: parseInt(id_grupo) } 
-  });
-  if (!grupo) throw new Error("Grupo não encontrado.");
+const adicionarAlunoAoGrupo = async (id_evento, id_grupo, id_aluno) => {
+  const eventoId = parseInt(id_evento);
+  const grupoId = parseInt(id_grupo);
+  const alunoId = parseInt(id_aluno);
 
-  const aluno = await prisma.aluno.findUnique({ 
-    where: { id_utilizador: parseInt(id_aluno) } 
+  // 1. Verificar se o grupo existe e se pertence ao evento indicado
+  const grupo = await prisma.grupo.findUnique({
+    where: { id_grupo: grupoId }
   });
-  if (!aluno) throw new Error("Aluno não encontrado.");
 
-  // Se o grupo está ligado a um evento, verificar que o aluno está inscrito nesse evento
-  if (grupo.id_evento) {
-    const inscrito = await prisma.evento_aluno.findUnique({
-      where: {
-        id_evento_id_utilizador: {
-          id_evento: grupo.id_evento,
-          id_utilizador: parseInt(id_aluno),
-        },
-      },
-    });
-    if (!inscrito) throw new Error("O aluno não está inscrito neste evento.");
+  if (!grupo || grupo.id_evento !== eventoId) {
+    throw new Error("Este grupo não pertence ao evento especificado.");
   }
 
-  const jaExiste = await prisma.aluno_grupo.findUnique({
-    where: { 
-      id_grupo_id_aluno: { 
-        id_grupo: parseInt(id_grupo), 
-        id_aluno: parseInt(id_aluno) 
-      } 
-    },
+  // 2. Verificar se o aluno está inscrito no evento (Segurança Crítica)
+  const inscritoNoEvento = await prisma.evento_aluno.findUnique({
+    where: {
+      id_evento_id_utilizador: {
+        id_evento: eventoId,
+        id_utilizador: alunoId
+      }
+    }
   });
-  if (jaExiste) throw new Error("O aluno já está neste grupo.");
 
+  if (!inscritoNoEvento) {
+    throw new Error("O aluno deve estar inscrito no evento antes de ser adicionado a um grupo.");
+  }
+
+  // 3. Verificar se o aluno já está no grupo (Evitar duplicados)
+  const jaNoGrupo = await prisma.aluno_grupo.findUnique({
+    where: {
+      id_grupo_id_aluno: {
+        id_grupo: grupoId,
+        id_aluno: alunoId
+      }
+    }
+  });
+
+  if (jaNoGrupo) throw new Error("O aluno já faz parte deste grupo.");
+
+  // 4. Se tudo estiver OK, adicionar
   return await prisma.aluno_grupo.create({
-    data: { 
-      id_grupo: parseInt(id_grupo), 
-      id_aluno: parseInt(id_aluno) 
-    },
+    data: {
+      id_grupo: grupoId,
+      id_aluno: alunoId
+    }
   });
 };
 
 // Adicionar docente a um grupo
-const adicionarDocenteAoGrupo = async (id_grupo, id_docente) => {
-  const grupo = await prisma.grupo.findUnique({ 
-    where: { id_grupo: parseInt(id_grupo) } 
-  });
-  if (!grupo) throw new Error("Grupo não encontrado.");
+const adicionarDocenteAoGrupo = async (id_evento, id_grupo, id_docente) => {
+  const eventoId = parseInt(id_evento);
+  const grupoId = parseInt(id_grupo);
+  const docenteId = parseInt(id_docente);
 
+  // 1. Validar se o grupo existe e se pertence ao evento do URL
+  const grupo = await prisma.grupo.findUnique({ 
+    where: { id_grupo: grupoId } 
+  });
+  
+  if (!grupo) throw new Error("Grupo não encontrado.");
+  
+  // Segurança extra: verificar se o grupo é do evento 1 (conforme o URL)
+  if (grupo.id_evento !== eventoId) {
+    throw new Error("Este grupo não pertence ao evento especificado.");
+  }
+
+  // 2. Verificar se o docente existe
   const docente = await prisma.docente.findUnique({ 
-    where: { id_utilizador: parseInt(id_docente) } 
+    where: { id_utilizador: docenteId } 
   });
   if (!docente) throw new Error("Docente não encontrado.");
 
-  if (grupo.id_evento) {
-    const inscrito = await prisma.evento_docente.findUnique({
-      where: {
-        id_evento_id_docente: {
-          id_evento: grupo.id_evento,
-          id_docente: parseInt(id_docente),
-        },
+  // 3. Verificar se o docente está associado ao evento pai
+  const inscrito = await prisma.evento_docente.findUnique({
+    where: {
+      id_evento_id_docente: {
+        id_evento: eventoId,
+        id_docente: docenteId,
       },
-    });
-    if (!inscrito) throw new Error("O docente não está associado a este evento.");
-  }
+    },
+  });
+  if (!inscrito) throw new Error("O docente não está associado a este evento.");
 
+  // 4. Verificar se já está no grupo
   const jaExiste = await prisma.docente_grupo.findUnique({
     where: { 
       id_docente_id_grupo: { 
-        id_docente: parseInt(id_docente), 
-        id_grupo: parseInt(id_grupo) 
+        id_docente: docenteId, 
+        id_grupo: grupoId 
       } 
     },
   });
   if (jaExiste) throw new Error("O docente já está neste grupo.");
 
+  // 5. Criar associação
   return await prisma.docente_grupo.create({
     data: { 
-      id_grupo: parseInt(id_grupo), 
-      id_docente: parseInt(id_docente) 
+      id_grupo: grupoId, 
+      id_docente: docenteId 
     },
   });
 };
@@ -195,7 +215,7 @@ const removerDocenteDoGrupo = async (id_grupo, id_docente) => {
 // Editar grupo
 const editarGrupo = async (id_grupo, dados) => {
   const { nome, descricao, hora_atuacao } = dados;
-
+  console.log(id_grupo);
   const grupo = await prisma.grupo.findUnique({ 
     where: { id_grupo: parseInt(id_grupo) } 
   });

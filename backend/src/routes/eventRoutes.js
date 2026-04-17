@@ -262,6 +262,8 @@ const groupRoutes = require("../routes/groupRoutes");
  */
 
 
+router.use('/', groupRoutes);
+
 // --- ROTAS DE EVENTOS ---
 router.get("/", tokenValidation, authorize([1,2,3]), eventController.listarEventos);
 router.get("/:id", tokenValidation, authorize([1,2,3]), eventController.buscarEventoPorId);
@@ -270,6 +272,5 @@ router.post("/:id/participantes", tokenValidation, authorize([1]), eventControll
 router.get("/:id/participantes", tokenValidation, authorize([1]), eventController.listarParticipantes);
 
 // --- ROTAS DE GRUPOS (Dentro de Eventos) ---
-router.use('/:id_evento/grupos', groupRoutes);
 
 module.exports = router;

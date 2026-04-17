@@ -15,6 +15,11 @@ const swaggerOptions = {
       description: 'Documentação interativa da API Entartes (Módulos: Auth, Users, Events, Coaching, Relatorios, Notificações, Salas, Anúncios)',
     },
     servers: [{ url: 'http://localhost:3000' }],
+    tags: [
+      { name: 'Auth', description: 'Endpoints de Autenticação (Login, Registo)' },
+      { name: 'Users', description: 'Operações CRUD de Utilizadores' },
+      { name: 'Events', description: 'Gestão de Eventos e relacionados' }
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -32,13 +37,13 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 // ----------------------------
 
-const userRoutes = require('./src/routes/userRoutes');
 const authRoutes = require('./src/routes/authRoutes');
+const userRoutes = require('./src/routes/userRoutes');
 const eventRoutes = require('./src/routes/eventRoutes');
-const groupRoutes = require('./src/routes/groupRoutes');
+// const groupRoutes = require('./src/routes/groupRoutes');
 const coachingRoutes = require('./src/routes/coachingRoutes');
 const relatorioRoutes = require('./src/routes/relatorioRoutes');
-const anuncioRoutes = require('./src/routes/anuncioRoutes');
+// const anuncioRoutes = require('./src/routes/anuncioRoutes');
 
 app.use(cors());
 app.use(express.json());
@@ -46,8 +51,8 @@ app.use(express.json());
 // Rota da Documentação
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // app.use('/api/event/anuncios', anuncioRoutes);
 // app.use('/api/event/group', groupRoutes);

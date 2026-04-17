@@ -19,7 +19,7 @@ const anuncioController = require('../controllers/anuncioController');
  *       200:
  *         description: Lista de anúncios
  */
-router.get('/', authorize([1, 2, 3]), tokenValidation, anuncioController.getAllAnuncios);
+router.get('/', tokenValidation, authorize([1, 2, 3]), anuncioController.getAllAnuncios);
 
 /**
  * @swagger
@@ -48,7 +48,7 @@ router.get('/', authorize([1, 2, 3]), tokenValidation, anuncioController.getAllA
  *       201:
  *         description: Anúncio criado com sucesso
  */
-router.post('/', authorize([1]), tokenValidation, anuncioController.createAnuncio);
+router.post('/', tokenValidation, authorize([1]), anuncioController.createAnuncio);
 
 /**
  * @swagger
@@ -70,7 +70,7 @@ router.post('/', authorize([1]), tokenValidation, anuncioController.createAnunci
  *       404:
  *         description: Anúncio não encontrado
  */
-router.get('/:id_anuncio', authorize([1, 2, 3]), tokenValidation, anuncioController.getAnuncioById);
+router.get('/:id_anuncio', tokenValidation, authorize([1, 2, 3]), anuncioController.getAnuncioById);
 
 /**
  * @swagger
@@ -101,7 +101,7 @@ router.get('/:id_anuncio', authorize([1, 2, 3]), tokenValidation, anuncioControl
  *       200:
  *         description: Anúncio atualizado com sucesso
  */
-router.put('/:id_anuncio', authorize([1]), tokenValidation, anuncioController.updateAnuncio);
+router.put('/:id_anuncio', tokenValidation, authorize([1]), anuncioController.updateAnuncio);
 
 /**
  * @swagger
@@ -121,7 +121,7 @@ router.put('/:id_anuncio', authorize([1]), tokenValidation, anuncioController.up
  *       200:
  *         description: Anúncio eliminado com sucesso
  */
-router.delete('/:id_anuncio', authorize([1]), tokenValidation, anuncioController.removeAnuncio);
+router.delete('/:id_anuncio', tokenValidation, authorize([1]), anuncioController.removeAnuncio);
 
 /**
  * @swagger
@@ -141,7 +141,7 @@ router.delete('/:id_anuncio', authorize([1]), tokenValidation, anuncioController
  *       200:
  *         description: Lista de anúncios do evento
  */
-router.get('/anuncios/:id_evento', authorize([1, 2, 3]), tokenValidation, anuncioController.getAnunciosByEvento);
+router.get('/anuncios/:id_evento', tokenValidation, authorize([1, 2, 3]), anuncioController.getAnunciosByEvento);
 
 /**
  * @swagger
@@ -161,6 +161,6 @@ router.get('/anuncios/:id_evento', authorize([1, 2, 3]), tokenValidation, anunci
  *       200:
  *         description: Lista de anúncios do grupo
  */
-router.get('/grupo/:id_grupo', authorize([1, 2, 3]), tokenValidation, anuncioController.getAnunciosByGrupo);
+router.get('/grupo/:id_grupo', tokenValidation, authorize([1, 2, 3]), anuncioController.getAnunciosByGrupo);
 
 module.exports = router;

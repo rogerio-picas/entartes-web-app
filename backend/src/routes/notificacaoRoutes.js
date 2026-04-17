@@ -34,8 +34,8 @@ const tokenValidation = require('../middlewares/authMiddleware');
  *         description: Notificação não encontrada
  */
 
-router.use(authorize([1,2,3]), tokenValidation);
-router.get('/', authorize([1,2,3]), tokenValidation, notificacaoController.listNotificacoes);
-router.patch('/:id/lida', authorize([1,2,3]), tokenValidation, notificacaoController.markAsRead);
+router.use(tokenValidation, authorize([1,2,3]));
+router.get('/', tokenValidation, authorize([1,2,3]), notificacaoController.listNotificacoes);
+router.patch('/:id/lida', tokenValidation, authorize([1,2,3]), notificacaoController.markAsRead);
 
 module.exports = router;
