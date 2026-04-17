@@ -14,12 +14,12 @@ export default function DashboardHeader() {
   }
 
   const navItems = [
-    { label: 'Início', path: '/', icon: Home },
-    { label: 'Eventos', path: '/events', icon: Calendar },
-    { label: 'Horário', path: '/schedule', icon: CalendarDays },
-    { label: 'Aulas', path: '/classes', icon: Users },
-    { label: 'Escola', path: '/school', icon: GraduationCap },
-    { label: 'Perfil', path: '/profile', icon: User },
+    { label: 'Início',   path: '/',         icon: Home },
+    { label: 'Eventos',  path: '/events',   icon: Calendar },
+    { label: 'Horário',  path: '/horario',  icon: CalendarDays }, // Ajustado de /schedule para /horario
+    { label: 'Aulas',    path: '/aulas',    icon: Users },        // Ajustado de /classes para /aulas
+    { label: 'Escola',   path: '/escola',   icon: GraduationCap }, // Ajustado de /school para /escola
+    { label: 'Perfil',   path: '/profile',  icon: User },
   ]
 
   return (
