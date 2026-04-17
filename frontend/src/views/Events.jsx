@@ -54,7 +54,7 @@ export default function Events() {
 
   return (
     // Removidas divs externas de navegação. O Layout já cuida disso.
-    <div className="max-w-[1400px] mx-auto font-['Sora']">
+    <div className="font-['Sora']">
       
       {/* Cabeçalho de Conteúdo (Seguindo o padrão de Aulas) */}
       <div className="mb-8">
