@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const groupService = require('./groupService');
 
 const criarEvento = async (dados, id_coordenadora) => {
 const { nome, descricao, data_de_realizacao } = dados;
@@ -201,6 +202,102 @@ const listarParticipantes = async (id_evento) => {
   };
 };
 
+const removerAlunoDoEvento = async (id_evento, id_aluno) => {
+  const eventoId = parseInt(id_evento);
+  const alunoId = parseInt(id_aluno);
+
+  const evento = await prisma.evento.findUnique({
+    where: { id_evento: eventoId },
+  });
+  if (!evento) throw new Error("Evento não encontrado.");
+
+  const registro = await prisma.evento_aluno.findUnique({
+    where: {
+      id_evento_id_utilizador: {
+        id_evento: eventoId,
+        id_utilizador: alunoId,
+      },
+    },
+  });
+
+  if (!registro) throw new Error("O aluno não está inscrito neste evento.");
+
+  const grupos = await prisma.aluno_grupo.findMany({
+    where: {
+      id_aluno: alunoId,
+      grupo: {
+        id_evento: eventoId,
+      },
+    },
+    select: { id_grupo: true },
+  });
+
+  if (grupos.length > 0) {
+    for (const grupo of grupos) {
+      await groupService.removerAlunoDoGrupo(grupo.id_grupo, alunoId);
+    }
+  }
+
+  await prisma.evento_aluno.delete({
+    where: {
+      id_evento_id_utilizador: {
+        id_evento: eventoId,
+        id_utilizador: alunoId,
+      },
+    },
+  });
+
+  return { mensagem: "Aluno removido do evento com sucesso." };
+};
+
+const removerDocenteDoEvento = async (id_evento, id_docente) => {
+  const eventoId = parseInt(id_evento);
+  const docenteId = parseInt(id_docente);
+
+  const evento = await prisma.evento.findUnique({
+    where: { id_evento: eventoId },
+  });
+  if (!evento) throw new Error("Evento não encontrado.");
+
+  const registro = await prisma.evento_docente.findUnique({
+    where: {
+      id_evento_id_docente: {
+        id_evento: eventoId,
+        id_docente: docenteId,
+      },
+    },
+  });
+
+  if (!registro) throw new Error("O docente não está inscrito neste evento.");
+
+  const grupos = await prisma.docente_grupo.findMany({
+    where: {
+      id_docente: docenteId,
+      grupo: {
+        id_evento: eventoId,
+      },
+    },
+    select: { id_grupo: true },
+  });
+
+  if (grupos.length > 0) {
+    for (const grupo of grupos) {
+      await groupService.removerDocenteDoGrupo(grupo.id_grupo, docenteId);
+    }
+  }
+
+  await prisma.evento_docente.delete({
+    where: {
+      id_evento_id_docente: {
+        id_evento: eventoId,
+        id_docente: docenteId,
+      },
+    },
+  });
+
+  return { mensagem: "Docente removido do evento com sucesso." };
+};
+
 const cancelarEvento = async (id_evento, id_coordenadora) => {
   const eventoId = parseInt(id_evento);
 
@@ -324,6 +421,8 @@ module.exports = {
   buscarEventoPorId,
   adicionarParticipante,
   listarParticipantes,
+  removerAlunoDoEvento,
+  removerDocenteDoEvento,
   editarEvento,
   cancelarEvento,
 };

@@ -154,6 +154,48 @@ const groupRoutes = require("../routes/groupRoutes");
  *       200:
  *         description: Sucesso
  *
+ * /api/event/{id}/participantes/alunos/{id_aluno}:
+ *   delete:
+ *     summary: Remove um aluno inscrito do evento
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: id_aluno
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Aluno removido com sucesso
+ *
+ * /api/event/{id}/participantes/docentes/{id_docente}:
+ *   delete:
+ *     summary: Remove um docente inscrito do evento
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: id_docente
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Docente removido com sucesso
+ *
  * /api/event/{id_evento}/grupos:
  *   post:
  *     summary: Cria um grupo para um evento
@@ -363,8 +405,9 @@ router.post("/", tokenValidation, authorize([1]), eventController.criarEvento);
 router.put("/:id", tokenValidation, authorize([1]), eventController.editarEvento);
 router.delete("/:id", tokenValidation, authorize([1]), eventController.cancelarEvento);
 router.post("/:id/participantes", tokenValidation, authorize([1]), eventController.adicionarParticipante);
-router.get("/:id/participantes", tokenValidation, authorize([1]), eventController.listarParticipantes);
-
+router.get("/:id/participantes", tokenValidation, authorize([1,2,3]), eventController.listarParticipantes);
+router.delete("/:id/participantes/alunos/:id_aluno", tokenValidation, authorize([1]), eventController.removerAlunoDoEvento);
+router.delete("/:id/participantes/docentes/:id_docente", tokenValidation, authorize([1]), eventController.removerDocenteDoEvento);
 
 module.exports = router;
 
