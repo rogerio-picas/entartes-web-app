@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { eventService } from '../services/eventService'
 import { Calendar as CalendarIcon, AlertCircle, Loader2 } from 'lucide-react'
+import EventModal from '../components/EventModal'
 
 // Funções auxiliares mantidas
 function formatDate(dateStr) {
@@ -12,7 +13,7 @@ function formatDate(dateStr) {
   })
 }
 
-function EventCard({ event }) {
+function EventCard({ event, onOpen }) {
   return (
     <div className="bg-white rounded-xl border border-[#4a6362]/20 shadow-sm hover:shadow-md transition-all p-6 flex flex-col gap-3 group">
       <div className="flex items-start justify-between gap-2">
@@ -33,7 +34,7 @@ function EventCard({ event }) {
 
       <div className="mt-auto pt-4 border-t border-[#4a6362]/10 flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">ID #{event.id_evento}</span>
-        <button className="text-xs font-semibold text-[#006A68] hover:underline">Ver detalhes</button>
+        <button onClick={onOpen} className="text-xs font-semibold text-[#006A68] hover:underline">Ver detalhes</button>
       </div>
     </div>
   )
@@ -43,6 +44,7 @@ export default function Events() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedEventId, setSelectedEventId] = useState(null)
 
   useEffect(() => {
     eventService
@@ -104,9 +106,13 @@ export default function Events() {
       {!loading && events.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {events.map((event) => (
-            <EventCard key={event.id_evento} event={event} />
+            <EventCard key={event.id_evento} event={event} onOpen={() => setSelectedEventId(event.id_evento)} />
           ))}
         </div>
+      )}
+
+      {selectedEventId && (
+        <EventModal eventId={selectedEventId} onClose={() => setSelectedEventId(null)} />
       )}
     </div>
   )

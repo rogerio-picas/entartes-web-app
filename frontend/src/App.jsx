@@ -6,9 +6,13 @@ import Aulas from './views/Aulas'
 import Horario from './views/Horario'
 import Escola from './views/Escola'
 import Profile from './views/Profile'
+import HomeAdmin      from './views/HomeAdmin'
+import AulasAdmin     from './views/AulasAdmin'
+import Grupos         from './views/Grupos'
+import NovoEventoModal from './views/NovoEventoModal'
 
 import ProtectedRoute from './components/ProtectedRoute'
-import DashboardLayout from './components/DashboardLayout' // Importe o layout criado acima
+import DashboardLayout from './components/DashboardLayout' 
 
 export default function App() {
   return (
@@ -25,14 +29,16 @@ export default function App() {
             </ProtectedRoute>
           }
         >
+          
           {/* Todas as rotas abaixo herdam o Header automaticamente */}
-          <Route path="/" element={<Home />} />
+          <Route path="/"  element={<Home />} />  
           <Route path="/home" element={<Navigate to="/" replace />} />
           <Route path="/horario" element={<Horario />} />
-          <Route path="/aulas" element={<Aulas />} />
+          <Route path="/aulas" element={<Aulas  />} />
           <Route path="/escola" element={<Escola />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/grupos" element={<Grupos />} />
         </Route>
 
         {/* Fallback para rotas inexistentes */}
