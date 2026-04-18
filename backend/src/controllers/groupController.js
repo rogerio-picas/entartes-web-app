@@ -24,10 +24,9 @@ const listarGruposDoEvento = async (req, res) => {
 
 const adicionarAlunoAoGrupo = async (req, res) => {
   try {
-    const resultado = await groupService.adicionarAlunoAoGrupo(
-      req.params.id_grupo,
-      req.params.id_aluno
-    );
+    const { id_evento, id_grupo, id_aluno } = req.params;
+    console.log(`Evento: ${id_evento}, Grupo: ${id_grupo}, Aluno: ${id_aluno}`);
+    const resultado = await groupService.adicionarAlunoAoGrupo(id_evento, id_grupo, id_aluno);
     res.status(201).json(resultado);
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
@@ -37,6 +36,7 @@ const adicionarAlunoAoGrupo = async (req, res) => {
 const adicionarDocenteAoGrupo = async (req, res) => {
   try {
     const resultado = await groupService.adicionarDocenteAoGrupo(
+      req.params.id_evento,
       req.params.id_grupo,
       req.params.id_docente
     );

@@ -85,11 +85,11 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *       200:
  *         description: Sucesso
  */
-router.post('/', authorize([1]), tokenValidation, coachingController.createNewCoaching);
-router.get('/', authorize([1]), tokenValidation, coachingController.getAllCoachings);
-router.get('/:id_utilizador', authorize([1,2,3]), tokenValidation, coachingController.getCoachingById);
-router.put('/:id_utilizador', authorize([1]), tokenValidation, coachingController.updateCoaching);
-router.delete('/:id_utilizador', authorize([1]), tokenValidation, coachingController.deleteCoaching);
+router.post('/', tokenValidation, authorize([1]), coachingController.createNewCoaching);
+router.get('/', tokenValidation, authorize([1]), coachingController.getAllCoachings);
+router.get('/:id_utilizador', tokenValidation, authorize([1,2,3]), coachingController.getCoachingById);
+router.put('/:id_utilizador', tokenValidation, authorize([1]), coachingController.updateCoaching);
+router.delete('/:id_utilizador', tokenValidation, authorize([1]), coachingController.deleteCoaching);
 
 
 // Faltam Funções específicas para aluno/docente como getMyCoachings, cancelCoaching

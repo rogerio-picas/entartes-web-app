@@ -43,9 +43,14 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *             example:
  *               nome: "João"
  *               apelido: "Silva"
+ *               email: "joaosilva@joaosilva.pt"
  *               codigo_username: "jsilva"
  *               password: "password123"
- *               id_tipo_utilizador: 3
+ *               telemovel: "944995678"
+ *               nif: "231333321"
+ *               data_nascimento: "1997-02-02"
+ *               id_tipo: 3
+ *               
  *     responses:
  *       201:
  *         description: Criado com sucesso

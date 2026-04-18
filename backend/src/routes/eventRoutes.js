@@ -4,7 +4,7 @@ const tokenValidation = require("../middlewares/authMiddleware");
 const authorize = require('../middlewares/roleCheckMiddleware');
 
 const eventController = require("../controllers/eventController");
-const groupController = require("../controllers/groupController");
+const groupRoutes = require("../routes/groupRoutes");
 
 /**
  * @swagger
@@ -80,8 +80,10 @@ const groupController = require("../controllers/groupController");
  *           schema:
  *             type: object
  *             properties:
- *               id_utilizador:
- *                 type: integer
+ *               codigo_username:
+ *                 type: string
+ *               tipo_utilizador:
+ *                  type: integer
  *     responses:
  *       201:
  *         description: Participante adicionado com sucesso
@@ -121,6 +123,11 @@ const groupController = require("../controllers/groupController");
  *             properties:
  *               nome:
  *                 type: string
+ *               descricao:
+ *                 type: string
+ *               hora_atuacao:
+ *                 type: string
+ *                 format: time
  *     responses:
  *       201:
  *         description: Grupo criado com sucesso
@@ -139,13 +146,18 @@ const groupController = require("../controllers/groupController");
  *       200:
  *         description: Sucesso
  *
- * /api/event/grupos/{id_grupo}:
+ * /api/event/{id_evento}/grupos/{id_grupo}:
  *   put:
  *     summary: Edita um grupo
  *     tags: [Events - Grupos]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
  *       - in: path
  *         name: id_grupo
  *         required: true
@@ -160,6 +172,11 @@ const groupController = require("../controllers/groupController");
  *             properties:
  *               nome:
  *                 type: string
+ *               descricao:
+ *                 type: string
+ *               hora_atuacao:
+ *                 type: string
+ *                 format: time
  *     responses:
  *       200:
  *         description: Sucesso
@@ -170,21 +187,31 @@ const groupController = require("../controllers/groupController");
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
  *         name: id_grupo
  *         required: true
  *         schema:
  *           type: integer
  *     responses:
  *       200:
- *         description: Sucesso
+ *         description: Grupo eliminado com sucesso
  *
- * /api/event/grupos/{id_grupo}/alunos/{id_aluno}:
+ * /api/event/{id_evento}/grupos/{id_grupo}/alunos/{id_aluno}:
  *   post:
  *     summary: Adiciona um aluno ao grupo
  *     tags: [Events - Grupos]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
  *       - in: path
  *         name: id_grupo
  *         required: true
@@ -205,6 +232,11 @@ const groupController = require("../controllers/groupController");
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
  *         name: id_grupo
  *         required: true
  *         schema:
@@ -216,15 +248,20 @@ const groupController = require("../controllers/groupController");
  *           type: integer
  *     responses:
  *       200:
- *         description: Sucesso
+ *         description: Aluno removido com sucesso
  *
- * /api/event/grupos/{id_grupo}/docentes/{id_docente}:
+ * /api/event/{id_evento}/grupos/{id_grupo}/docentes/{id_docente}:
  *   post:
  *     summary: Adiciona um docente ao grupo
  *     tags: [Events - Grupos]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
  *       - in: path
  *         name: id_grupo
  *         required: true
@@ -245,6 +282,11 @@ const groupController = require("../controllers/groupController");
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
  *         name: id_grupo
  *         required: true
  *         schema:
@@ -256,32 +298,19 @@ const groupController = require("../controllers/groupController");
  *           type: integer
  *     responses:
  *       200:
- *         description: Sucesso
+ *         description: Docente removido com sucesso
  */
 
+
+router.use('/', groupRoutes);
+
 // --- ROTAS DE EVENTOS ---
-router.get("/", authorize([1,2,3]), tokenValidation, eventController.listarEventos);
-router.get("/:id", authorize([1,2,3]), tokenValidation, eventController.buscarEventoPorId);
-router.post("/", authorize([1]), tokenValidation, eventController.criarEvento);
-router.post("/:id/participantes", authorize([1]), tokenValidation, eventController.adicionarParticipante);
-router.get("/:id/participantes", authorize([1]), tokenValidation, eventController.listarParticipantes);
+router.get("/", tokenValidation, authorize([1,2,3]), eventController.listarEventos);
+router.get("/:id", tokenValidation, authorize([1,2,3]), eventController.buscarEventoPorId);
+router.post("/", tokenValidation, authorize([1]), eventController.criarEvento);
+router.post("/:id/participantes", tokenValidation, authorize([1]), eventController.adicionarParticipante);
+router.get("/:id/participantes", tokenValidation, authorize([1]), eventController.listarParticipantes);
 
 // --- ROTAS DE GRUPOS (Dentro de Eventos) ---
-// Criar um grupo para um evento específico
-router.post("/:id_evento/grupos", authorize([1]), tokenValidation, groupController.criarGrupo);
-
-// Listar grupos de um evento
-router.get("/:id_evento/grupos", authorize([1,2,3]), tokenValidation, groupController.listarGruposDoEvento);
-
-// Gerir alunos e docentes nos grupos
-router.post("/grupos/:id_grupo/alunos/:id_aluno", authorize([1,2]), tokenValidation, groupController.adicionarAlunoAoGrupo);
-router.delete("/grupos/:id_grupo/alunos/:id_aluno", authorize([1,2]), tokenValidation, groupController.removerAlunoDoGrupo);
-
-router.post("/grupos/:id_grupo/docentes/:id_docente", authorize([1]), tokenValidation, groupController.adicionarDocenteAoGrupo);
-router.delete("/grupos/:id_grupo/docentes/:id_docente", authorize([1]), tokenValidation, groupController.removerDocenteDoGrupo);
-
-// Editar e Eliminar Grupos
-router.put("/grupos/:id_grupo", authorize([1]), tokenValidation, groupController.editarGrupo);
-router.delete("/grupos/:id_grupo", authorize([1]), tokenValidation, groupController.eliminarGrupo);
 
 module.exports = router;

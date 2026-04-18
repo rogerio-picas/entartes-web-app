@@ -12,6 +12,7 @@ dist/
 build/
 backend/generated/
 backend/prisma/generated/
+deletedfiles/
 
 # Sistema
 .DS_Store
