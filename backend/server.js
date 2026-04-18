@@ -6,6 +6,7 @@ const app = express();
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
+
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -58,6 +59,8 @@ app.use('/api/anuncios', anuncioRoutes);
 app.use('/api/disponibilidades', availabilityRoutes);
 app.use('/api/coaching', coachingRoutes);
 app.use('/api/relatorio', relatorioRoutes);
+app.use('/api/horario', horarioRoutes);
+app.use('/api/anuncios', anuncioRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
