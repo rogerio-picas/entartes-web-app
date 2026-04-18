@@ -4,6 +4,8 @@ import {
   XCircle, AlertCircle, RefreshCw, Plus, X, BookOpen, ArrowUpDown, Check
 } from 'lucide-react'
 import { aulasService } from '../services/aulasService.js'
+import { authService } from '../services/authService'
+import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 
 // ─── Mapeamento de estados e Funções Auxiliares ───────────
 const STATUS_CFG = {
