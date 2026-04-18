@@ -7,6 +7,8 @@ async function request(path, options = {}) {
 
   const res = await fetch(`${BASE}${path}`, { ...options, headers })
 
+  // 401 = não autenticado → terminar sessão
+  // 403 = autorizado mas sem permissão → mostrar erro sem terminar sessão
   if (res.status === 401) {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
