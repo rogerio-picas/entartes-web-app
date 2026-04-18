@@ -4,9 +4,11 @@ import {
   Calendar, CalendarDays, Users, GraduationCap,
   User, Bell, LogOut, ArrowUpDown, CheckCircle2, Clock,
   XCircle, Check, X, AlertCircle, RefreshCw, BookOpen,
-  MapPin, Music
+  MapPin, Music, Plus
 } from 'lucide-react'
 import { aulasService } from '../services/aulasService.js'
+import { authService } from '../services/authService'
+import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 
 // ─── Mapeamento de estados e Funções Auxiliares (Mantêm-se iguais) ───────────
 const STATUS_MAP = {
@@ -135,12 +137,15 @@ function Toast({ message, type, onClose }) {
 
 // ─── Página Principal (Limpada) ─────────────────────────────────────────────
 export default function Aulas() {
-  const [marcacoes, setMarcacoes] = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState('')
-  const [loadingId, setLoadingId] = useState(null)
-  const [toast, setToast]         = useState(null)
-  const [showAll, setShowAll]     = useState(false)
+  const [marcacoes, setMarcacoes]           = useState([])
+  const [loading, setLoading]               = useState(true)
+  const [error, setError]                   = useState('')
+  const [loadingId, setLoadingId]           = useState(null)
+  const [toast, setToast]                   = useState(null)
+  const [showAll, setShowAll]               = useState(false)
+  const [showDisponibilidade, setShowDisponibilidade] = useState(false)
+
+  const role = authService.getUser()?.role
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -217,6 +222,16 @@ export default function Aulas() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            {role === 2 && (
+              <button
+                onClick={() => setShowDisponibilidade(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors shadow-sm"
+              >
+                <Plus size={16} />
+                Nova disponibilidade
+              </button>
+            )}
+
             {pendentes > 0 && !showAll && (
               <div className="flex items-center gap-1.5 bg-amber-100 border border-amber-300 text-amber-700 px-3 py-1.5 rounded-full text-sm font-semibold">
                 <AlertCircle size={14} />
@@ -286,6 +301,16 @@ export default function Aulas() {
           </div>
         )}
       </div>
+
+      {showDisponibilidade && (
+        <NovaDisponibilidadeModal
+          onClose={() => setShowDisponibilidade(false)}
+          onSuccess={() => {
+            setShowDisponibilidade(false)
+            showToast('Disponibilidade criada com sucesso!', 'success')
+          }}
+        />
+      )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </>

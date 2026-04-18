@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { horarioService } from '../services/horarioService'
 import { authService } from '../services/authService'
+import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 
 // ─── Estado config ────────────────────────────────────────────────────────────
 const STATUS_CFG = {
@@ -260,6 +261,7 @@ export default function Horario() {
     const [error, setError] = useState('')
     const [modalAula, setModalAula] = useState(null)
     const [showInscrever, setShowInscrever] = useState(false)
+    const [showDisponibilidade, setShowDisponibilidade] = useState(false)
     const [filtroEstado, setFiltroEstado] = useState('todos')
     const [filtroModalidade, setFiltroModalidade] = useState('todas')
     const [toast, setToast] = useState(null)
@@ -327,6 +329,16 @@ export default function Horario() {
                         >
                             <RefreshCw size={15} className={`text-[#4A6362] ${loading ? 'animate-spin' : ''}`} />
                         </button>
+
+                        {role === 2 && (
+                            <button
+                                onClick={() => setShowDisponibilidade(true)}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors shadow-sm"
+                            >
+                                <Plus size={16} />
+                                Nova disponibilidade
+                            </button>
+                        )}
 
                         {role === 3 && (
                             <button
@@ -512,6 +524,16 @@ export default function Horario() {
             {/* Modais */}
             {modalAula && (
                 <AulaModal aula={modalAula} onClose={() => setModalAula(null)} />
+            )}
+
+            {showDisponibilidade && (
+                <NovaDisponibilidadeModal
+                    onClose={() => setShowDisponibilidade(false)}
+                    onSuccess={() => {
+                        setShowDisponibilidade(false)
+                        showToast('Disponibilidade criada com sucesso!')
+                    }}
+                />
             )}
 
             {showInscrever && (
