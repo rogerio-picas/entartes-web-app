@@ -117,7 +117,7 @@ const availabilityController = require('../controllers/availabilityController');
  */
 
 // POST - Criar disponibilidade
-router.post('/', tokenValidation, authorize([2]), availabilityController.createAvailability);
+router.post('/', tokenValidation, authorize([2]), availabilityController.criarDisponibilidade);
 
 // GET - Listar disponibilidades
 router.get('/', tokenValidation, authorize([2]), availabilityController.listarDisponibilidades);

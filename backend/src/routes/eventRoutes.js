@@ -8,7 +8,7 @@ const groupRoutes = require("../routes/groupRoutes");
 
 /**
  * @swagger
- * /api/event:
+ * /api/evento:
  *   get:
  *     summary: Lista todos os eventos
  *     tags: [Events]
@@ -43,7 +43,7 @@ const groupRoutes = require("../routes/groupRoutes");
  *       201:
  *         description: Criado com sucesso
  *
- * /api/event/{id}:
+ * /api/evento/{id}:
  *   get:
  *     summary: Retorna um evento específico
  *     tags: [Events]
@@ -113,7 +113,7 @@ const groupRoutes = require("../routes/groupRoutes");
  *       404:
  *         description: Evento não encontrado
  *
- * /api/event/{id}/participantes:
+ * /api/evento/{id}/participantes:
  *   post:
  *     summary: Adiciona um participante ao evento
  *     tags: [Events]
@@ -154,7 +154,7 @@ const groupRoutes = require("../routes/groupRoutes");
  *       200:
  *         description: Sucesso
  *
- * /api/event/{id}/participantes/alunos/{id_aluno}:
+ * /api/evento/{id}/participantes/alunos/{id_aluno}:
  *   delete:
  *     summary: Remove um aluno inscrito do evento
  *     tags: [Events]
@@ -175,7 +175,7 @@ const groupRoutes = require("../routes/groupRoutes");
  *       200:
  *         description: Aluno removido com sucesso
  *
- * /api/event/{id}/participantes/docentes/{id_docente}:
+ * /api/evento/{id}/participantes/docentes/{id_docente}:
  *   delete:
  *     summary: Remove um docente inscrito do evento
  *     tags: [Events]
@@ -196,7 +196,7 @@ const groupRoutes = require("../routes/groupRoutes");
  *       200:
  *         description: Docente removido com sucesso
  *
- * /api/event/{id_evento}/grupos:
+ * /api/evento/{id_evento}/grupos:
  *   post:
  *     summary: Cria um grupo para um evento
  *     tags: [Events - Grupos]
@@ -240,7 +240,7 @@ const groupRoutes = require("../routes/groupRoutes");
  *       200:
  *         description: Sucesso
  *
- * /api/event/{id_evento}/grupos/{id_grupo}:
+ * /api/evento/{id_evento}/grupos/{id_grupo}:
  *   put:
  *     summary: Edita um grupo
  *     tags: [Events - Grupos]
@@ -294,7 +294,7 @@ const groupRoutes = require("../routes/groupRoutes");
  *       200:
  *         description: Grupo eliminado com sucesso
  *
- * /api/event/{id_evento}/grupos/{id_grupo}/alunos/{id_aluno}:
+ * /api/evento/{id_evento}/grupos/{id_grupo}/alunos/{id_aluno}:
  *   post:
  *     summary: Adiciona um aluno ao grupo
  *     tags: [Events - Grupos]
@@ -344,7 +344,7 @@ const groupRoutes = require("../routes/groupRoutes");
  *       200:
  *         description: Aluno removido com sucesso
  *
- * /api/event/{id_evento}/grupos/{id_grupo}/docentes/{id_docente}:
+ * /api/evento/{id_evento}/grupos/{id_grupo}/docentes/{id_docente}:
  *   post:
  *     summary: Adiciona um docente ao grupo
  *     tags: [Events - Grupos]
