@@ -136,6 +136,24 @@ const listarParticipantes = async (req, res) => {
   }
 };
 
+const removerAlunoDoEvento = async (req, res) => {
+  try {
+    const resultado = await eventService.removerAlunoDoEvento(req.params.id, req.params.id_aluno);
+    return res.status(200).json(resultado);
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+const removerDocenteDoEvento = async (req, res) => {
+  try {
+    const resultado = await eventService.removerDocenteDoEvento(req.params.id, req.params.id_docente);
+    return res.status(200).json(resultado);
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
 module.exports = {
   criarEvento,
   listarEventos,
@@ -144,4 +162,6 @@ module.exports = {
   buscarEventoPorId,
   adicionarParticipante,
   listarParticipantes,
+  removerAlunoDoEvento,
+  removerDocenteDoEvento,
 };
