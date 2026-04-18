@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const authorize = require('../middlewares/roleCheckMiddleware');
+const tokenValidation = require('../middlewares/authMiddleware');
 
 
 // --- ROTAS DE ACESSO APENAS A COORDENAÇÃO/DIREÇÃO ---
@@ -101,15 +102,15 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  */
 
 
-router.get('/', authorize([1]), userController.getUsers); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
-router.post('/',authorize([1]), userController.createUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
-router.put('/:id_utilizador', authorize([1]), userController.updateUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
-router.delete('/:id_utilizador', authorize([1]), userController.deleteUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
+router.get('/', tokenValidation, authorize([1]), userController.getUsers); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
+router.post('/',tokenValidation, authorize([1]), userController.createUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
+router.put('/:id_utilizador',tokenValidation, authorize([1]), userController.updateUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
+router.delete('/:id_utilizador', tokenValidation, authorize([1]), userController.deleteUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
 
 // --- FIM --- ROTAS DE ACESSO APENAS A COORDENAÇÃO/DIREÇÃO ---
 
 // ROTAS DE ACESSO GERAL [1,2,3] (1- Coordenadora, 2 - Docente, 3 - Aluno)
-router.get('/:id_utilizador', authorize([1, 2, 3]), userController.getUser);
+router.get('/:id_utilizador', tokenValidation, authorize([1, 2, 3]), userController.getUser);
 
 
 module.exports = router;

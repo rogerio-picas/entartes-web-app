@@ -12,7 +12,7 @@ const availabilityService = require('../services/availabilityService');
  */
 const criarDisponibilidade = async (req, res) => {
   try {
-    const { id_utilizador, id_tipo } = req.user;
+    const { id: id_utilizador, role: id_tipo } = req.user;
 
     // Validar permissões
     availabilityService.validarDocente(id_tipo);
@@ -41,7 +41,7 @@ const criarDisponibilidade = async (req, res) => {
  */
 const listarDisponibilidades = async (req, res) => {
   try {
-    const { id_utilizador, id_tipo } = req.user;
+    const { id: id_utilizador, role: id_tipo } = req.user;
 
     // Validar permissões
     availabilityService.validarDocente(id_tipo);
@@ -67,7 +67,7 @@ const listarDisponibilidades = async (req, res) => {
  */
 const updateAvailability = async (req, res) => {
   try {
-    const { id_utilizador, id_tipo } = req.user;
+    const { id: id_utilizador, role: id_tipo } = req.user;
     const { id_disponibilidade } = req.params;
 
     // Validar permissões
@@ -104,7 +104,7 @@ const updateAvailability = async (req, res) => {
  */
 const deleteAvailability = async (req, res) => {
   try {
-    const { id_utilizador, id_tipo } = req.user;
+    const { id: id_utilizador, role: id_tipo } = req.user;
     const { id_disponibilidade } = req.params;
 
     // Validar permissões

@@ -161,14 +161,14 @@ const updateCoaching = async (req, res) => {
 // FUNCOES ALUNO E DOCENTE - COACHINGS --------------------------------------------
 const getMyCoachings = async (req, res) => {
     try {
-        const { id_utilizador, id_tipo } = req.user;
+        const { id: id_utilizador, role: id_tipo } = req.user;
 
         let queryFilter = {};
 
         if (id_tipo == 1) queryFilter = { id_user_criador: id_utilizador };
         else if (id_tipo == 2) queryFilter = { id_docente: id_utilizador };
         else if (id_tipo == 3) queryFilter = {};
-        else return res.status(403).json({ message: "Tipo de utilizador iválido!" });
+        else return res.status(403).json({ message: "Tipo de utilizador inválido!" });
 
         const marcacao = await prisma.marcacao.findMany({
             where: queryFilter,
