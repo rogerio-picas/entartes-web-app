@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import Navbar from '../components/Navbar'
 import { eventService } from '../services/eventService'
+import { Calendar as CalendarIcon, AlertCircle, Loader2 } from 'lucide-react'
+import EventModal from '../components/EventModal'
 
+// Funções auxiliares mantidas
 function formatDate(dateStr) {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('pt-PT', {
@@ -11,25 +13,28 @@ function formatDate(dateStr) {
   })
 }
 
-function EventCard({ event }) {
+function EventCard({ event, onOpen }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col gap-3">
+    <div className="bg-white rounded-xl border border-[#4a6362]/20 shadow-sm hover:shadow-md transition-all p-6 flex flex-col gap-3 group">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-gray-900 font-semibold text-base leading-snug">{event.nome}</h3>
-        <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-          </svg>
+        <h3 className="text-[#324B4A] font-semibold text-lg leading-snug group-hover:text-[#006A68] transition-colors">
+          {event.nome}
+        </h3>
+        <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-[#006A68] bg-[#CCE8E6] px-2.5 py-1 rounded-full">
+          <CalendarIcon size={12} />
           {formatDate(event.data_de_realizacao)}
         </span>
       </div>
 
       {event.descricao && (
-        <p className="text-gray-500 text-sm leading-relaxed line-clamp-3">{event.descricao}</p>
+        <p className="text-[#4A6362] text-sm leading-relaxed line-clamp-3 font-['Sora']">
+          {event.descricao}
+        </p>
       )}
 
-      <div className="mt-auto pt-2 border-t border-gray-100 flex items-center justify-between">
-        <span className="text-xs text-gray-400">ID #{event.id_evento}</span>
+      <div className="mt-auto pt-4 border-t border-[#4a6362]/10 flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">ID #{event.id_evento}</span>
+        <button onClick={onOpen} className="text-xs font-semibold text-[#006A68] hover:underline">Ver detalhes</button>
       </div>
     </div>
   )
@@ -39,6 +44,7 @@ export default function Events() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedEventId, setSelectedEventId] = useState(null)
 
   useEffect(() => {
     eventService
@@ -49,53 +55,65 @@ export default function Events() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    // Removidas divs externas de navegação. O Layout já cuida disso.
+    <div className="font-['Sora']">
+      
+      {/* Cabeçalho de Conteúdo (Seguindo o padrão de Aulas) */}
+      <div className="mb-8">
+        <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Agenda Cultural & Académica</p>
+        <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
+          Próximos <span className="text-[#006A68] font-semibold">Eventos</span>
+        </h1>
+      </div>
 
-      <main className="max-w-6xl mx-auto px-6 py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Eventos</h1>
-          <p className="text-gray-500 mt-1 text-sm">Lista de todos os eventos disponíveis</p>
+      {/* Estado: Carregando */}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-24 gap-3 text-[#006A68]">
+          <Loader2 className="animate-spin" size={32} />
+          <p className="text-sm font-medium animate-pulse">A carregar eventos...</p>
         </div>
+      )}
 
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <svg className="animate-spin w-8 h-8 text-indigo-500" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
+      {/* Estado: Erro */}
+      {error && (
+        <div className="flex items-center gap-3 bg-red-50 text-red-700 text-sm px-5 py-4 rounded-xl border border-red-200 mb-8">
+          <AlertCircle size={18} />
+          <div className="flex-1">
+            <p className="font-semibold">Ocorreu um problema</p>
+            <p className="opacity-80">{error}</p>
           </div>
-        )}
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-xs font-bold underline px-2 py-1 hover:bg-red-100 rounded transition-colors"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
 
-        {error && (
-          <div className="flex items-center gap-2 bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg border border-red-200 mb-6">
-            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            {error}
+      {/* Estado: Lista Vazia */}
+      {!loading && !error && events.length === 0 && (
+        <div className="text-center py-24 bg-[#EFF5F4]/30 rounded-3xl border-2 border-dashed border-[#4a6362]/10">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[#CCE8E6] text-[#006A68] mb-4">
+            <CalendarIcon size={32} />
           </div>
-        )}
+          <p className="text-[#324B4A] font-semibold text-xl">Nenhum evento encontrado</p>
+          <p className="text-[#4A6362] text-sm mt-2">Ainda não existem eventos agendados no sistema.</p>
+        </div>
+      )}
 
-        {!loading && !error && events.length === 0 && (
-          <div className="text-center py-20">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <p className="text-gray-500 font-medium">Nenhum evento encontrado</p>
-            <p className="text-gray-400 text-sm mt-1">Ainda não existem eventos criados.</p>
-          </div>
-        )}
+      {/* Estado: Lista de Eventos */}
+      {!loading && events.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+          {events.map((event) => (
+            <EventCard key={event.id_evento} event={event} onOpen={() => setSelectedEventId(event.id_evento)} />
+          ))}
+        </div>
+      )}
 
-        {!loading && events.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {events.map((event) => (
-              <EventCard key={event.id_evento} event={event} />
-            ))}
-          </div>
-        )}
-      </main>
+      {selectedEventId && (
+        <EventModal eventId={selectedEventId} onClose={() => setSelectedEventId(null)} />
+      )}
     </div>
   )
 }

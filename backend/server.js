@@ -6,6 +6,7 @@ const app = express();
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
+
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -44,6 +45,10 @@ const coachingRoutes = require('./src/routes/coachingRoutes');
 const relatorioRoutes = require('./src/routes/relatorioRoutes');
 const anuncioRoutes = require('./src/routes/anuncioRoutes');
 const availabilityRoutes = require('./src/routes/availabilityRoutes');
+const horarioRoutes = require('./src/routes/horarioRoutes');
+const aulasRoutes = require('./src/routes/aulasRoutes');
+const notificacaoRoutes = require('./src/routes/notificacaoRoutes');
+const salaRoutes = require('./src/routes/salaRoutes');
 
 app.use(cors());
 app.use(express.json());
@@ -58,6 +63,10 @@ app.use('/api/anuncios', anuncioRoutes);
 app.use('/api/disponibilidades', availabilityRoutes);
 app.use('/api/coaching', coachingRoutes);
 app.use('/api/relatorio', relatorioRoutes);
+app.use('/api/horario', horarioRoutes);
+app.use('/api/aulas', aulasRoutes);
+app.use('/api/notificacoes', notificacaoRoutes);
+app.use('/api/salas', salaRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

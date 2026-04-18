@@ -1,39 +1,35 @@
+import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react'
-import { Clock, CalendarCheck, Megaphone } from 'lucide-react'
-import DashboardHeader from '../components/DashboardHeader'
+import { Clock, CalendarCheck, Megaphone, Loader2 } from 'lucide-react'
+// REMOVIDO: import DashboardHeader from '../components/DashboardHeader'
 import { ActionCard, ClassCard, EventDashCard, DashboardSection } from '../components/Cards'
 import { eventService } from '../services/eventService'
-import { api } from '../services/api' // Faremos fetch direto de api.js para as que não têm service
+import { api } from '../services/api'
 
 export default function Home() {
-  // Estados para as várias secções da Home
+  const navigate = useNavigate();
   const [presencas, setPresencas] = useState([])
   const [aulas, setAulas] = useState([])
   const [inscricoes, setInscricoes] = useState([])
   const [eventos, setEventos] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Fetch a todos os endpoints em paralelo
   useEffect(() => {
     async function loadDashboardData() {
       try {
         setLoading(true)
-        
-        // Chamadas da API (prontas para a equipa do backend)
-        // Se as rotas abaixo derem NotFound, o catch trata de deixar um array vazio
         const [
           presencasData,
           aulasData,
           inscricoesData,
           eventosData
         ] = await Promise.allSettled([
-          api.get('/presencas/expirar'),   // Rota a ser desenvolvida pelo backend
-          api.get('/aulas/confirmadas'),   // Rota a ser desenvolvida pelo backend
-          api.get('/inscricoes/pendentes'),// Rota a ser desenvolvida pelo backend
-          eventService.getAll()            // Rota de eventos que já existe
+          api.get('/presencas/expirar'),
+          api.get('/aulas/confirmadas'),
+          api.get('/inscricoes/pendentes'),
+          eventService.getAll()
         ])
 
-        // Guardar dados (se a promessa foi cumprida (fulfilled), guardamos, caso contrário array vazio [fallback seguro])
         setPresencas(presencasData.status === 'fulfilled' && Array.isArray(presencasData.value) ? presencasData.value : [])
         setAulas(aulasData.status === 'fulfilled' && Array.isArray(aulasData.value) ? aulasData.value : [])
         setInscricoes(inscricoesData.status === 'fulfilled' && Array.isArray(inscricoesData.value) ? inscricoesData.value : [])
@@ -45,68 +41,117 @@ export default function Home() {
         setLoading(false)
       }
     }
-
     loadDashboardData()
   }, [])
 
   return (
-    <div className="min-h-screen bg-white font-sans text-brand-darkest pb-20">
-      {/* Aqui invocamos o novo header global isolado */}
-      <DashboardHeader />
+    /* REMOVIDO: div com min-h-screen e DashboardHeader interno. 
+       O conteúdo agora flui dentro do max-w-1400px definido nas páginas anteriores ou no Layout. */
+    <div className="font-['Sora']">
+      
+      {/* Título de Boas-vindas opcional (já que o Header diz "Bem-vindo") */}
+      <div className="mb-8 px-6 md:px-0">
+        <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Painel Geral</p>
+        <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
+          O teu <span className="text-[#006A68] font-semibold">Resumo</span>
+        </h1>
+      </div>
 
-      <main className="pt-10 flex flex-col gap-2">
+      <main className="flex flex-col gap-6">
         {loading ? (
-          <div className="flex w-full items-center justify-center p-20">
-            <span className="text-gray-400">A carregar os teus dados...</span>
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-[#006A68]">
+            <Loader2 className="animate-spin" size={32} />
+            <p className="text-sm font-medium animate-pulse">A atualizar o teu dashboard...</p>
           </div>
         ) : (
           <>
-            {/* Secção 1 */}
-            <DashboardSection title="Presenças a confirmar a expirar em 48h" icon={Clock}>
+            {/* Secção 1 - Presenças */}
+            <DashboardSection title="Presenças a confirmar (48h)" icon={Clock}>
               {presencas.length > 0 ? (
-                presencas.map((item) => (
-                  <ActionCard 
-                    key={`act-${item.id}`} 
-                    item={item} 
-                    onAccept={() => console.log('Aceite')} 
-                    onReject={() => console.log('Rejeitado')} 
-                  />
-                ))
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 md:px-0">
+                  {presencas.map((item) => (
+                    <ActionCard 
+                      key={`act-${item.id}`} 
+                      item={item} 
+                      onAccept={() => console.log('Aceite')} 
+                      onReject={() => console.log('Rejeitado')} 
+                    />
+                  ))}
+                </div>
               ) : (
-                <p className="px-6 text-sm text-gray-500">Sem presenças a expirar neste momento.</p>
+                <p className="px-6 md:px-0 text-sm text-gray-400 italic font-['Sora']">
+                  Sem presenças a expirar neste momento.
+                </p>
               )}
             </DashboardSection>
 
-            {/* Secção 2 */}
+            {/* Secção 2 - Aulas */}
             <DashboardSection title="Próximas aulas confirmadas" icon={CalendarCheck}>
               {aulas.length > 0 ? (
-                aulas.map((item) => (
-                  <ClassCard key={`class-${item.id}`} item={item} statusType={item.status || 'confirmada'} />
-                ))
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-6 md:px-0">
+                  {aulas.map((item) => (
+                    <ClassCard key={`class-${item.id}`} item={item} statusType={item.status || 'confirmada'} />
+                  ))}
+                </div>
               ) : (
-                <p className="px-6 text-sm text-gray-500">Sem aulas confirmadas agendadas para os próximos dias.</p>
+                <p className="px-6 md:px-0 text-sm text-gray-400 italic font-['Sora']">
+                  Sem aulas confirmadas agendadas.
+                </p>
               )}
             </DashboardSection>
 
-            {/* Secção 3 */}
-            <DashboardSection title="Inscrições a aguardar validação" icon={Clock}>
+            {/* Secção 3 - Inscrições */}
+            <DashboardSection title="Aguardar validação" icon={Clock}>
               {inscricoes.length > 0 ? (
-                inscricoes.map((item) => (
-                  <ClassCard key={`pend-${item.id}`} item={item} statusType={item.status || 'pendente'} />
-                ))
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 md:px-0">
+                  {inscricoes.map((item) => (
+                    <ClassCard key={`pend-${item.id}`} item={item} statusType={item.status || 'pendente'} />
+                  ))}
+                </div>
               ) : (
-                <p className="px-6 text-sm text-gray-500">Nenhuma inscrição pendente encontrada.</p>
+                <p className="px-6 md:px-0 text-sm text-gray-400 italic font-['Sora']">
+                  Nenhuma inscrição pendente.
+                </p>
               )}
             </DashboardSection>
 
-            {/* Secção 4 */}
-            <DashboardSection title="Próximos eventos" icon={Megaphone}>
+            {/* Secção 4 - Eventos */}
+            {/* Secção 4 - Eventos */}
+            <DashboardSection 
+              title="Próximos eventos" 
+              icon={Megaphone}
+              // Adicionamos uma prop extra se o teu DashboardSection permitir botões no topo, 
+              // caso contrário, usamos o botão em baixo como mostro abaixo
+            >
               {eventos.length > 0 ? (
-                eventos.map((item) => (
-                  <EventDashCard key={`evt-${item.id_evento || item.id}`} item={item} />
-                ))
+                <div className="flex flex-col gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-6 md:px-0">
+                    
+                    {/* Usamos .slice(0, 3) para mostrar apenas os 3 eventos mais próximos */}
+                    {eventos.slice(0, 3).map((item) => (
+                      <EventDashCard key={`evt-${item.id_evento || item.id}`} item={item} />
+                    ))}
+                  </div>
+
+                  {/* Botão de navegação para a página de Eventos */}
+                  <div className="px-6 md:px-0 flex justify-center md:justify-start">
+                    <button 
+                      onClick={() => navigate('/Events')}
+                      className="group flex items-center gap-2 text-[#006A68] font-semibold text-sm hover:gap-3 transition-all"
+                    >
+                      Ver todos os eventos 
+                      <span className="bg-[#CCE8E6] p-1 rounded-full group-hover:bg-[#006A68] group-hover:text-white transition-colors">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M9 18l6-6-6-6" />
+                        </svg>
+                      </span>
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <p className="px-6 text-sm text-gray-500">A nossa grelha de eventos está vazia de momento. Fica atento!</p>
+                <p className="px-6 md:px-0 text-sm text-gray-400 italic font-['Sora']">
+                  Sem eventos agendados de momento.
+                </p>
               )}
             </DashboardSection>
           </>
