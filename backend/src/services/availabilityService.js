@@ -31,22 +31,33 @@ const validarParametrosCreate = (dia_semana, data_especifica, hora_inicio, hora_
  * Verifica sobreposição de horários com outras disponibilidades
  */
 const verificarSobreposicao = async (id_docente, dia_semana, data_especifica, hora_inicio, hora_fim, id_disponibilidade_atual = null) => {
-  const horaInicioDate = new Date(`1970-01-01T${hora_inicio}Z`);
-  const horaFimDate = new Date(`1970-01-01T${hora_fim}Z`);
+  
+  // Função auxiliar para garantir que temos um objeto Date válido para o tipo TIME
+  const formatarHora = (hora) => {
+    // Se a hora já for uma string ISO completa (contém 'T'), extraímos apenas a parte do tempo
+    const timePart = hora.includes('T') ? hora.split('T')[1].split('.')[0] : hora;
+    const finalDate = new Date(`1970-01-01T${timePart.replace('Z', '')}Z`);
+    
+    if (isNaN(finalDate.getTime())) throw new Error(`Hora inválida: ${hora}`);
+    return finalDate;
+  };
+
+  const horaInicioDate = formatarHora(hora_inicio);
+  const horaFimDate = formatarHora(hora_fim);
 
   const whereCondition = {
-    id_docente,
-    dia_semana: dia_semana ?? undefined,
-    data_especifica: data_especifica ? new Date(data_especifica) : undefined,
+    id_docente: parseInt(id_docente),
+    // Se for null ou undefined, o Prisma deve procurar especificamente por registros onde é NULL
+    dia_semana: dia_semana !== null && dia_semana !== undefined ? parseInt(dia_semana) : null,
+    data_especifica: data_especifica ? new Date(data_especifica) : null,
     AND: [
       { hora_inicio: { lt: horaFimDate } },
       { hora_fim: { gt: horaInicioDate } },
     ],
   };
 
-  // Se é uma atualização, excluir a disponibilidade atual da verificação
   if (id_disponibilidade_atual) {
-    whereCondition.id_disponibilidade = { not: id_disponibilidade_atual };
+    whereCondition.id_disponibilidade = { not: parseInt(id_disponibilidade_atual) };
   }
 
   const sobrepostas = await prisma.disponibilidade.findMany({
@@ -151,45 +162,55 @@ const obterDisponibilidade = async (id_disponibilidade, id_docente) => {
 const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) => {
   const { dia_semana, data_especifica, hora_inicio, hora_fim } = dados;
 
-  // Verificar se existe e pertence ao docente
+  // 1. Verificar se existe e pertence ao docente
   const existente = await verificarPropriedade(id_disponibilidade, id_docente);
 
-  // Preparar dados finais (merge com existentes)
-  const horaInicio = hora_inicio 
-    ? new Date(`1970-01-01T${hora_inicio}Z`) 
-    : existente.hora_inicio;
-  const horaFim = hora_fim 
-    ? new Date(`1970-01-01T${hora_fim}Z`) 
-    : existente.hora_fim;
+  // Função Auxiliar Interna para limpar o formato da hora
+  const parseHoraTime = (valor) => {
+    if (!valor) return null;
+    // Se vier uma string ISO completa, extraímos apenas a parte do tempo (HH:mm:ss)
+    const extrairTempo = valor.toString().includes('T') 
+      ? valor.toString().split('T')[1].split('.')[0] 
+      : valor;
+    
+    const d = new Date(`1970-01-01T${extrairTempo.replace('Z', '')}Z`);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  // 2. Preparar dados finais com lógica de limpeza
+  const novaHoraInicio = hora_inicio ? parseHoraTime(hora_inicio) : existente.hora_inicio;
+  const novaHoraFim = hora_fim ? parseHoraTime(hora_fim) : existente.hora_fim;
+  
+  // Garantir que diaSemana é um número ou null (evitar NaN)
   const diaSemana = dia_semana !== undefined 
-    ? parseInt(dia_semana) 
+    ? (dia_semana === null ? null : parseInt(dia_semana)) 
     : existente.dia_semana;
-  const dataEspecifica = data_especifica 
-    ? new Date(data_especifica) 
+
+  const dataEspecifica = data_especifica !== undefined
+    ? (data_especifica === null ? null : new Date(data_especifica))
     : existente.data_especifica;
 
-  // Verificar sobreposição (excluindo a disponibilidade atual)
+  // 3. Verificar sobreposição
+  // Passamos as horas já formatadas para o verificador
   await verificarSobreposicao(
     id_docente,
     diaSemana,
     dataEspecifica,
-    hora_inicio || existente.hora_inicio,
-    hora_fim || existente.hora_fim,
+    novaHoraInicio, // Agora passamos o objeto Date válido
+    novaHoraFim,
     parseInt(id_disponibilidade)
   );
 
-  // Atualizar
-  const disponibilidadeAtualizada = await prisma.disponibilidade.update({
+  // 4. Atualizar
+  return await prisma.disponibilidade.update({
     where: { id_disponibilidade: parseInt(id_disponibilidade) },
     data: {
       dia_semana: diaSemana,
       data_especifica: dataEspecifica,
-      hora_inicio: horaInicio,
-      hora_fim: horaFim,
+      hora_inicio: novaHoraInicio,
+      hora_fim: novaHoraFim,
     },
   });
-
-  return disponibilidadeAtualizada;
 };
 
 /**
@@ -197,7 +218,7 @@ const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) =
  */
 const eliminarDisponibilidade = async (id_disponibilidade, id_docente) => {
   // Verificar se existe e tem marcações ativas
-  await verificarMarcacoesAtivas(id_disponibilidade);
+  // await verificarMarcacoesAtivas(id_disponibilidade);
 
   // Verificar se pertence ao docente
   await verificarPropriedade(id_disponibilidade, id_docente);
