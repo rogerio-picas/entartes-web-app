@@ -69,24 +69,30 @@ function GrupoCard({ grupo, onManage }) {
 }
 
 // ─── Create Group Panel ────────────────────────────────────────────────────────
-function CriarGrupoPanel({ onClose, onSuccess, eventId }) {
+function CriarGrupoPanel({ onClose, onSuccess, eventId: initialEventId }) {
     const [nome, setNome] = useState('')
     const [descricao, setDescricao] = useState('')
     const [searchAluno, setSearchAluno] = useState('')
-    const [alunos, setAlunos] = useState([]) // all available
+    const [alunos, setAlunos] = useState([])
+    const [eventos, setEventos] = useState([])
+    const [selectedEventId, setSelectedEventId] = useState(initialEventId ?? '')
     const [selected, setSelected] = useState([])
     const [loading, setLoading] = useState(false)
-    const [searching, setSearching] = useState(false)
     const [erro, setErro] = useState('')
 
-    // Fetch all students
     useEffect(() => {
         api.get('/users').then(data => {
-            if (Array.isArray(data)) {
+            if (Array.isArray(data))
                 setAlunos(data.filter(u => u.tipo_utilizador?.id_tipo === 3 || !u.tipo_utilizador))
-            }
         }).catch(() => {})
-    }, [])
+
+        // Load events for the selector (only when no eventId is pre-set)
+        if (!initialEventId) {
+            api.get('/evento').then(data => {
+                if (Array.isArray(data)) setEventos(data)
+            }).catch(() => {})
+        }
+    }, [initialEventId])
 
     const filtered = alunos.filter(u => {
         const q = searchAluno.toLowerCase()
@@ -105,18 +111,22 @@ function CriarGrupoPanel({ onClose, onSuccess, eventId }) {
 
     async function handleCreate() {
         if (!nome.trim()) { setErro('O nome do grupo é obrigatório.'); return }
+        if (!selectedEventId) { setErro('Seleciona um evento para associar o grupo.'); return }
         setLoading(true)
         setErro('')
         try {
-            // Create group (linked to event if provided, or standalone)
-            const url = eventId ? `/event/${eventId}/grupos` : '/event/grupos'
-            const grupo = await api.post(url, { nome: nome.trim(), descricao })
+            const grupo = await api.post(`/evento/${selectedEventId}/grupos`, { nome: nome.trim(), descricao })
 
-            // Add members
             const groupId = grupo.id_grupo
             for (const aluno of selected) {
                 try {
-                    await api.post(`/event/grupos/${groupId}/alunos/${aluno.id_utilizador}`, {})
+                    try {
+                        await api.post(`/evento/${selectedEventId}/participantes`, {
+                            id_utilizador: aluno.id_utilizador,
+                            tipo: 'aluno',
+                        })
+                    } catch { /* already registered — proceed */ }
+                    await api.post(`/evento/grupos/${groupId}/alunos/${aluno.id_utilizador}`, {})
                 } catch { /* skip individual errors */ }
             }
             onSuccess(grupo)
@@ -151,6 +161,19 @@ function CriarGrupoPanel({ onClose, onSuccess, eventId }) {
 
                 {/* Detalhes */}
                 <p className="text-sm font-medium text-[#000]">Detalhes</p>
+
+                {!initialEventId && (
+                    <select
+                        value={selectedEventId}
+                        onChange={e => setSelectedEventId(e.target.value)}
+                        className="w-full bg-white border border-[#6F7978] rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68]"
+                    >
+                        <option value="">Seleciona um evento</option>
+                        {eventos.map(ev => (
+                            <option key={ev.id_evento} value={ev.id_evento}>{ev.nome}</option>
+                        ))}
+                    </select>
+                )}
 
                 <div className="relative">
                     <input
@@ -264,12 +287,12 @@ export default function Grupos() {
         setError('')
         try {
             // Fetch all events and their groups
-            const eventos = await api.get('/event')
+            const eventos = await api.get('/evento')
             const allGrupos = []
             if (Array.isArray(eventos)) {
                 for (const ev of eventos.slice(0, 10)) {
                     try {
-                        const gs = await api.get(`/event/${ev.id_evento}/grupos`)
+                        const gs = await api.get(`/evento/${ev.id_evento}/grupos`)
                         if (Array.isArray(gs)) allGrupos.push(...gs)
                     } catch { /* skip */ }
                 }

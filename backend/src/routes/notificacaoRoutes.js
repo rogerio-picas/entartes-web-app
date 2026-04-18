@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const authorize = require('../controllers/roleCheckMiddleware');
+const authorize = require('../middlewares/roleCheckMiddleware');
 const tokenValidation = require('../middlewares/authMiddleware');
+const notificacaoController = require('../controllers/notificacaoController');
 
 /**
  * @swagger

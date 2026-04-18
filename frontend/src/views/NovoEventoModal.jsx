@@ -63,7 +63,7 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
         setLoading(true)
         setErro('')
         try {
-            await api.post('/event', {
+            await api.post('/evento', {
                 nome: nome.trim(),
                 descricao: descricao || null,
                 data_de_realizacao: data ? new Date(data).toISOString() : null,
