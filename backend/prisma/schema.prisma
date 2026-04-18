@@ -70,7 +70,7 @@ model disponibilidade {
   id_disponibilidade Int       @id @default(autoincrement())
   id_docente         Int?
   dia_semana         Int?
-  data_especifica    DateTime? @db.Date
+  data_especifica    DateTime? @db.Timestamp(6)
   hora_inicio        DateTime? @db.Time(6)
   hora_fim           DateTime? @db.Time(6)
   docente            docente?  @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
@@ -92,7 +92,7 @@ model docente {
 model docente_grupo {
   id_docente      Int
   id_grupo        Int
-  data_atribuicao DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  data_atribuicao DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Timestamp(6)
   docente         docente   @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
   grupo           grupo     @relation(fields: [id_grupo], references: [id_grupo], onDelete: Cascade, onUpdate: NoAction)
 
@@ -112,9 +112,11 @@ model evento {
   id_evento           Int                   @id @default(autoincrement())
   nome                String                @db.VarChar(100)
   descricao           String?
-  data_de_realizacao  DateTime?             @db.Date
+  data_de_realizacao  DateTime?             @db.Timestamp(6)
+  id_evento_estado    Int?
   anuncio             anuncio[]
   coordenadora_evento coordenadora_evento[]
+  evento_estado       evento_estado?        @relation(fields: [id_evento_estado], references: [id_evento_estado], onDelete: NoAction, onUpdate: NoAction)
   evento_aluno        evento_aluno[]
   evento_docente      evento_docente[]
   grupo               grupo[]
@@ -172,7 +174,7 @@ model participacao_conclusao {
   id_marcacoes              Int?
   id_aluno                  Int?
   id_docente                Int?
-  data_confirmacao          DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  data_confirmacao          DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Timestamp(6)
   confirmou_conclusao       Boolean?  @default(false)
   aluno                     aluno?    @relation(fields: [id_aluno], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
   docente                   docente?  @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
@@ -204,7 +206,7 @@ model utilizador {
   email            String?          @unique @db.VarChar(100)
   telemovel        String?          @db.VarChar(10)
   tentativas_login Int?             @default(0)
-  ultimo_login     DateTime?        @default(dbgenerated("CURRENT_DATE")) @db.Date
+  ultimo_login     DateTime?        @default(dbgenerated("CURRENT_DATE")) @db.Timestamp(6)
   estado           String?          @db.VarChar(20)
   aluno            aluno?
   coordenadora     coordenadora?
@@ -218,7 +220,7 @@ model aluno_marcacao {
   id_aluno_marcacoes Int       @id(map: "aluno_marcacoes_pkey") @default(autoincrement())
   id_aluno           Int?
   id_marcacoes       Int?
-  data_resposta      DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  data_resposta      DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Timestamp(6)
   aluno              aluno?    @relation(fields: [id_aluno], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction, map: "aluno_marcacoes_id_aluno_fkey")
   marcacao           marcacao? @relation(fields: [id_marcacoes], references: [id_marcacoes], onDelete: Cascade, onUpdate: NoAction, map: "aluno_marcacoes_id_marcacoes_fkey")
 }
@@ -269,4 +271,11 @@ model notificacao {
   data_envio     DateTime?   @default(now()) @db.Timestamp(6)
   lida           Boolean?    @default(false)
   utilizador     utilizador? @relation(fields: [id_user], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction, map: "notificacoes_id_user_fkey")
+}
+
+model evento_estado {
+  id_evento_estado Int      @id @default(autoincrement())
+  nome             String   @db.VarChar(50)
+  descricao        String?
+  evento           evento[]
 }

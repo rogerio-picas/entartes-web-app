@@ -5,7 +5,11 @@ const prisma = new PrismaClient();
 const groupService = require("../services/groupService");
 
 const criarGrupo = async (req, res) => {
+      console.log("--- DEBUG CONTROLLER ---");
+  console.log("Params:", req.params);
+  console.log("Body:", req.body);
   try {
+
     const grupo = await groupService.criarGrupo(req.params.id_evento, req.body);
     res.status(201).json(grupo);
   } catch (erro) {

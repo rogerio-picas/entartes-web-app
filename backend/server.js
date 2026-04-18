@@ -40,10 +40,10 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 const authRoutes = require('./src/routes/authRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const eventRoutes = require('./src/routes/eventRoutes');
-// const groupRoutes = require('./src/routes/groupRoutes');
 const coachingRoutes = require('./src/routes/coachingRoutes');
 const relatorioRoutes = require('./src/routes/relatorioRoutes');
-// const anuncioRoutes = require('./src/routes/anuncioRoutes');
+const anuncioRoutes = require('./src/routes/anuncioRoutes');
+const availabilityRoutes = require('./src/routes/availabilityRoutes');
 
 app.use(cors());
 app.use(express.json());
@@ -53,11 +53,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-
-// app.use('/api/event/anuncios', anuncioRoutes);
-// app.use('/api/event/group', groupRoutes);
-app.use('/api/event', eventRoutes);
-
+app.use('/api/evento', eventRoutes);
+app.use('/api/anuncios', anuncioRoutes);
+app.use('/api/disponibilidades', availabilityRoutes);
 app.use('/api/coaching', coachingRoutes);
 app.use('/api/relatorio', relatorioRoutes);
 

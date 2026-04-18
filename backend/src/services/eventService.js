@@ -201,7 +201,7 @@ const listarParticipantes = async (id_evento) => {
   };
 };
 
-const cancelarEvento = async (id_evento) => {
+const cancelarEvento = async (id_evento, id_coordenadora) => {
   const eventoId = parseInt(id_evento);
 
   // 1. Verificar se o evento existe
@@ -210,44 +210,47 @@ const cancelarEvento = async (id_evento) => {
     include: {
       evento_aluno: true,
       evento_docente: true,
+      coordenadora_evento: true,
     },
   });
 
   if (!evento) throw new Error("Evento não encontrado.");
 
-  // 2. Procurar o ID do estado "Cancelado"
+  // 2. Validar se a coordenadora tem permissão para cancelar o evento
+  const temPermissao = evento.coordenadora_evento.some(
+    (ce) => ce.id_utilizador === id_coordenadora
+  );
+
+  if (!temPermissao) {
+    throw new Error("Sem permissão para cancelar este evento. Apenas coordenadoras do evento podem cancelá-lo.");
+  }
+
+  // 3. Procurar o ID do estado "Cancelado"
   const estadoCancelado = await prisma.evento_estado.findFirst({
-    where: { nome: "Cancelado" },
+    where: { id_evento_estado: 5 },
   });
 
   if (!estadoCancelado) throw new Error("Estado 'Cancelado' não encontrado na Base de Dados.");
 
-  // CORREÇÃO BUGS: Usar 'id_evento_estado' em vez de 'id_estado'
+  // 4. Verificar se já está cancelado
   if (evento.id_evento_estado === estadoCancelado.id_evento_estado) {
     throw new Error("O evento já está cancelado.");
   }
 
-  // Recolher IDs dos participantes antes da transação para as notificações
+  // 5. Recolher IDs dos participantes antes da transação para as notificações
   const idsAlunos = evento.evento_aluno.map((ea) => ea.id_utilizador);
   const idsDocentes = evento.evento_docente.map((ed) => ed.id_docente);
 
-  // 3. Tudo numa transação atómica
+  // 6. Tudo numa transação atómica
   await prisma.$transaction(async (tx) => {
     
-    // --- DECISÃO DE NEGÓCIO ---
-    // A melhor prática é NÃO apagar as inscrições para manter o histórico.
-    // Como o evento mudou para 'Cancelado', o Frontend já sabe que não vai acontecer.
-    // Se quiseres MESMO apagar, retira os comentários abaixo:
-    // await tx.evento_aluno.deleteMany({ where: { id_evento: eventoId } });
-    // await tx.evento_docente.deleteMany({ where: { id_evento: eventoId } });
-
-    // 4. Atualizar estado do evento para Cancelado
+    // Atualizar estado do evento para Cancelado
     await tx.evento.update({
       where: { id_evento: eventoId },
-      data: { id_evento_estado: estadoCancelado.id_evento_estado }, // Correção aqui!
+      data: { id_evento_estado: estadoCancelado.id_evento_estado },
     });
 
-    // 5. Criar notificações para todos os participantes
+    // Criar notificações para todos os participantes
     const mensagem = `O evento "${evento.nome}" foi cancelado.`;
 
     const notificacoes = [...idsAlunos, ...idsDocentes].map((id_user) => ({
@@ -256,17 +259,59 @@ const cancelarEvento = async (id_evento) => {
       mensagem,
     }));
 
-    // createMany é muito mais eficiente do que criar um a um
     if (notificacoes.length > 0) {
       await tx.notificacao.createMany({ data: notificacoes });
     }
   });
 
-  // 6. Devolver sucesso com relatório do que aconteceu
+  // 7. Devolver sucesso com relatório do que aconteceu
   return {
     mensagem: "Evento cancelado com sucesso.",
+    evento_id: eventoId,
+    evento_nome: evento.nome,
     participantes_notificados: idsAlunos.length + idsDocentes.length,
   };
+};
+
+/**
+ * EDITAR - Atualiza informações de um evento
+ */
+const editarEvento = async (id_evento, dados) => {
+  const eventoId = parseInt(id_evento);
+  const { nome, descricao, data_de_realizacao } = dados;
+
+  // 1. Verificar se o evento existe
+  const evento = await prisma.evento.findUnique({
+    where: { id_evento: eventoId },
+  });
+
+  if (!evento) throw new Error("Evento não encontrado.");
+
+  // 2. Preparar dados para atualização (apenas campos fornecidos)
+  const dataAtualizar = {};
+  
+  if (nome !== undefined && nome.trim() !== "") {
+    dataAtualizar.nome = nome.trim();
+  }
+  if (descricao !== undefined) {
+    dataAtualizar.descricao = descricao;
+  }
+  if (data_de_realizacao !== undefined) {
+    dataAtualizar.data_de_realizacao = data_de_realizacao ? new Date(data_de_realizacao) : null;
+  }
+
+  // 3. Se nenhum campo foi fornecido, não fazer nada
+  if (Object.keys(dataAtualizar).length === 0) {
+    throw new Error("Nenhum campo válido foi fornecido para atualização.");
+  }
+
+  // 4. Atualizar evento
+  const eventoAtualizado = await prisma.evento.update({
+    where: { id_evento: eventoId },
+    data: dataAtualizar,
+  });
+
+  return eventoAtualizado;
 };
 
 
@@ -279,6 +324,6 @@ module.exports = {
   buscarEventoPorId,
   adicionarParticipante,
   listarParticipantes,
+  editarEvento,
   cancelarEvento,
-
 };

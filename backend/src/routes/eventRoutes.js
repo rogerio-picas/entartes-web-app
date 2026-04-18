@@ -60,6 +60,58 @@ const groupRoutes = require("../routes/groupRoutes");
  *         description: Sucesso
  *       404:
  *         description: Evento não encontrado
+ *   put:
+ *     summary: Atualiza informações de um evento
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               descricao:
+ *                 type: string
+ *               data_de_realizacao:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: Evento atualizado com sucesso
+ *       400:
+ *         description: Parâmetros inválidos
+ *       404:
+ *         description: Evento não encontrado
+ *   delete:
+ *     summary: Cancela um evento
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Evento cancelado com sucesso
+ *       400:
+ *         description: Erro ao cancelar evento
+ *       403:
+ *         description: Sem permissão para cancelar este evento
+ *       404:
+ *         description: Evento não encontrado
  *
  * /api/event/{id}/participantes:
  *   post:
@@ -301,16 +353,18 @@ const groupRoutes = require("../routes/groupRoutes");
  *         description: Docente removido com sucesso
  */
 
-
+// --- ROTAS DE GRUPOS (Dentro de Eventos) ---
 router.use('/', groupRoutes);
 
 // --- ROTAS DE EVENTOS ---
 router.get("/", tokenValidation, authorize([1,2,3]), eventController.listarEventos);
 router.get("/:id", tokenValidation, authorize([1,2,3]), eventController.buscarEventoPorId);
 router.post("/", tokenValidation, authorize([1]), eventController.criarEvento);
+router.put("/:id", tokenValidation, authorize([1]), eventController.editarEvento);
+router.delete("/:id", tokenValidation, authorize([1]), eventController.cancelarEvento);
 router.post("/:id/participantes", tokenValidation, authorize([1]), eventController.adicionarParticipante);
 router.get("/:id/participantes", tokenValidation, authorize([1]), eventController.listarParticipantes);
 
-// --- ROTAS DE GRUPOS (Dentro de Eventos) ---
 
 module.exports = router;
+

@@ -1,5 +1,6 @@
 // src/controllers/eventoController.js
 const eventService = require("../services/eventService");
+const { editarGrupo } = require("./groupController");
 
 const criarEvento = async (req, res) => {
   try {
@@ -62,6 +63,69 @@ const adicionarParticipante = async (req, res) => {
   }
 };
 
+const editarEvento = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, descricao, data_de_realizacao } = req.body;
+
+    if (!nome && !descricao && !data_de_realizacao) {
+      return res.status(400).json({
+        error: "Pelo menos um campo deve ser fornecido para edição.",
+      });
+    }
+
+    const eventoAtualizado = await eventService.editarEvento(id, req.body);
+
+    return res.status(200).json({
+      mensagem: "Evento atualizado com sucesso.",
+      evento: eventoAtualizado,
+    });
+  } catch (error) {
+    console.error("Erro no editarEvento:", error.message);
+    return res.status(error.message.includes("não encontrado") ? 404 : 400).json({
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Cancela um evento existente
+ * DELETE /api/event/:id
+ */
+const cancelarEvento = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const id_coordenadora = req.user.id;
+
+    if (!id) {
+      return res.status(400).json({
+        error: "ID do evento é obrigatório.",
+      });
+    }
+
+    const resultado = await eventService.cancelarEvento(id, id_coordenadora);
+
+    return res.status(200).json(resultado);
+  } catch (error) {
+    console.error("Erro no cancelarEvento:", error.message);
+
+    if (error.message.includes("não encontrado")) {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error.message.includes("Sem permissão")) {
+      return res.status(403).json({ error: error.message });
+    }
+    if (error.message.includes("já está cancelado")) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.status(500).json({
+      error: "Erro ao cancelar evento.",
+      details: error.message,
+    });
+  }
+};
+
 const listarParticipantes = async (req, res) => {
   try {
     const { id } = req.params;
@@ -75,6 +139,8 @@ const listarParticipantes = async (req, res) => {
 module.exports = {
   criarEvento,
   listarEventos,
+  editarEvento,
+  cancelarEvento,
   buscarEventoPorId,
   adicionarParticipante,
   listarParticipantes,
