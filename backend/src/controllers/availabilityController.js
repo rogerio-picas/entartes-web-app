@@ -10,7 +10,7 @@ const availabilityService = require('../services/availabilityService');
  * POST /api/disponibilidades
  * Cria uma nova disponibilidade
  */
-const createAvailability = async (req, res) => {
+const criarDisponibilidade = async (req, res) => {
   try {
     const { id_utilizador, id_tipo } = req.user;
 
@@ -28,7 +28,7 @@ const createAvailability = async (req, res) => {
       data: novaDisponibilidade,
     });
   } catch (error) {
-    console.error("Erro no createAvailability:", error.message);
+    console.error("Erro a criar disponibilidade:", error.message);
     res.status(error.message.includes("Apenas docentes") ? 403 : 400).json({
       message: error.message,
     });
@@ -140,7 +140,7 @@ const deleteAvailability = async (req, res) => {
 };
 
 module.exports = {
-  createAvailability,
+  criarDisponibilidade,
   listarDisponibilidades,
   updateAvailability,
   deleteAvailability,
