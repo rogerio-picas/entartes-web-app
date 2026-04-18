@@ -123,6 +123,11 @@ const groupRoutes = require("../routes/groupRoutes");
  *             properties:
  *               nome:
  *                 type: string
+ *               descricao:
+ *                 type: string
+ *               hora_atuacao:
+ *                 type: string
+ *                 format: time
  *     responses:
  *       201:
  *         description: Grupo criado com sucesso
@@ -141,13 +146,18 @@ const groupRoutes = require("../routes/groupRoutes");
  *       200:
  *         description: Sucesso
  *
- * /api/event/grupos/{id_grupo}:
+ * /api/event/{id_evento}/grupos/{id_grupo}:
  *   put:
  *     summary: Edita um grupo
  *     tags: [Events - Grupos]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
  *       - in: path
  *         name: id_grupo
  *         required: true
@@ -162,6 +172,11 @@ const groupRoutes = require("../routes/groupRoutes");
  *             properties:
  *               nome:
  *                 type: string
+ *               descricao:
+ *                 type: string
+ *               hora_atuacao:
+ *                 type: string
+ *                 format: time
  *     responses:
  *       200:
  *         description: Sucesso
@@ -172,21 +187,31 @@ const groupRoutes = require("../routes/groupRoutes");
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
  *         name: id_grupo
  *         required: true
  *         schema:
  *           type: integer
  *     responses:
  *       200:
- *         description: Sucesso
+ *         description: Grupo eliminado com sucesso
  *
- * /api/event/grupos/{id_grupo}/alunos/{id_aluno}:
+ * /api/event/{id_evento}/grupos/{id_grupo}/alunos/{id_aluno}:
  *   post:
  *     summary: Adiciona um aluno ao grupo
  *     tags: [Events - Grupos]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
  *       - in: path
  *         name: id_grupo
  *         required: true
@@ -207,6 +232,11 @@ const groupRoutes = require("../routes/groupRoutes");
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
  *         name: id_grupo
  *         required: true
  *         schema:
@@ -218,15 +248,20 @@ const groupRoutes = require("../routes/groupRoutes");
  *           type: integer
  *     responses:
  *       200:
- *         description: Sucesso
+ *         description: Aluno removido com sucesso
  *
- * /api/event/grupos/{id_grupo}/docentes/{id_docente}:
+ * /api/event/{id_evento}/grupos/{id_grupo}/docentes/{id_docente}:
  *   post:
  *     summary: Adiciona um docente ao grupo
  *     tags: [Events - Grupos]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
  *       - in: path
  *         name: id_grupo
  *         required: true
@@ -247,6 +282,11 @@ const groupRoutes = require("../routes/groupRoutes");
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
  *         name: id_grupo
  *         required: true
  *         schema:
@@ -258,7 +298,7 @@ const groupRoutes = require("../routes/groupRoutes");
  *           type: integer
  *     responses:
  *       200:
- *         description: Sucesso
+ *         description: Docente removido com sucesso
  */
 
 
