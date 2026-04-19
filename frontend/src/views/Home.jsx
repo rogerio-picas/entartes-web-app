@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react'
 import { Clock, CalendarCheck, Megaphone, Loader2 } from 'lucide-react'
 // REMOVIDO: import DashboardHeader from '../components/DashboardHeader'
-import { ActionCard, ClassCard, EventDashCard, DashboardSection } from '../components/Cards'
+import { ActionCard, ClassCard, EventCard, DashboardSection } from '../components/Cards'
+import EventModal from '../components/EventModal'
 import { eventService } from '../services/eventService'
 import { api } from '../services/api'
 
@@ -13,6 +14,7 @@ export default function Home() {
   const [inscricoes, setInscricoes] = useState([])
   const [eventos, setEventos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedEventId, setSelectedEventId] = useState(null)
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -116,30 +118,26 @@ export default function Home() {
             </DashboardSection>
 
             {/* Secção 4 - Eventos */}
-            {/* Secção 4 - Eventos */}
-            <DashboardSection 
-              title="Próximos eventos" 
-              icon={Megaphone}
-              // Adicionamos uma prop extra se o teu DashboardSection permitir botões no topo, 
-              // caso contrário, usamos o botão em baixo como mostro abaixo
-            >
+            <section className="mb-10 w-full max-w-[1280px] mx-auto">
+              <div className="flex items-center gap-3 mb-4">
+                <Megaphone size={28} className="text-brand-dark" />
+                <h2 className="text-2xl font-bold text-black font-sans">Próximos eventos</h2>
+              </div>
+
               {eventos.length > 0 ? (
                 <div className="flex flex-col gap-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-6 md:px-0">
-                    
-                    {/* Usamos .slice(0, 3) para mostrar apenas os 3 eventos mais próximos */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {eventos.slice(0, 3).map((item) => (
-                      <EventDashCard key={`evt-${item.id_evento || item.id}`} item={item} />
+                      <EventCard key={`evt-${item.id_evento || item.id}`} event={item} onOpen={() => setSelectedEventId(item.id_evento)} />
                     ))}
                   </div>
 
-                  {/* Botão de navegação para a página de Eventos */}
-                  <div className="px-6 md:px-0 flex justify-center md:justify-start">
-                    <button 
+                  <div className="flex justify-start">
+                    <button
                       onClick={() => navigate('/Events')}
                       className="group flex items-center gap-2 text-[#006A68] font-semibold text-sm hover:gap-3 transition-all"
                     >
-                      Ver todos os eventos 
+                      Ver todos os eventos
                       <span className="bg-[#CCE8E6] p-1 rounded-full group-hover:bg-[#006A68] group-hover:text-white transition-colors">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                           <path d="M9 18l6-6-6-6" />
@@ -149,14 +147,17 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                <p className="px-6 md:px-0 text-sm text-gray-400 italic font-['Sora']">
+                <p className="text-sm text-gray-400 italic font-['Sora']">
                   Sem eventos agendados de momento.
                 </p>
               )}
-            </DashboardSection>
+            </section>
           </>
         )}
       </main>
+      {selectedEventId && (
+        <EventModal eventId={selectedEventId} onClose={() => setSelectedEventId(null)} />
+      )}
     </div>
   )
 }

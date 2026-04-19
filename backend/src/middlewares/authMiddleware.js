@@ -16,7 +16,7 @@ const tokenValidation = (req, res, next) =>{
     }
     catch(error)
     {
-        res.status(403).json({ message: "Token inválido ou sessão expirada.", error: error.message});
+        res.status(401).json({ message: "Token inválido ou sessão expirada.", error: error.message});
     }
 };
 
