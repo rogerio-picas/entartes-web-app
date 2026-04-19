@@ -54,7 +54,7 @@ const { getAulasParaConfirmar, getAllAulas, updateEstadoAula } = require('../con
  */
 
 // Todas as funções (admin, docente, aluno) podem aceder às aulas
-router.get('/', tokenValidation, authorize([1, 2]), getAulasParaConfirmar);
+router.get('/', tokenValidation, getAulasParaConfirmar);
 router.get('/todas', tokenValidation, getAllAulas);
 router.patch('/:id/estado', tokenValidation, authorize([1, 2]), updateEstadoAula);
 
