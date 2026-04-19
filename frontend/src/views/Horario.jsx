@@ -11,7 +11,7 @@ import { horarioService } from '../services/horarioService'
 import { eventService } from '../services/eventService'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
-import NovoEventoModal from './NovoEventoModal'
+import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 
 // ─── Localizer para português ───────────────────────────────────────────────
 const localizer = dateFnsLocalizer({
@@ -401,7 +401,7 @@ export default function Horario() {
     // Modals
     const [selectedItem, setSelectedItem] = useState(null)
     const [showNovoCoaching, setShowNovoCoaching] = useState(false)
-    const [showNovoEvento, setShowNovoEvento] = useState(false)
+    const [showNovaDisponibilidade, setShowNovaDisponibilidade] = useState(false)
     const [toast, setToast] = useState(null)
 
     function showToast(msg, type = 'success') {
@@ -538,19 +538,10 @@ export default function Horario() {
                             <RefreshCw size={15} className={`text-[#4A6362] ${loading ? 'animate-spin' : ''}`} />
                         </button>
 
-                        {/* Docente: Novo coaching */}
                         {role === 2 && (
-                            <button onClick={() => setShowNovoCoaching(true)}
+                            <button onClick={() => setShowNovaDisponibilidade(true)}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors">
-                                <Plus size={15} /> Novo coaching
-                            </button>
-                        )}
-
-                        {/* Admin: Novo evento */}
-                        {role === 1 && (
-                            <button onClick={() => setShowNovoEvento(true)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors">
-                                <Plus size={15} /> Novo evento
+                                <Plus size={15} /> Nova Disponibilidade
                             </button>
                         )}
                     </div>
@@ -685,13 +676,12 @@ export default function Horario() {
                 />
             )}
 
-            {showNovoEvento && (
-                <NovoEventoModal
-                    onClose={() => setShowNovoEvento(false)}
-                    onSuccess={(nome) => {
-                        setShowNovoEvento(false)
-                        showToast(`Evento "${nome}" criado com sucesso!`)
-                        fetchAll()
+            {showNovaDisponibilidade && (
+                <NovaDisponibilidadeModal
+                    onClose={() => setShowNovaDisponibilidade(false)}
+                    onSuccess={() => {
+                        setShowNovaDisponibilidade(false)
+                        showToast('Disponibilidade criada com sucesso!')
                     }}
                 />
             )}

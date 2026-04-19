@@ -146,6 +146,7 @@ function Toast({ message, type, onClose }) {
 
 // ─── Página Principal (Limpada) ─────────────────────────────────────────────
 export default function Aulas() {
+  const role = authService.getUser()?.role ?? 3
   const [marcacoes, setMarcacoes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -155,6 +156,7 @@ export default function Aulas() {
   const [modalAula, setModalAula] = useState(null)
   const [filtroEstado, setFiltroEstado] = useState('todos')
   const [filtroModalidade, setFiltroModalidade] = useState('todas')
+  const [showNovaDisponibilidade, setShowNovaDisponibilidade] = useState(false)
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -238,13 +240,15 @@ export default function Aulas() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => {/* abrir modal de nova disponibilidade */}}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors shadow-sm"
-            >
-              <Plus size={16} />
-              Nova Disponibilidade
-            </button>
+            {role === 2 && (
+              <button
+                onClick={() => setShowNovaDisponibilidade(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors shadow-sm"
+              >
+                <Plus size={16} />
+                Nova Disponibilidade
+              </button>
+            )}
             {pendentes > 0 && !showAll && (
               <div className="flex items-center gap-1.5 bg-amber-100 border border-amber-300 text-amber-700 px-3 py-1.5 rounded-full text-sm font-semibold">
                 <AlertCircle size={14} />
@@ -435,6 +439,13 @@ export default function Aulas() {
       {/* Modal de detalhes */}
       {modalAula && (
         <AulaModal aula={modalAula} onClose={() => setModalAula(null)} />
+      )}
+
+      {showNovaDisponibilidade && (
+        <NovaDisponibilidadeModal
+          onClose={() => setShowNovaDisponibilidade(false)}
+          onSuccess={() => { setShowNovaDisponibilidade(false); fetchMarcacoes() }}
+        />
       )}
 
       {/* Toast */}
