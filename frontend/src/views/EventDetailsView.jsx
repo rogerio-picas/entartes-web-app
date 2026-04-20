@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
-import { ArrowLeft, Loader2, AlertCircle, Plus, Megaphone, Send, Users, User, Clock, Trash2, Calendar, MapPin } from 'lucide-react'
+import { ArrowLeft, Loader2, AlertCircle, Plus, Megaphone, Send, Users, User, Clock, Trash2, Calendar, MapPin, Edit2, X, RefreshCw, UserPlus } from 'lucide-react'
 import CriarGrupoPanel from '../components/CriarGrupoPanel'
+import EditEventPanel from '../components/EditEventPanel'
+import AddEventMemberPanel from '../components/AddEventMemberPanel'
 import { authService } from '../services/authService'
 
 function formatDate(dateStr) {
@@ -14,7 +16,7 @@ export default function EventDetailsView() {
     const { id } = useParams()
     const navigate = useNavigate()
     const user = authService.getUser()
-    const isAdmin = user?.tipo_utilizador?.id_tipo === 1 || user?.tipo_utilizador?.id_tipo === 2 // Assume 1/2 are admins/coordenadores
+    const isAdmin = user?.role === 1 || user?.role === 2 // Assume 1/2 are admins/coordenadores
 
     const [event, setEvent] = useState(null)
     const [groups, setGroups] = useState([])
@@ -26,9 +28,18 @@ export default function EventDetailsView() {
     
     // UI states
     const [showCreateGroup, setShowCreateGroup] = useState(false)
+    const [showEditEvent, setShowEditEvent] = useState(false)
+    const [showAddMember, setShowAddMember] = useState(false)
+    const [editGroupData, setEditGroupData] = useState(null)
     const [newMsg, setNewMsg] = useState('')
     const [msgTitle, setMsgTitle] = useState('')
     const [posting, setPosting] = useState(false)
+
+    // Modal UI states
+    const [modalNewMsg, setModalNewMsg] = useState('')
+    const [modalMsgTitle, setModalMsgTitle] = useState('')
+
+    const [editingAnuncio, setEditingAnuncio] = useState(null)
 
     // Load initial Event Details and Groups
     const loadEventData = useCallback(async () => {
@@ -52,49 +63,117 @@ export default function EventDetailsView() {
         }
     }, [id])
 
-    // Load Announcements based on Context (Event vs Selected Group)
-    const loadAnnouncements = useCallback(async () => {
+    // Load Announcements (Event only)
+    const loadEventAnnouncements = useCallback(async () => {
         try {
-            const url = selectedGroup 
-                ? `/evento/grupos/${selectedGroup.id_grupo}/anuncios`
-                : `/evento/${id}/anuncios`
-            
-            const data = await api.get(url)
+            const data = await api.get(`/anuncios/anuncios/${id}`)
             setAnnouncements(Array.isArray(data) ? data : [])
         } catch (e) {
-            console.warn("Anúncios não suportados ainda pelo backend ou sem dados.", e)
             setAnnouncements([])
         }
-    }, [id, selectedGroup])
+    }, [id])
+
+    // Load Announcements for Modal (Group only)
+    const [groupAnnouncements, setGroupAnnouncements] = useState([])
+    const loadGroupAnnouncements = useCallback(async (groupId) => {
+        try {
+            const data = await api.get(`/anuncios/grupo/${groupId}`)
+            setGroupAnnouncements(Array.isArray(data) ? data : [])
+        } catch (e) {
+            setGroupAnnouncements([])
+        }
+    }, [])
 
     useEffect(() => {
         loadEventData()
     }, [loadEventData])
 
     useEffect(() => {
-        loadAnnouncements()
-    }, [loadAnnouncements])
+        loadEventAnnouncements()
+    }, [loadEventAnnouncements])
 
-    const handlePostAnnouncement = async () => {
-        if (!newMsg.trim() && !msgTitle.trim()) return
+    useEffect(() => {
+        if (selectedGroup) {
+            loadGroupAnnouncements(selectedGroup.id_grupo)
+        } else {
+            setGroupAnnouncements([])
+        }
+    }, [selectedGroup, loadGroupAnnouncements])
+
+    const handlePostAnnouncement = async (isGroupContext = false) => {
+        const payloadMsg = isGroupContext ? modalNewMsg : newMsg
+        const payloadTitle = isGroupContext ? modalMsgTitle : msgTitle
+        if (!payloadMsg.trim() && !payloadTitle.trim()) return
+
         setPosting(true)
         try {
-            const url = selectedGroup 
-                ? `/evento/grupos/${selectedGroup.id_grupo}/anuncios`
-                : `/evento/${id}/anuncios`
-                
-            await api.post(url, {
-                titulo: msgTitle || 'Aviso Novo',
-                mensagem: newMsg
+            await api.post(`/anuncios`, {
+                titulo: payloadTitle,
+                mensagem: payloadMsg,
+                id_evento: isGroupContext ? null : parseInt(id),
+                id_grupo: isGroupContext ? selectedGroup.id_grupo : null
             })
-            // Limpar formulário e recarregar
-            setMsgTitle('')
-            setNewMsg('')
-            loadAnnouncements()
+            if (isGroupContext) {
+                setModalMsgTitle('')
+                setModalNewMsg('')
+                loadGroupAnnouncements(selectedGroup.id_grupo)
+            } else {
+                setMsgTitle('')
+                setNewMsg('')
+                loadEventAnnouncements()
+            }
         } catch (e) {
             alert('Não foi possível publicar.\n' + (e.message || ''))
         } finally {
             setPosting(false)
+        }
+    }
+
+    const handleDeleteGroup = async (groupId) => {
+        if (!window.confirm("Pretende mesmo APAGAR este grupo? Todos os alertas e membros serão perdidos para sempre.")) return;
+        try {
+            await api.delete(`/evento/${id}/grupos/${groupId}`);
+            setSelectedGroup(null);
+            loadEventData();
+        } catch (e) {
+            alert('Não foi possível eliminar o grupo.\n' + (e.message || ''));
+        }
+    }
+
+    const handleDeleteAnuncio = async (id_anuncio, isGroupContext) => {
+        if (!window.confirm("Apagar este anúncio permanentemente?")) return
+        try {
+            await api.delete(`/anuncios/${id_anuncio}`)
+            if (isGroupContext) loadGroupAnnouncements(selectedGroup.id_grupo)
+            else loadEventAnnouncements()
+        } catch(e) {
+            alert('Erro ao apagar anúncio: ' + (e.response?.data?.error || e.message))
+        }
+    }
+
+    const handleSaveEditAnuncio = async () => {
+        if (!editingAnuncio.mensagem.trim() && !editingAnuncio.titulo?.trim()) return
+        try {
+            await api.put(`/anuncios/${editingAnuncio.id_anuncio}`, {
+                titulo: editingAnuncio.titulo,
+                mensagem: editingAnuncio.mensagem
+            })
+            if (editingAnuncio.isGroupContext) loadGroupAnnouncements(selectedGroup.id_grupo)
+            else loadEventAnnouncements()
+            
+            setEditingAnuncio(null)
+        } catch(e) {
+            alert('Erro ao editar anúncio: ' + (e.response?.data?.error || e.message))
+        }
+    }
+
+    const handleDeleteEvent = async () => {
+        if (!window.confirm(`Tem a certeza absoluta de que pretende cancelar/eliminar o evento "${event?.nome}"?\n\nIsto afetará todas as inscrições e anúncios associados.`)) return
+        try {
+            await api.delete(`/evento/${id}`)
+            navigate('/eventos')
+        } catch (err) {
+            alert('Erro ao eliminar evento: ' + (err.response?.data?.error || err.message))
         }
     }
 
@@ -132,9 +211,6 @@ export default function EventDetailsView() {
                 </button>
                 <div className="flex justify-between items-end">
                     <div>
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#CCE8E6] text-[#006A68] rounded-full text-xs font-bold mb-3 uppercase tracking-wider">
-                           ID Evento #{event?.id_evento}
-                        </span>
                         <h1 className="text-3xl font-bold text-[#324B4A] leading-tight mb-2">{event?.nome || 'Evento sem nome'}</h1>
                         <p className="text-[#4A6362] flex items-center gap-2 text-sm font-medium">
                             <Calendar size={15}/> {formatDate(event?.data_de_realizacao)}
@@ -143,6 +219,29 @@ export default function EventDetailsView() {
                             <MapPin size={15}/> {event?.local || 'Local a definir'}
                         </p>
                     </div>
+
+                    {isAdmin && (
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setShowAddMember(true)}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-[#CCE8E6] text-[#006A68] hover:bg-[#b3d9d7] rounded-xl text-sm font-semibold transition-colors border border-[#006A68]/30"
+                            >
+                                <UserPlus size={16} /> Adicionar Membro
+                            </button>
+                            <button
+                                onClick={() => setShowEditEvent(true)}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-[#F4FBF9] text-[#006A68] hover:bg-[#CCE8E6] rounded-xl text-sm font-semibold transition-colors border border-[#006A68]/20"
+                            >
+                                <Edit2 size={16} /> Editar Evento
+                            </button>
+                            <button
+                                onClick={handleDeleteEvent}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl text-sm font-semibold transition-colors border border-red-200"
+                            >
+                                <Trash2 size={16} /> Eliminar
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -153,43 +252,33 @@ export default function EventDetailsView() {
                 <div className="flex-1 flex flex-col gap-6">
                     <div className="bg-white rounded-2xl border border-brand-dark/20 p-6 flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
-                            <Megaphone size={28} className={selectedGroup ? "text-[#FF9500]" : "text-brand-dark"} />
+                            <Megaphone size={28} className="text-brand-dark" />
                             <div>
                                 <h2 className="text-xl font-bold text-[#324B4A]">
                                     Mural de Anúncios
                                 </h2>
-                                <p className="text-sm font-medium text-[#4A6362]">
-                                    {selectedGroup 
-                                        ? `Aviso Restrito ao Grupo: ${selectedGroup.nome}` 
-                                        : 'Aviso Público Geral'}
-                                </p>
                             </div>
                         </div>
-                        {selectedGroup && (
-                            <button onClick={() => setSelectedGroup(null)} className="text-xs font-bold text-white bg-brand-dark px-3 py-1.5 rounded-lg hover:bg-opacity-80 transition">
-                                Voltar a Geral
-                            </button>
-                        )}
                     </div>
 
                     {/* Caixa de Criação de Anúncios */}
                     <div className="bg-white rounded-2xl border border-brand-dark/20 p-5 shadow-sm">
                         <input 
                             type="text"
-                            placeholder="Título curto (Opcional)"
+                            placeholder="Título do anúncio..."
                             value={msgTitle}
                             onChange={(e) => setMsgTitle(e.target.value)}
                             className="w-full bg-transparent border-b border-gray-200 pb-2 mb-3 text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-none"
                         />
                         <textarea 
-                            placeholder={selectedGroup ? `Escrever aviso para o grupo ${selectedGroup.nome}...` : "O que precisas de anunciar a todos os alunos deste evento?"}
+                            placeholder="O que precisas de anunciar a todos os alunos deste evento?"
                             value={newMsg}
                             onChange={(e) => setNewMsg(e.target.value)}
                             className="w-full bg-transparent text-sm resize-none focus:outline-none placeholder:text-[#4A6362]/60 min-h-[60px]"
                         />
                         <div className="flex justify-end mt-2">
                             <button 
-                                onClick={handlePostAnnouncement}
+                                onClick={() => handlePostAnnouncement(false)}
                                 disabled={posting || (!newMsg && !msgTitle)}
                                 className="flex items-center gap-2 bg-brand-dark text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors disabled:opacity-50"
                             >
@@ -206,7 +295,9 @@ export default function EventDetailsView() {
                                 <p className="text-[#4A6362] italic text-sm">Ainda não existem anúncios publicados neste contexto.</p>
                             </div>
                         ) : (
-                            announcements.map((anuncio, idx) => (
+                            announcements.map((anuncio, idx) => {
+                                const isEditing = editingAnuncio?.id_anuncio === anuncio.id_anuncio && !editingAnuncio?.isGroupContext
+                                return (
                                 <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-transparent hover:border-brand-dark/20 transition-all flex flex-col gap-3">
                                     <div className="flex justify-between items-start">
                                         <div className="flex items-center gap-2">
@@ -216,13 +307,32 @@ export default function EventDetailsView() {
                                                <span className="text-[10px] text-gray-400">{formatDate(anuncio.data_envio)}</span>
                                            </div>
                                         </div>
+                                        {isAdmin && !isEditing && (
+                                            <div className="flex items-center gap-2 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity" style={{ opacity: 1 }}> {/* Forced opacity to be visible right away for discoverability or keep on hover */}
+                                                <button onClick={() => setEditingAnuncio({ ...anuncio, isGroupContext: false })} className="text-[#006A68] hover:text-[#00504E] p-1"><Edit2 size={14}/></button>
+                                                <button onClick={() => handleDeleteAnuncio(anuncio.id_anuncio, false)} className="text-red-500 hover:text-red-700 p-1"><Trash2 size={14}/></button>
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
-                                        {anuncio.titulo && <span className="font-bold text-sm block mb-1 text-black">{anuncio.titulo}</span>}
-                                        <p className="text-[#4A6362] text-sm whitespace-pre-wrap">{anuncio.mensagem}</p>
+                                        {isEditing ? (
+                                            <div className="flex flex-col gap-2 mt-2">
+                                                <input value={editingAnuncio.titulo || ''} onChange={e => setEditingAnuncio({...editingAnuncio, titulo: e.target.value})} className="border p-2 rounded text-sm w-full" placeholder="Título" />
+                                                <textarea value={editingAnuncio.mensagem || ''} onChange={e => setEditingAnuncio({...editingAnuncio, mensagem: e.target.value})} className="border p-2 rounded text-sm w-full min-h-[60px]" placeholder="Mensagem" />
+                                                <div className="flex justify-end gap-2 mt-1">
+                                                    <button onClick={() => setEditingAnuncio(null)} className="text-xs text-gray-500 px-3 py-1 hover:bg-gray-100 rounded">Cancelar</button>
+                                                    <button onClick={handleSaveEditAnuncio} className="text-xs bg-[#006A68] text-white px-3 py-1 rounded">Guardar</button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {anuncio.titulo && <span className="font-bold text-sm block mb-1 text-black">{anuncio.titulo}</span>}
+                                                <p className="text-[#4A6362] text-sm whitespace-pre-wrap">{anuncio.mensagem}</p>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
-                            ))
+                            )})
                         )}
                     </div>
                 </div>
@@ -241,21 +351,6 @@ export default function EventDetailsView() {
                     </div>
                     
                     <div className="flex flex-col gap-3">
-                        <button 
-                            onClick={() => setSelectedGroup(null)}
-                            className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-                                !selectedGroup 
-                                ? 'bg-[#CCE8E6] border-brand-dark shadow-sm' 
-                                : 'bg-white border-[#BEC9C7] hover:border-brand-dark'
-                            }`}
-                        >
-                            <div className="w-10 h-10 rounded-full bg-brand-dark flex items-center justify-center text-white shrink-0"><Megaphone size={16}/></div>
-                            <div className="flex flex-col">
-                                <span className={`font-bold text-sm ${!selectedGroup ? 'text-brand-darkest' : 'text-black'}`}>Geral (Todos)</span>
-                                <span className="text-[10px] text-[#4A6362] uppercase tracking-wider">{unassignedAlunosCount} alunos soltos inscritos</span>
-                            </div>
-                        </button>
-
                         {groups.length === 0 ? (
                             <p className="text-xs text-center p-4 text-[#4A6362] italic">Nenhum grupo configurado.</p>
                         ) : (
@@ -265,16 +360,16 @@ export default function EventDetailsView() {
                                     onClick={() => setSelectedGroup(grupo)}
                                     className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                                         selectedGroup?.id_grupo === grupo.id_grupo 
-                                        ? 'bg-[#E3E9E8] border-[#FF9500] shadow-sm' 
-                                        : 'bg-white border-[#BEC9C7] hover:border-[#FF9500]'
+                                        ? 'bg-[#E3E9E8] border-[#006A68] shadow-sm' 
+                                        : 'bg-white border-[#BEC9C7] hover:border-[#006A68]'
                                     }`}
                                 >
-                                    <div className="w-10 h-10 rounded-full bg-white border border-[#BEC9C7] flex items-center justify-center text-[#FF9500] shrink-0 font-bold text-xs">
+                                    <div className={`w-10 h-10 rounded-full border flex items-center justify-center shrink-0 font-bold text-xs ${selectedGroup?.id_grupo === grupo.id_grupo ? 'border-[#006A68] bg-[#006A68] text-white' : 'border-[#BEC9C7] bg-white text-[#006A68]'}`}>
                                         G{grupo.id_grupo}
                                     </div>
                                     <div className="flex flex-col flex-1 min-w-0">
-                                        <span className={`font-bold text-sm truncate ${selectedGroup?.id_grupo === grupo.id_grupo ? 'text-[#FF9500]' : 'text-black'}`}>{grupo.nome}</span>
-                                        <span className="text-[10px] text-[#4A6362]">{(grupo.aluno_grupo?.length || 0)} Membros</span>
+                                        <span className={`font-bold text-sm truncate ${selectedGroup?.id_grupo === grupo.id_grupo ? 'text-[#006A68]' : 'text-black'}`}>{grupo.nome}</span>
+                                        <span className="text-[10px] text-[#4A6362]">{(grupo.aluno_grupo?.length || 0) + (grupo.docente_grupo?.length || 0)} Membros</span>
                                     </div>
                                 </button>
                             ))
@@ -284,17 +379,150 @@ export default function EventDetailsView() {
 
             </div>
 
-            {/* Modal Deslizante para Criação */}
+            {/* Modal de Feed do Grupo */}
+            {selectedGroup && (
+                <div className="fixed inset-0 z-[60] bg-black/60 flex flex-col items-center justify-center p-4">
+                    <div className="bg-[#F4FBF9] w-full max-w-2xl max-h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+                        
+                        <div className="bg-white border-b border-[#006A68]/20 p-5 shrink-0 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full border-2 border-[#006A68] bg-[#CCE8E6] flex items-center justify-center text-[#006A68] font-bold text-lg">
+                                    G{selectedGroup.id_grupo}
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-[#324B4A]">{selectedGroup.nome}</h2>
+                                    <p className="text-sm text-[#4A6362]">{(selectedGroup.aluno_grupo?.length || 0) + (selectedGroup.docente_grupo?.length || 0)} Membros no grupo</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {isAdmin && (
+                                    <>
+                                        <button onClick={() => { setEditGroupData(selectedGroup); setShowCreateGroup(true); }} className="px-3 py-1.5 text-sm bg-white border border-[#BEC9C7] rounded-lg font-bold text-[#006A68] hover:bg-[#EFF5F4] transition">Editar Grupo</button>
+                                        <button onClick={() => handleDeleteGroup(selectedGroup.id_grupo)} className="p-2 text-red-500 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition"><Trash2 size={16}/></button>
+                                    </>
+                                )}
+                                <button onClick={() => setSelectedGroup(null)} className="w-10 h-10 bg-[#E3E9E8] rounded-full flex items-center justify-center text-[#4A6362] hover:bg-black hover:text-white transition">
+                                    <ArrowLeft size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
+                            <div className="bg-white rounded-2xl border border-brand-dark/20 p-5 shadow-sm mb-6">
+                                <input 
+                                    type="text"
+                                    placeholder="Título do anúncio..."
+                                    value={modalMsgTitle}
+                                    onChange={(e) => setModalMsgTitle(e.target.value)}
+                                    className="w-full bg-transparent border-b border-gray-200 pb-2 mb-3 text-sm font-semibold text-black placeholder:text-gray-400 focus:outline-none"
+                                />
+                                <textarea 
+                                    placeholder="Novo anúncio restrito a este grupo..."
+                                    value={modalNewMsg}
+                                    onChange={(e) => setModalNewMsg(e.target.value)}
+                                    className="w-full bg-transparent text-sm resize-none focus:outline-none placeholder:text-[#4A6362]/60 min-h-[60px]"
+                                />
+                                <div className="flex justify-end mt-2">
+                                    <button 
+                                        onClick={() => handlePostAnnouncement(true)}
+                                        disabled={posting || (!modalNewMsg && !modalMsgTitle)}
+                                        className="flex items-center gap-2 bg-[#006A68] text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors disabled:opacity-50"
+                                    >
+                                        {posting ? <Loader2 size={16} className="animate-spin"/> : <Send size={16} />}
+                                        Publicar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-4">
+                                {groupAnnouncements.length === 0 ? (
+                                    <p className="text-center text-[#4A6362] italic py-8">Nenhum aviso restrito circulou neste grupo.</p>
+                                ) : (
+                                    groupAnnouncements.map((anuncio, idx) => {
+                                        const isEditing = editingAnuncio?.id_anuncio === anuncio.id_anuncio && editingAnuncio?.isGroupContext
+                                        return (
+                                        <div key={idx} className="bg-white p-5 rounded-2xl border border-brand-dark/20 flex flex-col gap-3 shadow-sm">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                <div className="w-8 h-8 rounded-full bg-brand-dark text-white flex items-center justify-center font-bold text-xs">C</div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-bold text-[#324B4A]">Coordenação</span>
+                                                    <span className="text-[10px] text-gray-400">{formatDate(anuncio.data_envio)}</span>
+                                                </div>
+                                                </div>
+                                                {isAdmin && !isEditing && (
+                                                    <div className="flex items-center gap-2">
+                                                        <button onClick={() => setEditingAnuncio({ ...anuncio, isGroupContext: true })} className="text-[#006A68] hover:text-[#00504E] p-1"><Edit2 size={14}/></button>
+                                                        <button onClick={() => handleDeleteAnuncio(anuncio.id_anuncio, true)} className="text-red-500 hover:text-red-700 p-1"><Trash2 size={14}/></button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                {isEditing ? (
+                                                    <div className="flex flex-col gap-2 mt-2">
+                                                        <input value={editingAnuncio.titulo || ''} onChange={e => setEditingAnuncio({...editingAnuncio, titulo: e.target.value})} className="border p-2 rounded text-sm w-full" placeholder="Título" />
+                                                        <textarea value={editingAnuncio.mensagem || ''} onChange={e => setEditingAnuncio({...editingAnuncio, mensagem: e.target.value})} className="border p-2 rounded text-sm w-full min-h-[60px]" placeholder="Mensagem" />
+                                                        <div className="flex justify-end gap-2 mt-1">
+                                                            <button onClick={() => setEditingAnuncio(null)} className="text-xs text-gray-500 px-3 py-1 hover:bg-gray-100 rounded">Cancelar</button>
+                                                            <button onClick={handleSaveEditAnuncio} className="text-xs bg-[#006A68] text-white px-3 py-1 rounded">Guardar</button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {anuncio.titulo && <span className="font-bold text-sm block mb-1 text-black">{anuncio.titulo}</span>}
+                                                        <p className="text-[#4A6362] text-sm whitespace-pre-wrap">{anuncio.mensagem}</p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )})
+                                )}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Deslizante para Edição Evento */}
+            {showEditEvent && (
+                <>
+                    <div className="fixed inset-0 z-[55] bg-black/20 backdrop-blur-[2px]" onClick={() => setShowEditEvent(false)} />
+                    <EditEventPanel 
+                        initialEvent={event}
+                        onClose={() => setShowEditEvent(false)}
+                        onSuccess={() => {
+                            setShowEditEvent(false)
+                            loadEventData()
+                        }}
+                    />
+                </>
+            )}
+
+            {/* Modal Deslizante para Criação Grupo */}
             {showCreateGroup && (
                 <>
-                    <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[2px]" onClick={() => setShowCreateGroup(false)} />
+                    <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[2px]" onClick={() => { setShowCreateGroup(false); setEditGroupData(null); }} />
                     <CriarGrupoPanel 
                         eventId={id} 
-                        onClose={() => setShowCreateGroup(false)}
+                        initialGroup={editGroupData}
+                        onClose={() => { setShowCreateGroup(false); setEditGroupData(null); }}
                         onSuccess={() => {
                             setShowCreateGroup(false)
+                            setEditGroupData(null)
                             loadEventData() // Reload groups list!
                         }}
+                    />
+                </>
+            )}
+            {/* Painel Adicionar Membro ao Evento */}
+            {showAddMember && (
+                <>
+                    <div className="fixed inset-0 z-[55] bg-black/20 backdrop-blur-[2px]" onClick={() => setShowAddMember(false)} />
+                    <AddEventMemberPanel
+                        eventId={id}
+                        onClose={() => setShowAddMember(false)}
+                        onSuccess={() => loadEventData()}
                     />
                 </>
             )}

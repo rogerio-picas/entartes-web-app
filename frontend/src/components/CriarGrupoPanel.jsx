@@ -10,9 +10,9 @@ function getInitials(nome) {
         : nome.slice(0, 2).toUpperCase()
 }
 
-export default function CriarGrupoPanel({ onClose, onSuccess, eventId }) {
-    const [nome, setNome] = useState('')
-    const [descricao, setDescricao] = useState('')
+export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGroup }) {
+    const [nome, setNome] = useState(initialGroup ? initialGroup.nome : '')
+    const [descricao, setDescricao] = useState(initialGroup ? (initialGroup.descricao || '') : '')
     const [searchAluno, setSearchAluno] = useState('')
     const [alunos, setAlunos] = useState([])
     const [selected, setSelected] = useState([])
@@ -20,11 +20,38 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId }) {
     const [erro, setErro] = useState('')
 
     useEffect(() => {
-        api.get('/users').then(data => {
-            if (Array.isArray(data))
-                setAlunos(data.filter(u => u.tipo_utilizador?.id_tipo === 3 || !u.tipo_utilizador))
+        api.get(`/evento/${eventId}/participantes`).then(data => {
+            // Backend returns { alunos: [...], docentes: [...] }
+            const alunosList = (data.alunos || []).map(a => ({
+                id_utilizador: a.id_utilizador,
+                nome: a.nome,
+                apelido: a.apelido,
+                email: a.email,
+                codigo_username: a.codigo_username,
+                tipo_utilizador: { id_tipo: 3 }
+            }))
+            const docentesList = (data.docentes || []).map(d => ({
+                id_utilizador: d.id_utilizador,
+                nome: d.nome,
+                apelido: d.apelido,
+                email: d.email,
+                codigo_username: d.codigo_username,
+                tipo_utilizador: { id_tipo: 2 }
+            }))
+            const all = [...alunosList, ...docentesList]
+            setAlunos(all)
+
+            // Prefill if editing
+            if (initialGroup && all.length > 0) {
+                const preSelectedIds = [
+                    ...(initialGroup.aluno_grupo || []).map(ag => ag.id_aluno),
+                    ...(initialGroup.docente_grupo || []).map(dg => dg.id_docente)
+                ]
+                const toSelect = all.filter(a => preSelectedIds.includes(a.id_utilizador))
+                setSelected(toSelect)
+            }
         }).catch(() => {})
-    }, [])
+    }, [initialGroup, eventId])
 
     const filtered = alunos.filter(u => {
         const q = searchAluno.toLowerCase()
@@ -46,23 +73,83 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId }) {
         setLoading(true)
         setErro('')
         try {
-            const grupo = await api.post(`/evento/${eventId}/grupos`, { nome: nome.trim(), descricao })
+            let groupId;
+            let grupo;
 
-            const groupId = grupo.id_grupo
-            for (const aluno of selected) {
-                try {
+            if (initialGroup) {
+                // Edit Group
+                grupo = await api.put(`/evento/${eventId}/grupos/${initialGroup.id_grupo}`, { nome: nome.trim(), descricao })
+                groupId = initialGroup.id_grupo
+                
+                // Sync Members
+                const currentIds = [
+                    ...(initialGroup.aluno_grupo || []).map(ag => ag.id_aluno),
+                    ...(initialGroup.docente_grupo || []).map(dg => dg.id_docente)
+                ]
+                const selectedIds = selected.map(s => s.id_utilizador)
+                
+                const added = selected.filter(s => !currentIds.includes(s.id_utilizador))
+                const removedIds = currentIds.filter(id => !selectedIds.includes(id))
+
+                const errors = []
+                for (const membro of added) {
+                    const typeId = membro.tipo_utilizador?.id_tipo === 2 ? 2 : 3
                     try {
-                        await api.post(`/evento/${eventId}/participantes`, {
-                            id_utilizador: aluno.id_utilizador,
-                            tipo: 'aluno',
-                        })
-                    } catch { /* already registered — proceed */ }
-                    await api.post(`/evento/grupos/${groupId}/alunos/${aluno.id_utilizador}`, {})
-                } catch { /* skip individual errors */ }
+                        try {
+                            await api.post(`/evento/${eventId}/participantes`, { codigo_username: membro.codigo_username })
+                        } catch (e) {
+                            if (e.response?.status !== 400 || !e.response?.data?.error?.includes('já está inscrito')) {
+                                console.warn('Erro ao inserir no evento:', e.response?.data || e)
+                            }
+                        }
+                        if (typeId === 2) await api.post(`/evento/${eventId}/grupos/${groupId}/docentes/${membro.id_utilizador}`, {})
+                        else await api.post(`/evento/${eventId}/grupos/${groupId}/alunos/${membro.id_utilizador}`, {})
+                    } catch (e) { 
+                        errors.push(`Membro ${membro.nome}: ${e.response?.data?.error || e.message}`)
+                    }
+                }
+                
+                if (errors.length > 0) alert("Erros ao adicionar membros:\n" + errors.join("\n"))
+
+                for (const id of removedIds) {
+                    try {
+                        const wasDocente = initialGroup.docente_grupo?.some(dg => dg.id_docente === id)
+                        if (wasDocente) await api.delete(`/evento/${eventId}/grupos/${groupId}/docentes/${id}`)
+                        else await api.delete(`/evento/${eventId}/grupos/${groupId}/alunos/${id}`)
+                    } catch {}
+                }
+            } else {
+                // Create Group
+                grupo = await api.post(`/evento/${eventId}/`, { nome: nome.trim(), descricao })
+                groupId = grupo.id_grupo
+
+                const errors = []
+                for (const membro of selected) {
+                    const typeId = membro.tipo_utilizador?.id_tipo === 2 ? 2 : 3
+                    try {
+                        try {
+                            await api.post(`/evento/${eventId}/participantes`, {
+                                codigo_username: membro.codigo_username
+                            })
+                        } catch (e) { 
+                            if (e.response?.status !== 400 || !e.response?.data?.error?.includes('já está inscrito')) {
+                                console.warn('Erro ao inserir no evento:', e.response?.data || e)
+                            }
+                        }
+                        if (typeId === 2) {
+                            await api.post(`/evento/${eventId}/grupos/${groupId}/docentes/${membro.id_utilizador}`, {})
+                        } else {
+                            await api.post(`/evento/${eventId}/grupos/${groupId}/alunos/${membro.id_utilizador}`, {})
+                        }
+                    } catch (e) { 
+                        errors.push(`Membro ${membro.nome}: ${e.response?.data?.error || e.message}`)
+                    }
+                }
+                if (errors.length > 0) alert("Erros ao adicionar membros:\n" + errors.join("\n"))
             }
             onSuccess(grupo)
         } catch (e) {
-            setErro(e.message || 'Erro ao criar grupo.')
+            setErro(e.message || 'Erro ao guardar dados do grupo.')
         } finally {
             setLoading(false)
         }
@@ -73,7 +160,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId }) {
             {/* Header */}
             <div className="px-9 pt-10 pb-4 border-b border-[#006A68] shrink-0">
                 <div className="flex items-center justify-between mb-1">
-                    <h2 className="text-2xl font-bold text-[#006A68] font-['Sora']">Criar novo grupo</h2>
+                    <h2 className="text-2xl font-bold text-[#006A68] font-['Sora']">{initialGroup ? 'Editar Grupo' : 'Criar novo grupo'}</h2>
                     <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-[#CCE8E6] flex items-center justify-center text-[#4A6362]">
                         <X size={17} />
                     </button>
@@ -169,7 +256,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId }) {
                     className="w-full py-4 bg-[#006A68] text-white font-semibold rounded-2xl hover:bg-[#00504E] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                     {loading ? <RefreshCw size={18} className="animate-spin" /> : <Check size={18} />}
-                    Criar grupo
+                    {initialGroup ? 'Guardar Alterações' : 'Criar grupo'}
                 </button>
             </div>
         </div>

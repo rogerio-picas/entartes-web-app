@@ -33,8 +33,7 @@ export function EventCard({ event, onOpen }) {
         </p>
       )}
 
-      <div className="mt-auto pt-4 border-t border-[#4a6362]/10 flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">ID #{event.id_evento}</span>
+      <div className="mt-auto pt-4 border-t border-[#4a6362]/10 flex items-center justify-end">
         <button onClick={onOpen} className="text-xs font-semibold text-[#006A68] hover:underline">Ver detalhes</button>
       </div>
     </div>
