@@ -12,7 +12,7 @@ import { eventService } from '../services/eventService'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
-
+import NovoEventoModal from './NovoEventoModal'
 // ─── Localizer para português ───────────────────────────────────────────────
 const localizer = dateFnsLocalizer({
     format,
@@ -385,7 +385,7 @@ export default function Horario() {
 
     const user = authService.getUser()
     const role = user?.role ?? 3
-
+    const [showNovoEvento, setShowNovoEvento] = useState(false)
     // View state
     const [viewMode, setViewMode] = useState('month') // 'month' | 'week'
     const [currentDate, setCurrentDate] = useState(new Date(today))
@@ -538,10 +538,19 @@ export default function Horario() {
                             <RefreshCw size={15} className={`text-[#4A6362] ${loading ? 'animate-spin' : ''}`} />
                         </button>
 
+                        {/* Docente: Nova Disponibilidade */}
                         {role === 2 && (
                             <button onClick={() => setShowNovaDisponibilidade(true)}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors">
                                 <Plus size={15} /> Nova Disponibilidade
+                            </button>
+                        )}
+
+                        {/* Admin: Novo evento */}
+                        {role === 1 && (
+                            <button onClick={() => setShowNovoEvento(true)}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors">
+                                <Plus size={15} /> Novo evento
                             </button>
                         )}
                     </div>
@@ -682,6 +691,17 @@ export default function Horario() {
                     onSuccess={() => {
                         setShowNovaDisponibilidade(false)
                         showToast('Disponibilidade criada com sucesso!')
+                    }}
+                />
+            )}
+
+            {showNovoEvento && (
+                <NovoEventoModal
+                    onClose={() => setShowNovoEvento(false)}
+                    onSuccess={(nome) => {
+                        setShowNovoEvento(false)
+                        showToast(`Evento "${nome}" criado com sucesso!`)
+                        fetchAll()
                     }}
                 />
             )}
