@@ -134,7 +134,7 @@ export default function Login() {
     setLoading(true)
     try {
       await authService.login(form.codigo_username, form.password)
-      navigate('/events')
+      navigate('/home')
     } catch (err) {
       setError(err.message || 'Credenciais inválidas.')
     } finally {

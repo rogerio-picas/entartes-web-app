@@ -1,9 +1,42 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// Listar todos os grupos
+const listarTodosOsGrupos = async () => {
+  return await prisma.grupo.findMany({
+    include: {
+      evento: { select: { id_evento: true, nome: true } },
+      aluno_grupo: {
+        include: {
+          aluno: {
+            include: {
+              utilizador: { select: { nome: true, apelido: true } },
+            },
+          },
+        },
+      },
+      docente_grupo: {
+        include: {
+          docente: {
+            include: {
+              utilizador: { select: { nome: true, apelido: true } },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { id_grupo: 'asc' },
+  });
+};
+
 // Criar grupo associado a um evento
 const criarGrupo = async (id_evento, dados) => {
   const { nome, descricao, hora_atuacao } = dados;
+
+  const eventoId = parseInt(id_evento);
+  if (!id_evento || isNaN(eventoId)) {
+    throw new Error("id_evento é obrigatório.");
+  }
 
   if (!nome || nome.trim() === "") {
     throw new Error("O nome do grupo é obrigatório.");
@@ -11,13 +44,13 @@ const criarGrupo = async (id_evento, dados) => {
 
   // Verificar que o evento existe
   const evento = await prisma.evento.findUnique({
-    where: { id_evento: parseInt(id_evento) },
+    where: { id_evento: eventoId },
   });
   if (!evento) throw new Error("Evento não encontrado.");
 
   return await prisma.grupo.create({
     data: {
-      id_evento: parseInt(id_evento),
+      id_evento: eventoId,
       nome: nome.trim(),
       descricao: descricao ?? null,
       // Normalização para o tipo TIME do NeonDB usando a base 1970
@@ -247,6 +280,7 @@ const eliminarGrupo = async (id_grupo) => {
 };
 
 module.exports = {
+  listarTodosOsGrupos,
   criarGrupo,
   listarGruposDoEvento,
   adicionarAlunoAoGrupo,

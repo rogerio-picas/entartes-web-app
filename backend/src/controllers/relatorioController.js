@@ -72,9 +72,12 @@ const exportCSV = async (req, res) => {
             modalidade: s.modalidade?.nome || 'N/A',
             sala: s.sala?.nome || 'N/A'
         }))
+        const headers = Object.keys(rows[0] || {}).join(',')
+        const lines = rows.map(r => Object.values(r).join(','))
+        const csv = [headers, ...lines].join('\n')
         res.setHeader('Content-Type', 'text/csv')
         res.setHeader('Content-Disposition', 'attachment; filename="sessoes.csv"')
-        res.send(stringify(rows, { header: true }))
+        res.send(csv)
     } catch (error) {
         res.status(500).json({ error: 'CSV export failed' })
     }

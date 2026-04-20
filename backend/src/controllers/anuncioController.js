@@ -1,3 +1,6 @@
+// ────────────────────────────────────────────────
+// anuncioController.js  (substitui o existente)
+// ────────────────────────────────────────────────
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -12,8 +15,8 @@ const createAnuncio = async (req, res) => {
 
         const novo = await prisma.anuncio.create({
             data: {
-                id_evento: id_evento ? parseInt(id_evento) : null,
-                id_grupo: id_grupo ? parseInt(id_grupo) : null,
+                id_evento:       id_evento  ? parseInt(id_evento)  : null,
+                id_grupo:        id_grupo   ? parseInt(id_grupo)   : null,
                 id_coordenadora: req.user.id,
                 titulo,
                 mensagem,

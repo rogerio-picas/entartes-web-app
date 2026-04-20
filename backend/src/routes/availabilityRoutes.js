@@ -109,7 +109,7 @@ const availabilityController = require('../controllers/availabilityController');
  *       200:
  *         description: Disponibilidade eliminada com sucesso
  *       400:
- *         description: Não é possível remover (ex: tem marcação ativa)
+ *         description: "Não é possível remover (ex: tem marcação ativa)"
  *       403:
  *         description: Sem permissão para eliminar
  *       404:

@@ -1,47 +1,39 @@
+export const authService = {
+  async login(codigo_username, password) {
+    const response = await fetch('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo_username, password }),
+    })
 
-const inicializarLogin = () => {
-    const loginForm = document.getElementById('loginForm');
+    const data = await response.json()
 
-    if (!loginForm) return;
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao fazer login')
+    }
 
-        const username = document.getElementById('username').value;
-        console.log(document.getElementById('username').value)
-        const password = document.getElementById('password').value;
-        const errorMessage = document.getElementById('errorMessage');
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('userRole', data.user.role)
+    localStorage.setItem('user', JSON.stringify(data.user))
 
-        try {
-            const response = await fetch('http://localhost:3000/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    codigo_username: username,
-                    password: password 
-                })
-            });
+    return data
+  },
 
-            const data = await response.json();
+  logout() {
+    localStorage.removeItem('token')
+    localStorage.removeItem('userRole')
+    localStorage.removeItem('user')
+  },
 
-            if (response.ok) {
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('userRole', data.user.role);
-                // window.location.href = 'index.html';
-            } else {
-                if (errorMessage) {
-                    errorMessage.style.display = 'block';
-                    errorMessage.innerText = data.message;
-                }
-            }
-        } catch (error) {
-            console.error('Erro de ligação:', error);
-        }
-    });
-};
+  getToken() {
+    return localStorage.getItem('token')
+  },
 
-// 2. FORÇAMOS o browser a esperar que o HTML esteja pronto
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', inicializarLogin);
-} else {
-    inicializarLogin();
+  getUser() {
+    try {
+      return JSON.parse(localStorage.getItem('user'))
+    } catch {
+      return null
+    }
+  },
 }

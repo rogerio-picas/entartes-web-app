@@ -6,6 +6,7 @@ const createNewCoaching = async (req, res) => {
     try {
         const {
             id_modalidade,
+            id_sala,
             data_a_realizar,
             hora_inicio,
             duracao_minutos
@@ -24,6 +25,7 @@ const createNewCoaching = async (req, res) => {
         const newScheduling = await prisma.marcacao.create({
             data: {
                 id_modalidade: parseInt(id_modalidade),
+                id_sala: parseInt(id_sala),
                 id_user_criador: req.user.id,
                 data_a_realizar: new Date(data_a_realizar),
                 hora_inicio: new Date(`1970-01-01T${hora_inicio}Z`),
@@ -74,9 +76,9 @@ const getAllCoachings = async (req, res) => {
 
 const getCoachingById = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id_utilizador } = req.params;
         const coaching = await prisma.marcacao.findUnique({
-            where: { id: parseInt(id) },
+            where: { id_marcacoes: parseInt(id_utilizador) },
             include: {
                 estado_marcacao: true,
                 modalidade: true,
@@ -106,7 +108,7 @@ const deleteCoaching = async (req, res) => {
     try {
         const { id_utilizador } = req.params;
         const deletedCoaching = await prisma.marcacao.delete({
-            where: { id_utilizador: parseInt(id_utilizador) },
+            where: { id_marcacoes: parseInt(id_utilizador) },
             include: {
                 estado_marcacao: true,
                 modalidade: true,
@@ -136,7 +138,7 @@ const updateCoaching = async (req, res) => {
         } = req.body;
 
         const updatedCoaching = await prisma.marcacao.update({
-            where: { id_utilizador: parseInt(id_utilizador) },
+            where: { id_marcacoes: parseInt(id_utilizador) },
             data: {
                 id_modalidade: parseInt(id_modalidade),
                 data_a_realizar: new Date(data_a_realizar),
@@ -173,12 +175,8 @@ const getMyCoachings = async (req, res) => {
             include: {
                 modalidade: true,
                 estado_marcacao: true,
-                data_a_realizar: true,
-                hora_inicio: true,
                 utilizador: {
-                    nome: true,
-                    apelido: true,
-                    email: true
+                    select: { nome: true, apelido: true, email: true }
                 }
             }
         });
