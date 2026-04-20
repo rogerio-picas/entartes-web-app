@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { eventService } from '../services/eventService'
 import { Calendar as CalendarIcon, AlertCircle, Loader2 } from 'lucide-react'
-import EventModal from '../components/EventModal'
 import { EventCard } from '../components/Cards'
+import { useNavigate } from 'react-router-dom'
 
 export default function Events() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [selectedEventId, setSelectedEventId] = useState(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     eventService
@@ -70,13 +70,9 @@ export default function Events() {
       {!loading && events.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {events.map((event) => (
-            <EventCard key={event.id_evento} event={event} onOpen={() => setSelectedEventId(event.id_evento)} />
+            <EventCard key={event.id_evento} event={event} onOpen={() => navigate(`/eventos/${event.id_evento}`)} />
           ))}
         </div>
-      )}
-
-      {selectedEventId && (
-        <EventModal eventId={selectedEventId} onClose={() => setSelectedEventId(null)} />
       )}
     </div>
   )

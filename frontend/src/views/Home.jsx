@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { Clock, CalendarCheck, Megaphone, Loader2 } from 'lucide-react'
 // REMOVIDO: import DashboardHeader from '../components/DashboardHeader'
 import { ActionCard, ClassCard, EventCard, DashboardSection } from '../components/Cards'
-import EventModal from '../components/EventModal'
 import { eventService } from '../services/eventService'
 import { api } from '../services/api'
 
@@ -14,7 +13,6 @@ export default function Home() {
   const [inscricoes, setInscricoes] = useState([])
   const [eventos, setEventos] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedEventId, setSelectedEventId] = useState(null)
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -128,7 +126,7 @@ export default function Home() {
                 <div className="flex flex-col gap-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {eventos.slice(0, 3).map((item) => (
-                      <EventCard key={`evt-${item.id_evento || item.id}`} event={item} onOpen={() => setSelectedEventId(item.id_evento)} />
+                      <EventCard key={`evt-${item.id_evento || item.id}`} event={item} onOpen={() => navigate(`/eventos/${item.id_evento || item.id}`)} />
                     ))}
                   </div>
 
@@ -155,9 +153,6 @@ export default function Home() {
           </>
         )}
       </main>
-      {selectedEventId && (
-        <EventModal eventId={selectedEventId} onClose={() => setSelectedEventId(null)} />
-      )}
     </div>
   )
 }

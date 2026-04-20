@@ -112,6 +112,7 @@ model evento {
   id_evento           Int                   @id @default(autoincrement())
   nome                String                @db.VarChar(100)
   descricao           String?
+  local               String?               @db.VarChar(150)
   data_de_realizacao  DateTime?             @db.Timestamp(6)
   id_evento_estado    Int?
   anuncio             anuncio[]
