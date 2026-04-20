@@ -5,25 +5,43 @@ import { Home, CalendarDays, Users, GraduationCap, User, Bell, Calendar, LogOut 
 export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
     const navigate = useNavigate()
     const location = useLocation()
-    const user = authService.getUser() || { nome: 'Ana Pinto' }
+    const user = authService.getUser() || {}
+    const role = user.role ?? 3    
     const [firstName, ...rest] = (user.nome ?? '').split(' ')
     const lastName = rest.at(-1) ?? ''
- 
+    
+
     function handleLogout() {
         authService.logout()
         navigate('/login')
     }
 
   
-  const navItems = [
-        { label: 'Início',   path: '/home',    icon: Home },
-        { label: 'Horário',  path: '/horario', icon: Calendar },
-        { label: 'Aulas',    path: '/aulas',   icon: CalendarDays },
-        { label: 'Escola',   path: '/escola',  icon: GraduationCap },
-        { label: 'Eventos',  path: '/eventos',   icon: Calendar },
-        { label: 'Grupos', path: '/grupos',        icon: LayoutGrid },
-        { label: 'Perfil',   path: '/profile', icon: User },
-
+  const navItems = role === 1
+  ? [
+      { label: 'Início',   path: '/admin/home',  icon: Home },
+      { label: 'Horário',  path: '/horario',      icon: Calendar },
+      { label: 'Aulas',    path: '/admin/aulas',  icon: CalendarDays },
+      { label: 'Escola',   path: '/escola',       icon: GraduationCap },
+      { label: 'Eventos',  path: '/eventos',      icon: CalendarDays },
+      { label: 'Grupos',   path: '/grupos',       icon: LayoutGrid },
+      { label: 'Perfil',   path: '/profile',      icon: User },
+    ]
+  : role === 2
+  ? [
+      { label: 'Início',   path: '/docente/home', icon: Home },
+      { label: 'Horário',  path: '/horario',      icon: Calendar },
+      { label: 'Aulas',    path: '/aulas',        icon: CalendarDays },
+      { label: 'Escola',   path: '/escola',       icon: GraduationCap },
+      { label: 'Eventos',  path: '/eventos',      icon: CalendarDays },
+      { label: 'Perfil',   path: '/profile',      icon: User },
+    ]
+  : [
+      { label: 'Início',   path: '/aluno/home',   icon: Home },
+      { label: 'Horário',  path: '/horario',      icon: Calendar },
+      { label: 'Aulas',    path: '/aulas',        icon: CalendarDays },
+      { label: 'Eventos',  path: '/eventos',      icon: CalendarDays },
+      { label: 'Perfil',   path: '/profile',      icon: User },
     ]
 
   return (
