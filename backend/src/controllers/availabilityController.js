@@ -14,10 +14,7 @@ const criarDisponibilidade = async (req, res) => {
   try {
     const { id: id_utilizador, role: id_tipo } = req.user;
 
-    // Validar permissões
-    availabilityService.validarDocente(id_tipo);
-
-    // Chamar serviço
+    // Chamar serviço (validação de rol já foi feita pelo middleware)
     const novaDisponibilidade = await availabilityService.criarDisponibilidade(
       id_utilizador,
       req.body
@@ -41,12 +38,9 @@ const criarDisponibilidade = async (req, res) => {
  */
 const listarDisponibilidades = async (req, res) => {
   try {
-    const { id: id_utilizador, role: id_tipo } = req.user;
+    const { id: id_utilizador } = req.user;
 
-    // Validar permissões
-    availabilityService.validarDocente(id_tipo);
-
-    // Chamar serviço
+    // Chamar serviço (validação de rol já foi feita pelo middleware)
     const disponibilidades = await availabilityService.listarDisponibilidades(id_utilizador);
 
     res.status(200).json({
@@ -67,13 +61,10 @@ const listarDisponibilidades = async (req, res) => {
  */
 const updateAvailability = async (req, res) => {
   try {
-    const { id: id_utilizador, role: id_tipo } = req.user;
+    const { id: id_utilizador } = req.user;
     const { id_disponibilidade } = req.params;
 
-    // Validar permissões
-    availabilityService.validarDocente(id_tipo);
-
-    // Chamar serviço
+    // Chamar serviço (validação de rol já foi feita pelo middleware)
     const disponibilidadeAtualizada = await availabilityService.atualizarDisponibilidade(
       id_disponibilidade,
       id_utilizador,
@@ -104,13 +95,10 @@ const updateAvailability = async (req, res) => {
  */
 const deleteAvailability = async (req, res) => {
   try {
-    const { id: id_utilizador, role: id_tipo } = req.user;
+    const { id: id_utilizador } = req.user;
     const { id_disponibilidade } = req.params;
 
-    // Validar permissões
-    availabilityService.validarDocente(id_tipo);
-
-    // Chamar serviço
+    // Chamar serviço (validação de rol já foi feita pelo middleware)
     const resultado = await availabilityService.eliminarDisponibilidade(
       id_disponibilidade,
       id_utilizador

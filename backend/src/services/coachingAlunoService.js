@@ -11,11 +11,11 @@ const prisma = new PrismaClient();
  
 // IDs dos estados de marcação (tabela estado_marcacao)
 const ESTADO_MARCACAO = {
-  PENDENTE: 1,
-  EM_VALIDACAO: 2,
-  CONFIRMADA: 3,
-  CONCLUIDA: 4,
-  CANCELADA: 5,
+  AGENDADA: 1,
+  CONCLUIDA: 2,
+  CANCELADA: 3,
+  CONFIRMADA: 4,
+  EM_VALIDACAO: 5,
 };
  
 // Durações permitidas (em minutos), conforme RF-COA-06
@@ -128,6 +128,7 @@ async function consultarDisponibilidades({ id_modalidade = null, data = null } =
  *  - Não existe marcação sobreposta para o mesmo docente
  *  - O horário não colide com o horário letivo fixo do docente
  *  - Não existe marcação duplicada do mesmo aluno para o mesmo slot
+ *  - Se outros_alunos for fornecido, valida-os e adiciona-os
  *
  * @param {number} id_aluno       - ID do aluno que faz o pedido
  * @param {object} dados
@@ -137,6 +138,7 @@ async function consultarDisponibilidades({ id_modalidade = null, data = null } =
  * @param {string} dados.hora_inicio      - "HH:MM:SS"
  * @param {number} dados.duracao_minutos
  * @param {number} dados.numero_alunos_pretendidos - 1 = Solo, >1 = Grupo
+ * @param {Array<number>} [dados.outros_alunos] - IDs dos outros alunos participantes (opcional, para grupo)
  * @returns {Promise<object>} Marcação criada com estado PENDENTE
  */
 async function solicitarMarcacao(id_aluno, dados) {
@@ -147,6 +149,7 @@ async function solicitarMarcacao(id_aluno, dados) {
     hora_inicio,
     duracao_minutos,
     numero_alunos_pretendidos = 1,
+    outros_alunos = [],
   } = dados;
  
   // ── Validação 1: o aluno existe e tem coaching ativo
@@ -179,7 +182,7 @@ async function solicitarMarcacao(id_aluno, dados) {
   }
 
   // ── Validação 4: o docente tem uma disponibilidade válida para este pedido
-  const horaInicioDate = new Date(`1970-01-01T${hora_inicio}`);
+  const horaInicioDate = new Date(`1970-01-01T${hora_inicio}Z`);
   const horaFimDate = new Date(horaInicioDate.getTime() + duracao_minutos * 60 * 1000);
   const diaSemana = new Date(data_a_realizar).getDay();
 
@@ -194,15 +197,16 @@ async function solicitarMarcacao(id_aluno, dados) {
           ],
         },
         { hora_inicio: { lte: horaInicioDate } },
-        { hora_fim: { gte: horaFimDate } },
+        { hora_fim: { gte: horaFimDate } },  // ← o slot tem de CABER inteiro
       ],
     },
   });
 
   if (!disponibilidadeValida) {
-    throw new Error('O docente não tem uma disponibilidade válida para este pedido.');
+    throw new Error(
+      `O horário pedido (${hora_inicio} + ${duracao_minutos}min) não cabe dentro da disponibilidade do docente.`
+    );
   }
-
   // ── Validação 5: sem pedido duplicado do mesmo aluno para o mesmo slot
   const pedidoDuplicado = await prisma.aluno_marcacao.findFirst({
     where: {
@@ -218,38 +222,59 @@ async function solicitarMarcacao(id_aluno, dados) {
   if (pedidoDuplicado) throw new Error('Já existe um pedido teu para este horário.');
  
   // ── Validação 6: sem conflito de agenda do docente (RF-COA-05)
-  const conflitoDocente = await prisma.marcacao.findFirst({
+  // Busca todas as marcações existentes PENDENTE, EM_VALIDACAO ou CONFIRMADA neste dia
+  const marcacoesExistentes = await prisma.marcacao.findMany({
     where: {
       id_docente,
       data_a_realizar: new Date(data_a_realizar),
-      id_estado: { in: [ESTADO_MARCACAO.EM_VALIDACAO, ESTADO_MARCACAO.CONFIRMADA] },
-      // Sobreposição: nova começa antes da existente acabar E acaba depois da existente começar
-      hora_inicio: { lt: horaFimDate },
+      id_estado: { in: [ESTADO_MARCACAO.AGENDADA, ESTADO_MARCACAO.EM_VALIDACAO, ESTADO_MARCACAO.CONFIRMADA] },
     },
+    select: { hora_inicio: true, duracao_minutos: true },
   });
-  if (conflitoDocente) throw new Error('O docente já tem uma marcação confirmada neste horário.');
+
+  // Verifica se há sobreposição com alguma marcação existente
+  for (const marcacao of marcacoesExistentes) {
+    const horaInicioExistente = new Date(marcacao.hora_inicio);
+    const horaFimExistente = new Date(horaInicioExistente.getTime() + marcacao.duracao_minutos * 60 * 1000);
+
+    // Sobreposição: nova começa antes da existente acabar E acaba depois da existente começar
+    if (horaInicioDate < horaFimExistente && horaFimDate > horaInicioExistente) {
+      throw new Error(
+        `O docente já tem uma marcação reservada neste horário. Escolhe outro slot disponível.`
+      );
+    }
+  }
  
   // ── Validação 7: sem conflito com horário letivo fixo do docente (RF-COA-05 CA4)
-  const conflitoLetivo = await prisma.horario_letivo.findFirst({
+  const horariosLetivos = await prisma.horario_letivo.findMany({
     where: {
       id_docente,
       dia_semana: diaSemana,
-      hora_inicio: { lt: horaFimDate },
-      hora_fim: { gt: horaInicioDate },
     },
+    select: { hora_inicio: true, hora_fim: true },
   });
-  if (conflitoLetivo) throw new Error('O horário coincide com o horário letivo fixo do docente.');
+
+  for (const horario of horariosLetivos) {
+    const horaInicioLetivo = new Date(horario.hora_inicio);
+    const horaFimLetivo = new Date(horario.hora_fim);
+
+    // Verifica sobreposição
+    if (horaInicioDate < horaFimLetivo && horaFimDate > horaInicioLetivo) {
+      throw new Error(
+        `O horário coincide com um período letivo fixo do docente. Escolhe outro slot.`
+      );
+    }
+  }
  
-  // ── Criação da marcação + registo do aluno como interessado (dentro de uma transação)
   const resultado = await prisma.$transaction(async (tx) => {
-    // Cria a marcação com estado PENDENTE
+    // Cria a marcação com estado AGENDADA
     const marcacao = await tx.marcacao.create({
       data: {
         id_docente,
         id_modalidade,
-        id_estado: ESTADO_MARCACAO.PENDENTE,
+        id_estado: ESTADO_MARCACAO.AGENDADA,
         data_a_realizar: new Date(data_a_realizar),
-        hora_inicio: new Date(`1970-01-01T${hora_inicio}`),
+        hora_inicio: new Date(`1970-01-01T${hora_inicio}Z`),
         duracao_minutos,
         numero_alunos_pretendidos,
         id_user_criador: id_aluno,
@@ -260,7 +285,7 @@ async function solicitarMarcacao(id_aluno, dados) {
     await tx.marcacao_estado_historico.create({
       data: {
         id_marcacoes: marcacao.id_marcacoes,
-        id_estado: ESTADO_MARCACAO.PENDENTE,
+        id_estado: ESTADO_MARCACAO.AGENDADA,
       },
     });
  
@@ -274,10 +299,99 @@ async function solicitarMarcacao(id_aluno, dados) {
  
     return marcacao;
   });
- 
+
+  // Se outros alunos foram fornecidos, adiciona-os
+  if (outros_alunos.length > 0) {
+    await adicionarParticipantesGrupo(resultado.id_marcacoes, id_aluno, outros_alunos);
+  }
+
   return resultado;
 }
- 
+
+// ─────────────────────────────────────────────────────────────
+// 2.1 adicionarParticipantesGrupo
+// ─────────────────────────────────────────────────────────────
+/**
+ * Adiciona outros alunos a uma marcação de grupo existente.
+ * Só pode ser chamado pelo aluno que criou a marcação, e apenas se ainda estiver PENDENTE.
+ *
+ * @param {number} id_marcacao - ID da marcação
+ * @param {number} id_aluno_requisitante - ID do aluno que criou a marcação
+ * @param {Array<number>} outros_alunos - IDs dos outros alunos a adicionar
+ * @returns {Promise<object>} Resultado da adição
+ */
+async function adicionarParticipantesGrupo(id_marcacao, id_aluno_requisitante, outros_alunos) {
+  // Verificar se a marcação existe e foi criada pelo requisitante
+  const marcacao = await prisma.marcacao.findUnique({
+    where: { id_marcacoes: id_marcacao },
+    include: { aluno_marcacao: true },
+  });
+
+  if (!marcacao) throw new Error('Marcação não encontrada.');
+  if (marcacao.id_user_criador !== id_aluno_requisitante) throw new Error('Só o criador da marcação pode adicionar participantes.');
+  if (marcacao.id_estado !== ESTADO_MARCACAO.AGENDADA) throw new Error('Só é possível adicionar participantes a marcações no estado Agendada.');
+
+  // Verificar se numero_alunos_pretendidos > 1
+  if (marcacao.numero_alunos_pretendidos <= 1) throw new Error('Esta marcação não é para grupo.');
+
+  // Calcular quantos já estão associados
+  const participantesAtuais = marcacao.aluno_marcacao.length;
+  const totalComNovos = participantesAtuais + outros_alunos.length;
+
+  if (totalComNovos > marcacao.numero_alunos_pretendidos) {
+    throw new Error(`Adicionar estes alunos excederia o número pretendido (${marcacao.numero_alunos_pretendidos}).`);
+  }
+
+  // Verificar duplicados na lista de novos
+  if (new Set(outros_alunos).size !== outros_alunos.length) {
+    throw new Error('Há alunos duplicados na lista de novos participantes.');
+  }
+
+  // Verificar se algum novo já está associado
+  const idsAtuais = marcacao.aluno_marcacao.map(am => am.id_aluno);
+  const duplicados = outros_alunos.filter(id => idsAtuais.includes(id));
+  if (duplicados.length > 0) {
+    throw new Error(`Os alunos ${duplicados.join(', ')} já estão associados a esta marcação.`);
+  }
+
+  // Validar cada novo aluno
+  for (const id of outros_alunos) {
+    const outro_aluno = await prisma.aluno.findUnique({
+      where: { id_utilizador: id }
+    });
+    if (!outro_aluno) throw new Error(`Outro aluno com ID ${id} não encontrado.`);
+    if (!outro_aluno.coaching) throw new Error(`Outro aluno com ID ${id} não tem permissão de coaching ativa.`);
+
+    // Verificar se o aluno já tem pedido para o mesmo slot
+    const conflito = await prisma.aluno_marcacao.findFirst({
+      where: {
+        id_aluno: id,
+        marcacao: {
+          id_docente: marcacao.id_docente,
+          data_a_realizar: marcacao.data_a_realizar,
+          hora_inicio: marcacao.hora_inicio,
+          id_estado: { notIn: [ESTADO_MARCACAO.CANCELADA] },
+        },
+      },
+    });
+    if (conflito) throw new Error(`O aluno ${id} já tem um pedido para este horário.`);
+  }
+
+  // Adicionar os novos participantes
+  await prisma.$transaction(async (tx) => {
+    for (const id_aluno of outros_alunos) {
+      await tx.aluno_marcacao.create({
+        data: {
+          id_aluno,
+          id_marcacoes: id_marcacao,
+        },
+      });
+    }
+  });
+
+  return { mensagem: 'Participantes adicionados com sucesso.', total_participantes: totalComNovos };
+}
+
 // ─────────────────────────────────────────────────────────────
 // 3. listarMeusPedidos
 // ─────────────────────────────────────────────────────────────
@@ -351,10 +465,10 @@ async function cancelarPedidoPendente(id_aluno, id_marcacao) {
  
   if (!associacao) throw new Error('Marcação não encontrada ou não pertence ao aluno.');
  
-  // Só permite cancelar se ainda estiver PENDENTE
-  if (associacao.marcacao.id_estado !== ESTADO_MARCACAO.PENDENTE) {
+  // Só permite cancelar se ainda estiver AGENDADA
+  if (associacao.marcacao.id_estado !== ESTADO_MARCACAO.AGENDADA) {
     throw new Error(
-      'Só é possível cancelar pedidos no estado Pendente. Contacta a coordenação para outros casos.'
+      'Só é possível cancelar pedidos no estado Agendada. Contacta a coordenação para outros casos.'
     );
   }
  
@@ -401,8 +515,8 @@ async function confirmarPresencaGrupo(id_aluno, id_marcacao, aceitar) {
  
   if (!associacao) throw new Error('Convite não encontrado para este aluno.');
  
-  // Verifica que a marcação ainda está PENDENTE (aceitações só fazem sentido neste estado)
-  if (associacao.marcacao.id_estado !== ESTADO_MARCACAO.PENDENTE) {
+  // Verifica que a marcação ainda está AGENDADA (aceitações só fazem sentido neste estado)
+  if (associacao.marcacao.id_estado !== ESTADO_MARCACAO.AGENDADA) {
     throw new Error('Esta marcação já não está disponível para confirmação.');
   }
  
@@ -566,6 +680,7 @@ async function _cancelarMarcacaoPorExpiracao(id_marcacao) {
 module.exports = {
   consultarDisponibilidades,
   solicitarMarcacao,
+  adicionarParticipantesGrupo,
   listarMeusPedidos,
   cancelarPedidoPendente,
   confirmarPresencaGrupo,
