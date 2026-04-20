@@ -20,8 +20,8 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
         { label: 'Horário',  path: '/horario', icon: Calendar },
         { label: 'Aulas',    path: '/aulas',   icon: CalendarDays },
         { label: 'Escola',   path: '/escola',  icon: GraduationCap },
-        { label: 'Eventos',  path: '/events',   icon: Calendar },
-        { label: 'Painel de Gestão', path: '/grupos',        icon: LayoutGrid },
+        { label: 'Eventos',  path: '/eventos',   icon: Calendar },
+        { label: 'Grupos', path: '/grupos',        icon: LayoutGrid },
         { label: 'Perfil',   path: '/profile', icon: User },
 
     ]

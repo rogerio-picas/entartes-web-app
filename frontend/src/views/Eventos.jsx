@@ -2,43 +2,7 @@ import { useState, useEffect } from 'react'
 import { eventService } from '../services/eventService'
 import { Calendar as CalendarIcon, AlertCircle, Loader2 } from 'lucide-react'
 import EventModal from '../components/EventModal'
-
-// Funções auxiliares mantidas
-function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('pt-PT', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  })
-}
-
-function EventCard({ event, onOpen }) {
-  return (
-    <div className="bg-white rounded-xl border border-[#4a6362]/20 shadow-sm hover:shadow-md transition-all p-6 flex flex-col gap-3 group">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-[#324B4A] font-semibold text-lg leading-snug group-hover:text-[#006A68] transition-colors">
-          {event.nome}
-        </h3>
-        <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-[#006A68] bg-[#CCE8E6] px-2.5 py-1 rounded-full">
-          <CalendarIcon size={12} />
-          {formatDate(event.data_de_realizacao)}
-        </span>
-      </div>
-
-      {event.descricao && (
-        <p className="text-[#4A6362] text-sm leading-relaxed line-clamp-3 font-['Sora']">
-          {event.descricao}
-        </p>
-      )}
-
-      <div className="mt-auto pt-4 border-t border-[#4a6362]/10 flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">ID #{event.id_evento}</span>
-        <button onClick={onOpen} className="text-xs font-semibold text-[#006A68] hover:underline">Ver detalhes</button>
-      </div>
-    </div>
-  )
-}
+import { EventCard } from '../components/Cards'
 
 export default function Events() {
   const [events, setEvents] = useState([])
