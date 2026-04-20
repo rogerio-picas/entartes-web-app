@@ -12,10 +12,10 @@ const prisma = new PrismaClient();
 // IDs dos estados de marcação (tabela estado_marcacao)
 const ESTADO_MARCACAO = {
   AGENDADA: 1,
-  CONCLUIDA: 2,
-  CANCELADA: 3,
-  CONFIRMADA: 4,
-  EM_VALIDACAO: 5,
+  EM_VALIDACAO: 2,
+  CONFIRMADA: 3,
+  CONCLUIDA: 4,
+  CANCELADA: 5,
 };
  
 // Durações permitidas (em minutos), conforme RF-COA-06
@@ -465,10 +465,13 @@ async function cancelarPedidoPendente(id_aluno, id_marcacao) {
  
   if (!associacao) throw new Error('Marcação não encontrada ou não pertence ao aluno.');
  
-  // Só permite cancelar se ainda estiver AGENDADA
-  if (associacao.marcacao.id_estado !== ESTADO_MARCACAO.AGENDADA) {
+  // Só permite cancelar se ainda estiver AGENDADA ou EM_VALIDACAO
+  if (
+    associacao.marcacao.id_estado !== ESTADO_MARCACAO.AGENDADA &&
+    associacao.marcacao.id_estado !== ESTADO_MARCACAO.EM_VALIDACAO
+  ) {
     throw new Error(
-      'Só é possível cancelar pedidos no estado Agendada. Contacta a coordenação para outros casos.'
+      'Só é possível cancelar pedidos Agendados ou em Validação. Contacta a coordenação para outros casos.'
     );
   }
  
