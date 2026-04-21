@@ -7,87 +7,10 @@ const coachingDocenteController = require('../controllers/coachingDocenteControl
 const tokenValidation = require('../middlewares/authMiddleware');
 const authorize = require('../middlewares/roleCheckMiddleware');
 
+/* ROTAS GENÉRICAS (ADMIN) ESTÃO COMENTADAS NO FINAL DO CÓDIGO - SWAGGER OCULTO */
+
 /**
  * @swagger
- * /api/coaching:
- *   post:
- *     summary: Cria um novo agendamento de coaching
- *     tags: [Coaching]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               id_modalidade:
- *                 type: integer
- *               id_sala:
- *                 type: integer
- *               data_a_realizar:
- *                 type: string
- *               hora_inicio:
- *                 type: string
- *               duracao_minutos:
- *                 type: integer
- *     responses:
- *       201:
- *         description: Criado com sucesso
- *   get:
- *     summary: Lista todos os agendamentos
- *     tags: [Coaching]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Sucesso
- *
- * /api/coaching/{id_utilizador}:
- *   get:
- *     summary: Retorna agendamentos de coaching de um utilizador
- *     tags: [Coaching]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id_utilizador
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Sucesso
- *   put:
- *     summary: Atualiza um agendamento de coaching
- *     tags: [Coaching]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id_utilizador
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Sucesso
- *   delete:
- *     summary: Elimina um agendamento de coaching
- *     tags: [Coaching]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id_utilizador
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Sucesso
- *
  * /api/coaching/disponibilidades/consultar:
  *   get:
  *     summary: Consulta disponibilidades de coaching filtrando por modalidade e data
@@ -188,7 +111,7 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *       200:
  *         description: Presença confirmada
  *
- * /api/coaching/conclusao-sessao/{id_marcacao}:
+ * /api/coaching/aluno/conclusao-sessao/{id_marcacao}:
  *   post:
  *     summary: Valida a conclusão de uma sessão de coaching
  *     tags: [Coaching - Aluno]
@@ -353,7 +276,7 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *       200:
  *         description: Histórico da marcação
  *
- * /api/coaching/docente/minhas-aulas:
+ * /api/coaching/minhas-aulas:
  *   get:
  *     summary: Lista as aulas do docente autenticado
  *     tags: [Coaching - Docente]
@@ -391,7 +314,7 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *       404:
  *         description: Marcação não encontrada ou não pertence ao docente
  *
- * /api/coaching/docente/cancelar-marcacao/{id_marcacao}:
+ * /api/coaching/cancelar-marcacao/{id_marcacao}:
  *   post:
  *     summary: Docente cancela uma sessão de coaching atribuída
  *     tags: [Coaching - Docente]
