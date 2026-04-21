@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { authService } from '../services/authService'
-import { Home, CalendarDays, Users, GraduationCap, User, Bell, Calendar, LogOut , LayoutGrid} from 'lucide-react'
+import { Home, CalendarDays, GraduationCap, User, Bell, Calendar, LogOut, LayoutGrid } from 'lucide-react'
 
 export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
     const navigate = useNavigate()
@@ -21,8 +21,8 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
         { label: 'Aulas',    path: '/aulas',   icon: CalendarDays },
         { label: 'Escola',   path: '/escola',  icon: GraduationCap },
         { label: 'Eventos',  path: '/eventos',   icon: Calendar },
-        { label: 'Grupos', path: '/grupos',        icon: LayoutGrid },
-        { label: 'Perfil',   path: '/profile', icon: User },
+        { label: 'Grupos', path: '/grupos',   icon: LayoutGrid },
+        { label: 'Perfil', path: '/profile', icon: User },
 
     ]
 

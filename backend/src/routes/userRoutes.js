@@ -15,6 +15,13 @@ const tokenValidation = require('../middlewares/authMiddleware');
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: id_tipo
+ *         schema:
+ *           type: integer
+ *           enum: [1, 2, 3]
+ *         description: "Filtra por tipo de utilizador: 1 = Coordenador, 2 = Docente, 3 = Aluno"
  *     responses:
  *       200:
  *         description: Sucesso
