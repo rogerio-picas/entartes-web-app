@@ -8,26 +8,32 @@ const userService = require('../services/userService');
 
 
 const getUsers = async (req, res) => {
-  try 
+  try
   {
+    const { id_tipo } = req.query;
+    const where = id_tipo ? { id_tipo: parseInt(id_tipo) } : {};
+
     const users = await prisma.utilizador.findMany({
-    select: {
-      id_utilizador: true,
-      codigo_username: true,
-      nome: true,
-      apelido: true,
-      email: true,
-      telemovel: true,
-      data_nascimento: true,
-      nif: true,
-      estado: true      
+      where,
+      orderBy: { nome: 'asc' },
+      select: {
+        id_utilizador: true,
+        codigo_username: true,
+        nome: true,
+        apelido: true,
+        email: true,
+        telemovel: true,
+        data_nascimento: true,
+        nif: true,
+        estado: true,
+        id_tipo: true,
       },
     });
 
     res.status(200).json(users);
 
-  } 
-  catch (error) 
+  }
+  catch (error)
   {
     res.status(500).json({ message: 'Erro ao encontrar utilizador.', error: error.message });
   }

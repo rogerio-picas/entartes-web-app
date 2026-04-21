@@ -9,6 +9,7 @@ import Profile from './views/Profile'
 import HomeAdmin      from './views/HomeAdmin'
 import AulasAdmin     from './views/AulasAdmin'
 import Grupos         from './views/Grupos'
+import Modalidades    from './views/Modalidades'
 import NovoEventoModal from './views/NovoEventoModal'
 
 import ProtectedRoute from './components/ProtectedRoute'
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/eventos" element={<Events />} />
           <Route path="/grupos" element={<Grupos />} />
+          <Route path="/modalidades" element={<Modalidades />} />
         </Route>
 
         {/* Fallback para rotas inexistentes */}

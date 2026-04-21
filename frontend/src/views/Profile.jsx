@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 export default function ProfileManagement() {
   const navigate = useNavigate()
+  const role = authService.getUser()?.role ?? 3
 
   const handleLogout = () => {
     authService.logout()
@@ -13,13 +14,13 @@ export default function ProfileManagement() {
   const profileOptions = [
     { title: 'Alterar dados pessoais', icon: UserCog },
     { title: 'Gestão de Notificações', icon: BellRing },
-    { title: 'Gerir modalidades', icon: Music2 },
+    ...(role !== 3 ? [{ title: 'Gerir modalidades', icon: Music2, onClick: () => navigate('/modalidades') }] : []),
     { title: 'Ajuda e Suporte', icon: LifeBuoy },
   ]
 
   return (
     <div className="font-['Sora']">
-      
+
       {/* Cabeçalho da Página (Consistente com Home, Aulas e Eventos) */}
       <div className="mb-8">
         <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Configurações de Conta</p>
@@ -35,6 +36,7 @@ export default function ProfileManagement() {
           return (
             <button
               key={index}
+              onClick={option.onClick}
               className="flex items-center justify-between p-6 rounded-[20px] bg-[#CCE8E6] hover:bg-[#B8E0DE] transition-colors group text-left"
             >
               <div className="flex items-center gap-4">
