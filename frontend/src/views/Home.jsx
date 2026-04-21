@@ -54,26 +54,42 @@ export default function Home() {
   const [selectedEventId, setSelectedEventId] = useState(null)
 
   useEffect(() => {
-    async function load() {
-      setLoading(true)
-      try {
-        const [p, a, i, e] = await Promise.allSettled([
-          api.get('/horario/minhas-aulas'),   // aulas do aluno
-          api.get('/horario/minhas-aulas'),   // confirmadas
-          api.get('/horario/minhas-aulas'),   // pendentes
-          eventService.getAll(),
-        ])
-        const todas = p.status === 'fulfilled' && Array.isArray(p.value) ? p.value : []
-        // Split by estado: 1=pendente(para confirmar presença), 2=confirmada, etc.
-        setPresencas(todas.filter(a => a.id_estado === 4)) // concluidas aguardando confirmação aluno
-        setAulas(todas.filter(a => a.id_estado === 2))     // confirmadas futuras
-        setInscricoes(todas.filter(a => a.id_estado === 1)) // pendentes de validação
-        setEventos(e.status === 'fulfilled' && Array.isArray(e.value) ? e.value : [])
-      } catch(err) { console.error(err) }
-      finally { setLoading(false) }
+  async function load() {
+    setLoading(true)
+    try {
+      const results = await Promise.allSettled([
+        api.get('/horario/minhas-aulas'),
+        eventService.getAll(),
+      ])
+
+      // Pegamos a resposta das aulas (índice 0)
+      const aulasRes = results[0];
+      // Pegamos a resposta dos eventos (índice 1)
+      const eventosRes = results[1];
+
+      // Extraímos os dados com segurança
+      // Se usar Axios, o dado está em .data. Se for fetch puro, ajuste para onde está o array.
+      const todasAsAulas = (aulasRes.status === 'fulfilled' && Array.isArray(aulasRes.value.data)) 
+        ? aulasRes.value.data 
+        : [];
+
+      const todosOsEventos = (eventosRes.status === 'fulfilled' && Array.isArray(eventosRes.value)) 
+        ? eventosRes.value 
+        : [];
+
+      setPresencas(todasAsAulas.filter(a => a.id_estado === 4))
+      setAulas(todasAsAulas.filter(a => a.id_estado === 2))
+      setInscricoes(todasAsAulas.filter(a => a.id_estado === 1))
+      setEventos(todosOsEventos)
+
+    } catch (err) { 
+      console.error("Erro ao carregar dados da Home:", err) 
+    } finally { 
+      setLoading(false) 
     }
-    load()
-  }, [])
+  }
+  load()
+}, [])
 
   async function handleConfirmarPresenca(id) {
     setLoadingAction(id)

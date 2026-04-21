@@ -17,9 +17,12 @@ import { authService } from './services/authService'
 
 function HomeRedirect() {
   const user = authService.getUser()
-  const role = user?.role ?? 3
+  const role = user?.role // Pode ser 1, 2, 3 ou undefined
+
   if (role === 1) return <Navigate to="/admin/home" replace />
   if (role === 2) return <Navigate to="/docente/home" replace />
+  
+  // Se não caiu nos acima, assume-se que é Aluno (role 3 ou erro)
   return <Navigate to="/aluno/home" replace />
 }
 
@@ -65,3 +68,5 @@ export default function App() {
     </BrowserRouter>
   )
 }
+
+

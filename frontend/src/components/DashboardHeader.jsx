@@ -10,6 +10,7 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
     const [firstName, ...rest] = (user.nome ?? '').split(' ')
     const lastName = rest.at(-1) ?? ''
     
+    const isProfileActive = location.pathname === '/profile'
 
     function handleLogout() {
         authService.logout()
@@ -46,20 +47,29 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
 
   return (
         <nav className="bg-[#EFF5F4] border-b-[3px] border-brand-dark px-6 py-4 flex items-center justify-between sticky top-0 z-30">
- 
-            {/* Left: Greeting */}
-            <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-brand-dark flex items-center justify-center shrink-0">
-                    <span className="text-[#9CF1EE] text-lg font-medium">{firstName?.[0] ?? 'A'}</span>
+
+            {/* Left: Greeting - Agora clicável e com efeito de estado ativo */}
+            <button 
+                onClick={() => navigate('/profile')}
+                className="flex items-center gap-3 hover:opacity-80 transition-all outline-none text-left group"
+            >
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all 
+                    ${isProfileActive 
+                        ? 'ring-2 ring-brand-dark bg-brand-light' 
+                        : 'bg-brand-dark group-hover:shadow-md'}`}
+                >
+                    <span className={`text-lg font-medium transition-colors ${isProfileActive ? 'text-brand-darkest' : 'text-[#9CF1EE]'}`}>
+                        {firstName?.[0] ?? 'A'}
+                    </span>
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-[#4A6362] text-sm tracking-wide">Bem-vinda</span>
-                    <span className="text-black font-semibold text-xl leading-tight">
+                    <span className="text-[#4A6362] text-sm tracking-wide">Olá,</span>
+                    <span className={`font-semibold text-xl leading-tight transition-colors ${isProfileActive ? 'text-brand-dark' : 'text-black'}`}>
                         {firstName} {lastName}
                     </span>
                 </div>
-            </div>
- 
+            </button>
+
             {/* Centre: Navigation */}
             <div className="hidden md:flex items-center justify-center gap-1">
                 {navItems.map((item) => {
@@ -83,15 +93,13 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                     )
                 })}
             </div>
- 
+
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
-                {/* Bell with unread badge */}
                 <button
                     onClick={onBellClick}
                     className="relative flex items-center justify-center w-10 h-10 bg-[#4A6362] rounded-full hover:bg-[#3A504F] transition-colors"
                     title="Notificações"
-                    aria-label={`Notificações${unreadCount > 0 ? ` — ${unreadCount} por ler` : ''}`}
                 >
                     <Bell size={20} className="text-white" />
                     {unreadCount > 0 && (
@@ -100,7 +108,7 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                         </span>
                     )}
                 </button>
- 
+
                 <button
                     onClick={handleLogout}
                     className="flex items-center justify-center w-10 h-10 bg-brand-bg border border-brand-dark rounded-full hover:bg-red-50 hover:border-red-300 transition-colors group"
