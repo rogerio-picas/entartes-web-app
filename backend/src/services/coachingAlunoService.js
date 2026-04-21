@@ -184,7 +184,9 @@ async function solicitarMarcacao(id_aluno, dados) {
   // ── Validação 4: o docente tem uma disponibilidade válida para este pedido
   const horaInicioDate = new Date(`1970-01-01T${hora_inicio}Z`);
   const horaFimDate = new Date(horaInicioDate.getTime() + duracao_minutos * 60 * 1000);
-  const diaSemana = new Date(data_a_realizar).getDay();
+  const [ano, mes, dia] = data_a_realizar.split('-').map(Number);
+  const diaSemana = new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay();  
+  //const diaSemana = new Date(data_a_realizar).getDay();
 
   const disponibilidadeValida = await prisma.disponibilidade.findFirst({
     where: {
