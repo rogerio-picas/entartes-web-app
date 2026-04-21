@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Clock, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react'
 import { disponibilidadeService } from '../services/disponibilidadeService'
+import { modalidadeService } from '../services/modalidadeService'
 
 const DIAS_SEMANA = [
     { value: 0, label: 'Domingo' },
@@ -26,14 +27,28 @@ function Field({ label, children }) {
 const inputCls = "w-full border border-[#6F7978] rounded-lg px-4 py-3.5 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] bg-white transition-colors font-['Sora']"
 
 export default function NovaDisponibilidadeModal({ onClose, onSuccess }) {
-    const [horaInicio, setHoraInicio] = useState('')
-    const [horaFim, setHoraFim]       = useState('')
-    const [modalidade, setModalidade] = useState('Jazz')
-    const [frequencia, setFrequencia] = useState('unica')
-    const [diaSemana, setDiaSemana]   = useState(1)
-    const [data, setData]             = useState('')
-    const [saving, setSaving]         = useState(false)
-    const [erro, setErro]             = useState('')
+    const [horaInicio, setHoraInicio]     = useState('')
+    const [horaFim, setHoraFim]           = useState('')
+    const [modalidade, setModalidade]     = useState('')
+    const [modalidades, setModalidades]   = useState([])
+    const [frequencia, setFrequencia]     = useState('unica')
+    const [diaSemana, setDiaSemana]       = useState(1)
+    const [data, setData]                 = useState('')
+    const [saving, setSaving]             = useState(false)
+    const [erro, setErro]                 = useState('')
+
+    useEffect(() => {
+        // This modal is only accessible to docentes. id_utilizador equals id_docente,
+        // so we decode it from the JWT to filter only this docente's modalidades.
+        const token = localStorage.getItem('token')
+        const id_docente = token ? JSON.parse(atob(token.split('.')[1])).id : null
+        modalidadeService.listar(id_docente)
+            .then(list => {
+                setModalidades(list)
+                if (list.length > 0) setModalidade(list[0].id_modalidade)
+            })
+            .catch(() => {})
+    }, [])
 
     async function handleCriar() {
         if (!horaInicio || !horaFim) {
@@ -118,17 +133,14 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess }) {
                     {/* Modalidade */}
                     <Field label="Modalidade">
                         <div className="relative">
-                            {/* TODO: SUBSTITUIR POR MODALIDADES/LIST */}
                             <select
                                 value={modalidade}
-                                onChange={e => setModalidade(e.target.value)}
+                                onChange={e => setModalidade(Number(e.target.value))}
                                 className={`${inputCls} appearance-none cursor-pointer pr-10`}
                             >
-                                <option>Ballet</option>
-                                <option>Contemporâneo</option>
-                                <option>Hip Hop</option>
-                                <option>Jazz</option>
-                                <option>Salsa</option>
+                                {modalidades.map(m => (
+                                    <option key={m.id_modalidade} value={m.id_modalidade}>{m.nome}</option>
+                                ))}
                             </select>
                             <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6362] pointer-events-none" />
                         </div>
