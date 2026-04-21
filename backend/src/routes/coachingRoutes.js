@@ -3,6 +3,7 @@ const router = express.Router();
 const coachingController = require('../controllers/coachingController');
 const coachingAlunoController = require('../controllers/coachingAlunoController');
 const coachingCoordenacaoController = require('../controllers/coachingCoordenacaoController');
+const coachingDocenteController = require('../controllers/coachingDocenteController');
 const tokenValidation = require('../middlewares/authMiddleware');
 const authorize = require('../middlewares/roleCheckMiddleware');
 
@@ -351,6 +352,69 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *     responses:
  *       200:
  *         description: Histórico da marcação
+ *
+ * /api/coaching/docente/minhas-aulas:
+ *   get:
+ *     summary: Lista as aulas do docente autenticado
+ *     tags: [Coaching - Docente]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: id_estado
+ *         schema:
+ *           type: integer
+ *         description: Filtrar por estado da marcação
+ *     responses:
+ *       200:
+ *         description: Lista de aulas do docente
+ *       500:
+ *         description: Erro interno no servidor
+ *
+ * /api/coaching/docente/conclusao-sessao/{id_marcacao}:
+ *   post:
+ *     summary: Valida a conclusão de uma sessão pelo docente
+ *     tags: [Coaching - Docente]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_marcacao
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Validação registada com sucesso
+ *       400:
+ *         description: A sessão não está no estado 'Confirmada'
+ *       404:
+ *         description: Marcação não encontrada ou não pertence ao docente
+ *
+ * /api/coaching/docente/cancelar-marcacao/{id_marcacao}:
+ *   post:
+ *     summary: Docente cancela uma sessão de coaching atribuída
+ *     tags: [Coaching - Docente]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_marcacao
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               motivo:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Sessão cancelada com sucesso
  */
 
 // ========== ROTAS GENÉRICAS (coordenador) ==========
@@ -366,7 +430,7 @@ router.post('/marcacao/solicitar', tokenValidation, authorize([3]), coachingAlun
 router.get('/meus-pedidos', tokenValidation, authorize([3]), coachingAlunoController.listarMeusPedidos);
 router.delete('/pedido/:id_marcacao/cancelar', tokenValidation, authorize([3]), coachingAlunoController.cancelarPedidoPendente);
 router.post('/presenca-grupo', tokenValidation, authorize([3]), coachingAlunoController.confirmarPresencaGrupo);
-router.post('/conclusao-sessao/:id_marcacao', tokenValidation, authorize([3]), coachingAlunoController.validarConclusaoSessao);
+router.post('/aluno/conclusao-sessao/:id_marcacao', tokenValidation, authorize([3]), coachingAlunoController.validarConclusaoSessao);
 
 // ========== ROTAS DA COORDENADORA ==========
 router.get('/pedidos-pendentes', tokenValidation, authorize([1]), coachingCoordenacaoController.listarPedidosPendentes);
@@ -376,5 +440,10 @@ router.post('/cancelar-marcacao', tokenValidation, authorize([1]), coachingCoord
 router.post('/reatribuir-sala', tokenValidation, authorize([1]), coachingCoordenacaoController.reatribuirSala);
 router.get('/salas-disponiveis', tokenValidation, authorize([1]), coachingCoordenacaoController.consultarSalasDisponiveis);
 router.get('/historico-marcacao/:id_marcacao', tokenValidation, authorize([1]), coachingCoordenacaoController.consultarHistoricoMarcacao);
+
+// ============ ROTAS DO DOCENTE ================
+router.get('/minhas-aulas', tokenValidation, authorize([2]), coachingDocenteController.listarMinhasAulas);
+router.post('/docente/conclusao-sessao/:id_marcacao', tokenValidation, authorize([2]), coachingDocenteController.validarConclusaoSessao);
+router.post('/cancelar-marcacao/:id_marcacao', tokenValidation, authorize([2]), coachingDocenteController.cancelarMarcacao);
 
 module.exports = router;

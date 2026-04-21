@@ -46,7 +46,7 @@ const relatorioRoutes = require('./src/routes/relatorioRoutes');
 const anuncioRoutes = require('./src/routes/anuncioRoutes');
 const availabilityRoutes = require('./src/routes/availabilityRoutes');
 const horarioRoutes = require('./src/routes/horarioRoutes');
-const aulasRoutes = require('./src/routes/aulasRoutes');
+// const aulasRoutes = require('./src/routes/aulasRoutes');
 const notificacaoRoutes = require('./src/routes/notificacaoRoutes');
 const salaRoutes = require('./src/routes/salaRoutes');
 
@@ -64,7 +64,7 @@ app.use('/api/disponibilidades', availabilityRoutes);
 app.use('/api/coaching', coachingRoutes);
 app.use('/api/relatorio', relatorioRoutes);
 app.use('/api/horario', horarioRoutes);
-app.use('/api/aulas', aulasRoutes);
+// app.use('/api/aulas', aulasRoutes);
 app.use('/api/notificacoes', notificacaoRoutes);
 app.use('/api/salas', salaRoutes);
 
