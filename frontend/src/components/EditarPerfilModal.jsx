@@ -59,6 +59,22 @@ function PasswordStrength({ password }) {
     )
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+/**
+ * Lê o payload do JWT guardado no localStorage sem verificar a assinatura.
+ * Serve apenas para extrair o `id` do utilizador no frontend.
+ */
+function getIdFromToken() {
+    try {
+        const token = localStorage.getItem('token')
+        if (!token) return null
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        return payload.id ?? null
+    } catch {
+        return null
+    }
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function EditarPerfilModal({ onClose, onSuccess }) {
     const user = authService.getUser()
@@ -87,17 +103,16 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
 
     // UI state
     const [loading, setLoading] = useState(true)
+    const [loadError, setLoadError] = useState('')
     const [saving, setSaving] = useState(false)
     const [errors, setErrors] = useState({})
     const [passErrors, setPassErrors] = useState({})
     const [successMsg, setSuccessMsg] = useState('')
 
-    // Load user data
+    // Load user data — usa /auth/me para não depender de permissões de role
     useEffect(() => {
-        if (!user?.id_utilizador) { setLoading(false); return }
-        api.get(`/users/${user.id_utilizador}`)
+        api.get('/auth/me')
             .then(data => {
-                console.log("DADOS DO PRISMA:", data);
                 setForm({
                     nome: data.nome ?? '',
                     apelido: data.apelido ?? '',
@@ -108,8 +123,18 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                         : '',
                     nif: data.nif ?? '',
                 })
+                // Actualiza localStorage com dados completos
+                const stored = authService.getUser()
+                localStorage.setItem('user', JSON.stringify({
+                    ...stored,
+                    id_utilizador: data.id_utilizador,
+                    nome: data.nome,
+                    apelido: data.apelido,
+                }))
             })
-            .catch(() => {})
+            .catch(err => {
+                setLoadError(err.message || 'Erro ao carregar os teus dados.')
+            })
             .finally(() => setLoading(false))
     }, [])
 
@@ -157,21 +182,29 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
     async function handleSaveDados() {
         const e = validateDados()
         if (Object.keys(e).length) { setErrors(e); return }
+        const id = getIdFromToken()
+        if (!id) { setErrors({ _global: 'Sessão inválida. Faz logout e volta a entrar.' }); return }
         setSaving(true)
         setSuccessMsg('')
         try {
             const payload = {
                 nome: form.nome.trim(),
                 apelido: form.apelido.trim() || null,
+                email: form.email.trim(),
                 telemovel: form.telemovel.trim() || null,
+                data_nascimento: form.data_nascimento || null,
+                nif: form.nif.trim() || null,
             }
-            await api.put(`/users/${user.id_utilizador}`, payload)
+            await api.put(`/users/${id}`, payload)
 
-            // Update local storage name
+            // Actualiza localStorage
             const stored = authService.getUser()
-            if (stored) {
-                localStorage.setItem('user', JSON.stringify({ ...stored, nome: form.nome.trim() }))
-            }
+            localStorage.setItem('user', JSON.stringify({
+                ...stored,
+                id_utilizador: id,
+                nome: form.nome.trim(),
+                apelido: form.apelido.trim() || stored?.apelido,
+            }))
 
             setSuccessMsg('Dados guardados com sucesso!')
             onSuccess?.()
@@ -186,10 +219,12 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
     async function handleSavePassword() {
         const e = validatePassword()
         if (Object.keys(e).length) { setPassErrors(e); return }
+        const id = getIdFromToken()
+        if (!id) { setPassErrors({ _global: 'Sessão inválida. Faz logout e volta a entrar.' }); return }
         setSaving(true)
         setSuccessMsg('')
         try {
-            await api.put(`/users/${user.id_utilizador}`, {
+            await api.put(`/users/${id}`, {
                 password_atual: passForm.password_atual,
                 password: passForm.nova_password,
             })
@@ -282,10 +317,14 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                         </div>
                     )}
 
-                    {/* Loading */}
+                    {/* Loading / Load error */}
                     {loading ? (
                         <div className="flex items-center justify-center py-16">
                             <RefreshCw size={24} className="text-[#006A68] animate-spin" />
+                        </div>
+                    ) : loadError ? (
+                        <div className="flex items-center gap-2 bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl border border-red-200">
+                            <AlertCircle size={14} className="shrink-0" /> {loadError}
                         </div>
                     ) : tab === 'dados' ? (
 
