@@ -17,6 +17,13 @@ const ESTADO_MARCACAO = {
   CONCLUIDA: 4,
   CANCELADA: 5,
 };
+
+const ESTADO_ALUNO_MARCACAO = {
+  PENDENTE:   1,
+  CONFIRMADO: 2,
+  CONCLUIDO:  3,
+  RECUSADO:   4,
+};
  
 // Durações permitidas (em minutos), conforme RF-COA-06
 const DURACOES_PERMITIDAS = [30, 45, 60, 75, 90, 120];
@@ -296,6 +303,7 @@ async function solicitarMarcacao(id_aluno, dados) {
       data: {
         id_aluno,
         id_marcacoes: marcacao.id_marcacoes,
+        id_aluno_estado: ESTADO_ALUNO_MARCACAO.CONFIRMADO, // ← id 2 para o criador da marcação, já confirmado
       },
     });
  
@@ -386,6 +394,7 @@ async function adicionarParticipantesGrupo(id_marcacao, id_aluno_requisitante, o
         data: {
           id_aluno,
           id_marcacoes: id_marcacao,
+          id_aluno_estado: ESTADO_ALUNO_MARCACAO.PENDENTE, // ← os convidados começam como PENDENTE
         },
       });
     }
@@ -537,31 +546,46 @@ async function confirmarPresencaGrupo(id_aluno, id_marcacao, aceitar) {
   }
  
   if (!aceitar) {
-    // O aluno recusou — cancela a marcação de grupo inteira
+    await prisma.aluno_marcacao.updateMany({
+      where: { id_aluno, id_marcacoes: id_marcacao },
+      data: {
+        id_aluno_estado: ESTADO_ALUNO_MARCACAO.RECUSADO,
+        data_resposta: new Date(),
+      },
+    });
     await _cancelarMarcacaoPorExpiracao(id_marcacao);
     return { mensagem: 'Participação recusada. A sessão de grupo foi cancelada.' };
   }
- 
-  // Regista a confirmação do aluno (atualiza a data de resposta)
+  // ← sem "else"! O return acima já garante que só chegamos aqui se aceitar = true
+
   await prisma.aluno_marcacao.updateMany({
     where: { id_aluno, id_marcacoes: id_marcacao },
-    data: { data_resposta: new Date() },
+    data: {
+      id_aluno_estado: ESTADO_ALUNO_MARCACAO.CONFIRMADO,
+      data_resposta: new Date(),
+    },
   });
- 
-  // Verifica se TODOS os participantes já confirmaram
+
   const todosOsParticipantes = await prisma.aluno_marcacao.findMany({
     where: { id_marcacoes: id_marcacao },
   });
- 
-  const todosConfirmaram = todosOsParticipantes.every((p) => p.data_resposta !== null);
- 
+
+  const todosConfirmaram = todosOsParticipantes.every(
+    (p) => p.id_aluno_estado === ESTADO_ALUNO_MARCACAO.CONFIRMADO
+  );
+
   return {
-    mensagem: aceitar ? 'Presença confirmada com sucesso.' : 'Participação recusada.',
+    mensagem: 'Presença confirmada com sucesso.',
     todos_confirmaram: todosConfirmaram,
     total_participantes: todosOsParticipantes.length,
-    confirmados: todosOsParticipantes.filter((p) => p.data_resposta !== null).length,
+    confirmados: todosOsParticipantes.filter(
+      (p) => p.id_aluno_estado === ESTADO_ALUNO_MARCACAO.CONFIRMADO
+    ).length,
+    pendentes: todosOsParticipantes.filter(
+      (p) => p.id_aluno_estado === ESTADO_ALUNO_MARCACAO.PENDENTE
+    ).length,
   };
-}
+}  
  
 // ─────────────────────────────────────────────────────────────
 // 6. validarConclusaoSessao
@@ -692,4 +716,5 @@ module.exports = {
   validarConclusaoSessao,
   _cancelarMarcacaoPorExpiracao,
   ESTADO_MARCACAO,
+  ESTADO_ALUNO_MARCACAO,
 };
