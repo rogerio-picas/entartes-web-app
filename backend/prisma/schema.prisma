@@ -112,7 +112,6 @@ model evento {
   descricao           String?
   data_de_realizacao  DateTime?             @db.Timestamp(6)
   id_evento_estado    Int?
-  local               String?               @db.VarChar(150)
   anuncio             anuncio[]
   coordenadora_evento coordenadora_evento[]
   evento_estado       evento_estado?        @relation(fields: [id_evento_estado], references: [id_evento_estado], onDelete: NoAction, onUpdate: NoAction)

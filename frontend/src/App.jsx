@@ -7,7 +7,6 @@ import Aulas from './views/Aulas'
 import Horario from './views/Horario'
 import Escola from './views/Escola'
 import Profile from './views/Profile'
-import HomeAdmin      from './views/HomeAdmin'
 import AulasAdmin     from './views/AulasAdmin'
 
 import Modalidades    from './views/Modalidades'
