@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const authController = require('../controllers/authController');
+const tokenValidation = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -27,5 +28,21 @@ const authController = require('../controllers/authController');
  *         description: Credenciais inválidas
  */
 router.post('/login', authController.login);
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Retorna os dados completos do utilizador autenticado
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dados do utilizador
+ *       401:
+ *         description: Token inválido
+ */
+router.get('/me', tokenValidation, authController.getMe);
 
 module.exports = router;
