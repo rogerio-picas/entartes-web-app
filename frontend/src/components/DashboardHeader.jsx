@@ -25,7 +25,7 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
       { label: 'Aulas',    path: '/admin/aulas',  icon: CalendarDays },
       { label: 'Escola',   path: '/escola',       icon: GraduationCap },
       { label: 'Eventos',  path: '/eventos',      icon: CalendarDays },
-      { label: 'Grupos',   path: '/grupos',       icon: LayoutGrid },
+    
       { label: 'Perfil',   path: '/profile',      icon: User },
     ]
   : role === 2

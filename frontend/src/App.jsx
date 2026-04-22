@@ -8,8 +8,11 @@ import Aulas from './views/Aulas'
 import Horario from './views/Horario'
 import Escola from './views/Escola'
 import Profile from './views/Profile'
-import AulasAdmin from './views/AulasAdmin'
-import Grupos from './views/Grupos'
+import HomeAdmin      from './views/HomeAdmin'
+import AulasAdmin     from './views/AulasAdmin'
+import EventDetailsView from './views/EventDetailsView'
+import NovoEventoModal from './views/NovoEventoModal'
+
 import ProtectedRoute from './components/ProtectedRoute'
 import RoleRoute from './components/RoleRoute'
 import DashboardLayout from './components/DashboardLayout'
@@ -59,8 +62,7 @@ export default function App() {
             element={<RoleRoute roles={[1,2]}><Escola /></RoleRoute>} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/eventos" element={<Events />} />
-          <Route path="/grupos"
-            element={<RoleRoute roles={[1]}><Grupos /></RoleRoute>} />
+          <Route path="/eventos/:id" element={<EventDetailsView />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

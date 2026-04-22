@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Plus, ChevronRight, Check, AlertCircle, RefreshCw, Trash2 } from 'lucide-react'
+import { X, Check, AlertCircle, RefreshCw } from 'lucide-react'
 import { api } from '../services/api'
 
 function Field({ label, value, onChange, type = 'text', placeholder, multiline = false }) {
@@ -37,26 +37,15 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
     const [data, setData] = useState('')
     const [hora, setHora] = useState('19:00')
     const [descricao, setDescricao] = useState('')
-    const [whatsapp, setWhatsapp] = useState('')
+    const [local, setLocal] = useState('')
+    // const [whatsapp, setWhatsapp] = useState('') // TODO: aguarda suporte backend
 
-    // FAQs
-    const [faqs, setFaqs] = useState([])
-    const [faqPergunta, setFaqPergunta] = useState('')
-    const [faqResposta, setFaqResposta] = useState('')
-    const [faqGeral, setFaqGeral] = useState(false)
-    const [expandedFaq, setExpandedFaq] = useState(null)
-
-    function addFaq() {
-        if (!faqPergunta.trim()) return
-        setFaqs(prev => [...prev, { pergunta: faqPergunta, resposta: faqResposta, geral: faqGeral, id: Date.now() }])
-        setFaqPergunta('')
-        setFaqResposta('')
-        setFaqGeral(false)
-    }
-
-    function removeFaq(id) {
-        setFaqs(prev => prev.filter(f => f.id !== id))
-    }
+    // TODO: FAQs — aguarda tabela backend
+    // const [faqs, setFaqs] = useState([])
+    // const [faqPergunta, setFaqPergunta] = useState('')
+    // const [faqResposta, setFaqResposta] = useState('')
+    // const [faqGeral, setFaqGeral] = useState(false)
+    // const [expandedFaq, setExpandedFaq] = useState(null)
 
     async function handleSubmit() {
         if (!nome.trim()) { setErro('O nome do evento é obrigatório.'); return }
@@ -67,8 +56,9 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
                 nome: nome.trim(),
                 descricao: descricao || null,
                 data_de_realizacao: data ? new Date(data).toISOString() : null,
-                hora_inicio: hora || null,
-                link_whatsapp: whatsapp || null,
+                local: local || null,
+                // hora_inicio: hora || null,         // TODO: aguarda suporte backend
+                // link_whatsapp: whatsapp || null,   // TODO: aguarda tabela backend
             })
             onSuccess(nome)
         } catch (e) {
@@ -114,76 +104,15 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
                         <div className="flex-1 min-w-[150px]">
                             <Field label="Data" value={data} onChange={setData} type="date" />
                         </div>
-                        <div className="flex-1 min-w-[130px]">
-                            <Field label="Hora de início" value={hora} onChange={setHora} type="time" />
-                        </div>
                     </div>
 
+                    <Field label="Local" value={local} onChange={setLocal} placeholder="Ex: Auditório Principal, Lisboa..." />
                     <Field label="Descrição" value={descricao} onChange={setDescricao} placeholder="Descrição do evento" multiline />
-                    <Field label="Link Whatsapp" value={whatsapp} onChange={setWhatsapp} placeholder="https://chat.whatsapp.com/..." />
 
-                    {/* FAQs */}
-                    <div>
-                        <p className="text-sm font-medium text-[#000] mb-3">FAQ's</p>
+                    {/* WhatsApp — TODO: aguarda suporte backend */}
+                    {/* <Field label="Link Whatsapp" value={whatsapp} onChange={setWhatsapp} placeholder="https://chat.whatsapp.com/..." /> */}
 
-                        {/* Existing FAQs */}
-                        {faqs.length > 0 && (
-                            <div className="space-y-1 mb-3">
-                                {faqs.map(faq => (
-                                    <div key={faq.id}>
-                                        <div
-                                            className="flex items-center gap-2 px-3 py-2 hover:bg-[#CCE8E6]/50 rounded-lg cursor-pointer"
-                                            onClick={() => setExpandedFaq(expandedFaq === faq.id ? null : faq.id)}
-                                        >
-                                            <ChevronRight size={14} className={`text-[#4A6362] transition-transform ${expandedFaq === faq.id ? 'rotate-90' : ''}`} />
-                                            <span className="flex-1 text-sm text-[#161D1C]">{faq.pergunta}</span>
-                                            {faq.geral && <span className="text-[10px] bg-[#CCE8E6] text-[#006A68] px-1.5 py-0.5 rounded">Geral</span>}
-                                            <button onClick={e => { e.stopPropagation(); removeFaq(faq.id) }} className="text-red-400 hover:text-red-600">
-                                                <Trash2 size={13} />
-                                            </button>
-                                        </div>
-                                        {expandedFaq === faq.id && faq.resposta && (
-                                            <div className="ml-6 px-3 py-2 text-sm text-[#4A6362] bg-white/60 rounded-lg mb-1">
-                                                {faq.resposta}
-                                            </div>
-                                        )}
-                                        <div className="ml-6 border-t border-[#BEC9C7]" />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Add FAQ button */}
-                        <button
-                            onClick={() => {}}
-                            className="flex items-center gap-1.5 text-[#006A68] text-sm font-medium mb-4"
-                        >
-                            <Plus size={16} /> Adicionar
-                        </button>
-
-                        {/* FAQ Form */}
-                        <div className="bg-white rounded-xl p-4 space-y-3 border border-[#BEC9C7]">
-                            <Field label="Pergunta" value={faqPergunta} onChange={setFaqPergunta} placeholder="Escreve a pergunta" />
-                            <Field label="Resposta" value={faqResposta} onChange={setFaqResposta} placeholder="Escreve a resposta" multiline />
-                            <div className="flex items-center justify-between">
-                                <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                                    <div
-                                        onClick={() => setFaqGeral(v => !v)}
-                                        className={`w-4.5 h-4.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${faqGeral ? 'bg-[#006A68] border-[#006A68]' : 'border-[#3F4948]'}`}
-                                    >
-                                        {faqGeral && <Check size={11} className="text-white" strokeWidth={3} />}
-                                    </div>
-                                    FAQ geral
-                                </label>
-                                <button
-                                    onClick={addFaq}
-                                    className="text-sm font-medium text-[#006A68] hover:underline"
-                                >
-                                    Guardar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    {/* FAQs — TODO: aguarda tabela backend */}
                 </div>
 
                 {/* Footer */}
