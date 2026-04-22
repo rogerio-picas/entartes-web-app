@@ -41,11 +41,23 @@ export default function Home() {
 
         // Normalizar dados
         const normalizadas = rawMarcacoes.map(m => {
-            let dt = new Date(m.data);
+            let dt = m.data ? new Date(m.data) : new Date();
             if (m.hora_inicio) {
                const hr = new Date(m.hora_inicio);
                dt.setHours(hr.getHours(), hr.getMinutes(), 0, 0);
             }
+
+            // Fallback seguro caso a API apenas envie a string do estado
+            let resolvedIdEstado = m.id_estado;
+            if (!resolvedIdEstado && m.estado) {
+                const estadoStr = m.estado.toLowerCase();
+                if (estadoStr.includes('pend') || estadoStr.includes('agend')) resolvedIdEstado = 1;
+                else if (estadoStr.includes('valida')) resolvedIdEstado = 2;
+                else if (estadoStr.includes('confirm')) resolvedIdEstado = 3;
+                else if (estadoStr.includes('conclui') || estadoStr.includes('finaliz')) resolvedIdEstado = 4;
+                else if (estadoStr.includes('cancel')) resolvedIdEstado = 5;
+            }
+
             return {
                 ...m,
                 id: m.id_marcacao,
@@ -54,6 +66,7 @@ export default function Home() {
                     ? (m.alunos?.length > 0 ? m.alunos.map(a => a.nome).join(', ') : 'A aguardar aluno(s)') 
                     : (m.docente || '—'),
                 status: (m.estado || '').toLowerCase(),
+                id_estado: resolvedIdEstado,
                 dateTime: dt,
                 ja_validou: m.ja_validou
             };
@@ -108,36 +121,34 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {/* Secção 1 - Presenças a confirmar (Destaque para Docente) */}
-            {(role === 2 || presencas.length > 0) && (
-              <DashboardSection title="Presenças a confirmar (48h)" icon={Clock}>
-                {presencas.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 md:px-0">
-                    {presencas.map((item) => (
-                    <div key={`pres-${item.id}`} className="flex flex-col gap-2">
-                      <ClassCard item={item} statusType="confirmada" />
-                      {item.ja_validou ? (
-                        <div className="w-full py-2.5 bg-[#E3E9E8] border border-[#BEC9C7] text-[#4A6362] text-center font-bold text-sm rounded-xl cursor-default">
-                          A aguardar {role === 2 ? 'aluno(s)' : 'docente'}
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleValidarConclusao(item.id)}
-                          className="w-full py-2.5 bg-[#049A59] text-white font-bold text-sm rounded-xl hover:bg-[#037A47] shadow-sm transition-colors"
-                        >
-                          Validar Presença
-                        </button>
-                      )}
-                    </div>
-                    ))}
+            {/* Secção 1 - Presenças a confirmar (48h pós-aula) */}
+            <DashboardSection title="Presenças a confirmar (48h)" icon={Clock}>
+              {presencas.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 md:px-0">
+                  {presencas.map((item) => (
+                  <div key={`pres-${item.id}`} className="flex flex-col gap-2">
+                    <ClassCard item={item} statusType="confirmada" />
+                    {item.ja_validou ? (
+                      <div className="w-full py-2.5 bg-[#E3E9E8] border border-[#BEC9C7] text-[#4A6362] text-center font-bold text-sm rounded-xl cursor-default">
+                        A aguardar {role === 2 ? 'aluno(s)' : 'docente'}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleValidarConclusao(item.id)}
+                        className="w-full py-2.5 bg-[#049A59] text-white font-bold text-sm rounded-xl hover:bg-[#037A47] shadow-sm transition-colors"
+                      >
+                        Validar Presença
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <p className="px-6 md:px-0 text-sm text-gray-400 italic font-['Sora']">
-                    Nenhuma presença pendente de validação nas últimas 48h.
-                  </p>
-                )}
-              </DashboardSection>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <p className="px-6 md:px-0 text-sm text-gray-400 italic font-['Sora']">
+                  Nenhuma presença pendente de validação nas últimas 48h.
+                </p>
+              )}
+            </DashboardSection>
 
             {/* Secção 2 - Em Validação */}
             <DashboardSection title="À espera de confirmação (Em Validação)" icon={Clock}>
@@ -190,14 +201,24 @@ export default function Home() {
                 <Megaphone size={28} className="text-brand-dark" />
                 <h2 className="text-2xl font-bold text-black font-sans">Próximos eventos</h2>
               </div>
-            ) : (
-              <p className="text-sm text-gray-400 italic">
-                Sem eventos de momento.
-              </p>
-            )}
-          </section>
+              {eventos.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {eventos.map((item) => (
+                    <EventCard 
+                      key={item.id_evento} 
+                      event={item} 
+                      onOpen={() => setSelectedEventId(item.id_evento)} 
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 italic">
+                  Sem eventos de momento.
+                </p>
+              )}
+            </section>
 
-                    {/* Modal de evento */}
+            {/* Modal de evento */}
           {selectedEventId && (
             <EventModal
               eventId={selectedEventId}
@@ -205,8 +226,10 @@ export default function Home() {
             />
           )}
 
+            </>
+          )}
         </main>
-      )}
+
     </div>
   )
 }

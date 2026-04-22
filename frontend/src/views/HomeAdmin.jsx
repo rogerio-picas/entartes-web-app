@@ -418,13 +418,6 @@ export default function HomeAdmin() {
         finally { setLoadingAction(null) }
     }
 
-    setCoachings48h(prev => prev.filter(a => a.id !== id))
-    setStats(s => ({ ...s, porValidar: Math.max(0, s.porValidar - 1) }))
-    showToast('Coaching confirmado!')
-  } catch { showToast('Erro ao confirmar.', 'error') }
-  finally { setLoadingAction(null) }
-}
-
     async function handleReject(id) {
         const motivo = window.prompt("Motivo da rejeição:");
         if (!motivo) return;
