@@ -5,7 +5,7 @@ import {
   User, ChevronRight, AlertCircle, RefreshCw
 } from 'lucide-react'
 import { ClassCard, EventCard, DashboardSection } from '../components/Cards'
-import EventModal from '../components/EventModal'
+import EventModal from '../views/NovoEventoModal'
 import { aulasService } from '../services/aulasService'
 import { eventService } from '../services/eventService'
 import { api } from '../services/api'
