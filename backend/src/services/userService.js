@@ -70,4 +70,40 @@ const criarUtilizador = async (dados) => {
     });
 };
 
-module.exports = { criarUtilizador };
+const atualizarUtilizador = async (id_utilizador, dados) => {
+    const {
+        codigo_username,
+        password,
+        id_tipo,
+        nome,
+        apelido,
+        data_nascimento,
+        email,
+        telemovel,
+        nif,
+        estado
+    } = dados;
+
+    const dataToUpdate = {};
+
+    if (codigo_username !== undefined) dataToUpdate.codigo_username = codigo_username;
+    if (password !== undefined) {
+        const salt = await bcrypt.genSalt(10);
+        dataToUpdate.password = await bcrypt.hash(password, salt);
+    }
+    if (id_tipo !== undefined) dataToUpdate.id_tipo = parseInt(id_tipo);
+    if (nome !== undefined) dataToUpdate.nome = nome;
+    if (apelido !== undefined) dataToUpdate.apelido = apelido;
+    if (data_nascimento !== undefined) dataToUpdate.data_nascimento = new Date(data_nascimento);
+    if (email !== undefined) dataToUpdate.email = email;
+    if (telemovel !== undefined) dataToUpdate.telemovel = telemovel;
+    if (nif !== undefined) dataToUpdate.nif = nif;
+    if (estado !== undefined) dataToUpdate.estado = estado;
+
+    return await prisma.utilizador.update({
+        where: { id_utilizador: parseInt(id_utilizador) },
+        data: dataToUpdate,
+    });
+};
+
+module.exports = { criarUtilizador, atualizarUtilizador };

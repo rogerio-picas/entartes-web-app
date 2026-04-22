@@ -126,12 +126,7 @@ const updateUser = async (req, res) => {
     const { id_utilizador } = req.params;
     const dataToUpdate = req.body;
 
-    const updatedUser = await prisma.utilizador.update({
-      where: {
-        id_utilizador: parseInt(id_utilizador),
-      },
-      data: dataToUpdate,
-    });
+    const updatedUser = await userService.atualizarUtilizador(parseInt(id_utilizador), dataToUpdate);
 
     res.status(200).json({
       message: 'Utilizador atualizado com sucesso',
