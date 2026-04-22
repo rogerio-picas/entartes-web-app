@@ -7,11 +7,12 @@ import Aulas from './views/Aulas'
 import Horario from './views/Horario'
 import Escola from './views/Escola'
 import Profile from './views/Profile'
-import HomeAdmin      from './views/HomeAdmin'
+
 import AulasAdmin     from './views/AulasAdmin'
 
 import Modalidades    from './views/Modalidades'
 import NovoEventoModal from './views/NovoEventoModal'
+import { authService } from './services/authService'
 
 import ProtectedRoute from './components/ProtectedRoute'
 import DashboardLayout from './components/DashboardLayout' 

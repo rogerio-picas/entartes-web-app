@@ -54,7 +54,7 @@ function formatDuration(minutos) {
 /**
  * Transforma uma marcação da API no formato que o componente precisa.
  */
-function mapMarcacao(m) {
+export function mapMarcacao(m) {
     const docNome = m.docente?.utilizador
         ? `${m.docente.utilizador.nome ?? ''} ${m.docente.utilizador.apelido ?? ''}`.trim()
         : 'Sem docente'
