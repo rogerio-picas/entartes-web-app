@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertCircle, Check, ChevronRight, Plus, RefreshCw, Trash2, X } from 'lucide-react'
+import { X, Plus, ChevronRight, Check, AlertCircle, RefreshCw, Trash2 } from 'lucide-react'
 import { api } from '../services/api'
 
 function Field({ label, value, onChange, type = 'text', placeholder, multiline = false }) {
@@ -26,7 +26,7 @@ function Field({ label, value, onChange, type = 'text', placeholder, multiline =
                     onChange={e => onChange(e.target.value)}
                     placeholder={placeholder}
                     className={base}
-                />
+                  />
             )}
         </div>
     )
@@ -36,9 +36,6 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
 
-    // Detalhes
-    const [nome, setNome] = useState('')
-    const [data, setData] = useState('')
     const [hora, setHora] = useState('19:00')
     const [descricao, setDescricao] = useState('')
     const [whatsapp, setWhatsapp] = useState('')
@@ -46,10 +43,6 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
 
     // FAQs
     const [faqs, setFaqs] = useState([])
-    const [faqPergunta, setFaqPergunta] = useState('')
-    const [faqResposta, setFaqResposta] = useState('')
-    const [faqGeral, setFaqGeral] = useState(false)
-    const [expandedFaq, setExpandedFaq] = useState(null)
 
     function addFaq() {
         if (!faqPergunta.trim()) return
@@ -67,6 +60,8 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
         setFaqPergunta('')
         setFaqResposta('')
         setFaqGeral(false)
+    }
+
     }
 
     function removeFaq(id) {
@@ -99,7 +94,6 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
             setLoading(false)
         }
     }
-
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
@@ -107,7 +101,7 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
             <div
                 className="relative bg-[#F4FBF9] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
                 onClick={e => e.stopPropagation()}
-            >
+              >
                 {/* Header */}
                 <div className="px-8 pt-8 pb-0 shrink-0">
                     <div className="flex items-center justify-between mb-1">
@@ -160,11 +154,10 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
                     <div>
                         <p className="text-sm font-medium text-[#000] mb-3">FAQ's</p>
 
+                        {/* Existing FAQs */}
                         {faqs.length > 0 && (
                             <div className="space-y-1 mb-3">
                                 {faqs.map(faq => (
-                                    <div key={faq.id}>
-                                        <div
                                             className="flex items-center gap-2 px-3 py-2 hover:bg-[#CCE8E6]/50 rounded-lg cursor-pointer"
                                             onClick={() => setExpandedFaq(expandedFaq === faq.id ? null : faq.id)}
                                         >
@@ -208,15 +201,16 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
                             </div>
                         )}
 
-                        {/* Botão (placeholder futuro) */}
+                        {/* Add FAQ button */}
                         <button
+                            onClick={() => {}}
                             type="button"
                             className="flex items-center gap-1.5 text-[#006A68] text-sm font-medium mb-4"
                         >
                             <Plus size={16} /> Adicionar
                         </button>
 
-                        {/* Form FAQ */}
+                        {/* FAQ Form */}
                         <div className="bg-white rounded-xl p-4 space-y-3 border border-[#BEC9C7]">
                             <Field
                                 label="Pergunta"
@@ -253,7 +247,7 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
                                 <button
                                     onClick={addFaq}
                                     className="text-sm font-medium text-[#006A68] hover:underline"
-                                >
+                        >
                                     Guardar
                                 </button>
                             </div>
@@ -267,8 +261,7 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
                         onClick={handleSubmit}
                         disabled={loading}
                         className="flex items-center gap-2 px-8 py-4 bg-[#006A68] text-white font-semibold rounded-2xl hover:bg-[#00504E] transition-colors disabled:opacity-60 text-base"
-                    >
-                        {loading ? (
+                    >{loading ? (
                             <RefreshCw size={18} className="animate-spin" />
                         ) : (
                             <Check size={18} />
@@ -279,4 +272,3 @@ export default function NovoEventoModal({ onClose, onSuccess }) {
             </div>
         </div>
     )
-}
