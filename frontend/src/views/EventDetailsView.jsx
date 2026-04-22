@@ -16,7 +16,7 @@ export default function EventDetailsView() {
     const { id } = useParams()
     const navigate = useNavigate()
     const user = authService.getUser()
-    const isAdmin = user?.role === 1 || user?.role === 2 // Assume 1/2 are admins/coordenadores
+    const isAdmin = user?.role === 1 // Apenas Admin (Role 1) tem permissões de edição
 
     const [event, setEvent] = useState(null)
     const [groups, setGroups] = useState([])
@@ -359,13 +359,15 @@ export default function EventDetailsView() {
                 <div className="w-full lg:w-[320px] flex flex-col gap-4 shrink-0">
                     <div className="flex items-center justify-between pb-2 border-b border-brand-dark/20">
                         <h3 className="font-bold text-[#324B4A] text-lg flex items-center gap-2"><Users size={18}/> Grupos</h3>
-                        <button 
-                            onClick={() => setShowCreateGroup(true)}
-                            className="w-8 h-8 rounded-full bg-brand-dark flex items-center justify-center text-white hover:bg-[#00504E] transition-colors shadow-sm"
-                            title="Criar novo grupo"
-                        >
-                            <Plus size={16} />
-                        </button>
+                        {isAdmin && (
+                            <button 
+                                onClick={() => setShowCreateGroup(true)}
+                                className="w-8 h-8 rounded-full bg-brand-dark flex items-center justify-center text-white hover:bg-[#00504E] transition-colors shadow-sm"
+                                title="Criar novo grupo"
+                            >
+                                <Plus size={16} />
+                            </button>
+                        )}
                     </div>
                     
                     <div className="flex flex-col gap-3">
