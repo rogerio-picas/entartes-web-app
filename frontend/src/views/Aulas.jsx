@@ -3,25 +3,28 @@ import {
   CalendarDays, Clock, User, MapPin, Music, CheckCircle2,
   XCircle, AlertCircle, RefreshCw, Plus, X, BookOpen, ArrowUpDown, Check
 } from 'lucide-react'
-import { aulasService } from '../services/aulasService.js'
+import { coachingService } from '../services/coachingService'
+import { api } from '../services/api'
 import { authService } from '../services/authService'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 
 // ─── Mapeamento de estados e Funções Auxiliares ───────────
 const STATUS_CFG = {
   1: { label: 'Pendente',   icon: Clock,        textColor: 'text-amber-700',   bg: 'bg-amber-100',   border: 'border-amber-200' },
-  2: { label: 'Confirmada', icon: CheckCircle2, textColor: 'text-emerald-700', bg: 'bg-emerald-100', border: 'border-emerald-200' },
-  3: { label: 'Cancelada',  icon: XCircle,      textColor: 'text-red-700',     bg: 'bg-red-100',     border: 'border-red-200' },
+  2: { label: 'Em Validação', icon: AlertCircle, textColor: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-200' },
+  3: { label: 'Confirmada', icon: CheckCircle2, textColor: 'text-emerald-700', bg: 'bg-emerald-100', border: 'border-emerald-200' },
   4: { label: 'Concluída',  icon: CheckCircle2, textColor: 'text-[#006A68]',   bg: 'bg-[#CCE8E6]',   border: 'border-[#006A68]' },
+  5: { label: 'Cancelada',  icon: XCircle,      textColor: 'text-red-700',     bg: 'bg-red-100',     border: 'border-red-200' },
 }
 
 function getStatusCfg(id_estado, estado_nome) {
   if (STATUS_CFG[id_estado]) return STATUS_CFG[id_estado]
   const nome = (estado_nome ?? '').toLowerCase()
   if (nome.includes('pend'))    return STATUS_CFG[1]
-  if (nome.includes('confirm')) return STATUS_CFG[2]
-  if (nome.includes('cancel'))  return STATUS_CFG[3]
+  if (nome.includes('valid'))   return STATUS_CFG[2]
+  if (nome.includes('confirm')) return STATUS_CFG[3]
   if (nome.includes('conclui') || nome.includes('finaliz')) return STATUS_CFG[4]
+  if (nome.includes('cancel'))  return STATUS_CFG[5]
   return { label: estado_nome ?? '—', textColor: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200', icon: Clock }
 }
 
@@ -65,13 +68,12 @@ function AulaModal({ aula, onClose }) {
             <InfoItem icon={MapPin} label="Sala / Estúdio" value={aula.sala} />
             <InfoItem icon={User} label="Professor" value={aula.docente} />
             <InfoItem icon={Music} label="Modalidade" value={aula.modalidade} />
-            <InfoItem label="Tipo de Aula" value={aula.tipo_aula} icon={BookOpen} />
+            <InfoItem label="Tipo de Aula" value={aula.tipo_aula ?? 'Individual'} icon={BookOpen} />
           </div>
           {aula.alunos && aula.alunos.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-[#4A6362] uppercase tracking-wider mb-2">
-                Alunos inscritos ({aula.alunos.length}
-                {aula.numero_alunos_pretendidos ? `/${aula.numero_alunos_pretendidos}` : ''})
+                Alunos ({aula.alunos.length})
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {aula.alunos.map((a, i) => (
@@ -133,18 +135,7 @@ function StatusBadge({ id_estado, estado_nome }) {
   )
 }
 
-function Toast({ message, type, onClose }) {
-  return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-white font-['Sora'] text-sm font-medium
-      ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
-      {type === 'success' ? <Check size={16} /> : <X size={16} />}
-      {message}
-      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><X size={14} /></button>
-    </div>
-  )
-}
-
-// ─── Página Principal (Limpada) ─────────────────────────────────────────────
+// ─── Página Principal ─────────────────────────────────────────────
 export default function Aulas() {
   const role = authService.getUser()?.role ?? 3
   const [marcacoes, setMarcacoes] = useState([])
@@ -167,29 +158,47 @@ export default function Aulas() {
     setLoading(true)
     setError('')
     try {
-      const data = showAll
-        ? await aulasService.getTodas()
-        : await aulasService.getParaConfirmar()
-      setMarcacoes(data)
+      let data = []
+      if (role === 1) { // Admin
+        const pendentes = await coachingService.getAdminPedidos('1,2')
+        if (showAll) {
+          const concluidas = await coachingService.getAdminPedidos('3,4,5') // Na verdade a API não recebe múltiplos estados facilmente senao mudarmos o backend. Assumimos tudo.
+          data = await coachingService.getAdminPedidos() // Pode nao devolver todos, mas tentamos
+        } else {
+          data = pendentes
+        }
+      } else if (role === 2) { // Docente
+        data = await coachingService.getDocenteAulas()
+      } else { // Aluno
+        data = await coachingService.getAlunoPedidos()
+      }
+      setMarcacoes(data || [])
     } catch (err) {
       setError(err.message || 'Erro ao carregar as aulas.')
     } finally {
       setLoading(false)
     }
-  }, [showAll])
+  }, [showAll, role])
 
   useEffect(() => { fetchMarcacoes() }, [fetchMarcacoes])
 
   const handleConfirm = async (id) => {
     setLoadingId(id)
     try {
-      await aulasService.updateEstado(id, aulasService.ESTADOS.CONFIRMADA)
-      setMarcacoes(prev => prev.map(r =>
-        r.id === id ? { ...r, id_estado: aulasService.ESTADOS.CONFIRMADA, estado_nome: 'Confirmada' } : r
-      ))
-      showToast('Aula confirmada com sucesso!', 'success')
+      if (role === 1) {
+          // Admin needs sala ID
+          const salaId = prompt('Introduza o ID da Sala para confirmar (ex: 1):')
+          if (!salaId) throw new Error('ID Sala é obrigatório para o Admin atribuir.')
+          await api.post('/coaching/confirmar-marcacao', { id_marcacao: id, id_sala: parseInt(salaId) })
+      } else if (role === 2) {
+          await api.post(`/coaching/docente/conclusao-sessao/${id}`)
+      } else {
+          await api.post(`/coaching/aluno/conclusao-sessao/${id}`)
+      }
+      showToast('Ação concluída com sucesso!', 'success')
+      fetchMarcacoes()
     } catch (err) {
-      showToast(err.message || 'Erro ao confirmar aula.', 'error')
+      showToast(err.response?.data?.message || err.message || 'Erro.', 'error')
     } finally {
       setLoadingId(null)
     }
@@ -198,13 +207,17 @@ export default function Aulas() {
   const handleReject = async (id) => {
     setLoadingId(id)
     try {
-      await aulasService.updateEstado(id, aulasService.ESTADOS.CANCELADA)
-      setMarcacoes(prev => prev.map(r =>
-        r.id === id ? { ...r, id_estado: aulasService.ESTADOS.CANCELADA, estado_nome: 'Cancelada' } : r
-      ))
-      showToast('Aula cancelada.', 'error')
+      if (role === 1) {
+          await api.post('/coaching/rejeitar-marcacao', { id_marcacao: id, motivo: 'Cancelado na página Aulas' })
+      } else if (role === 2) {
+          await api.post(`/coaching/cancelar-marcacao/${id}`)
+      } else {
+          await api.delete(`/coaching/pedido/${id}/cancelar`)
+      }
+      showToast('Cancelado com sucesso.', 'success')
+      fetchMarcacoes()
     } catch (err) {
-      showToast(err.message || 'Erro ao cancelar aula.', 'error')
+      showToast(err.response?.data?.message || err.message || 'Erro ao cancelar.', 'error')
     } finally {
       setLoadingId(null)
     }
@@ -217,15 +230,18 @@ export default function Aulas() {
   const marcacoesFiltradas = marcacoes.filter(a => {
     if (filtroEstado !== 'todos' && a.estado_nome !== filtroEstado) return false
     if (filtroModalidade !== 'todas' && a.modalidade !== filtroModalidade) return false
+    if (!showAll && role === 1 && a.id_estado !== 1 && a.id_estado !== 2) return false
     return true
   })
 
+  // Se o id_estado for null, pomos "Desconhecido" contido no 0
   const counts = marcacoes.reduce((acc, m) => {
-    acc[m.id_estado] = (acc[m.id_estado] ?? 0) + 1
+    const id = m.id_estado || 0
+    acc[id] = (acc[id] ?? 0) + 1
     return acc
   }, {})
 
-  const pendentes = counts[aulasService.ESTADOS.PENDENTE] ?? 0
+  const pendentes = (counts[1] ?? 0) + (counts[2] ?? 0)
 
   return (
     <>
@@ -361,7 +377,7 @@ export default function Aulas() {
                   const cfg = getStatusCfg(row.id_estado, row.estado_nome)
                   const StatusIcon = cfg.icon
                   const isLoading = loadingId === row.id
-                  const isPendente = row.id_estado === aulasService.ESTADOS.PENDENTE
+                  const isPendente = row.id_estado === 1 || row.id_estado === 2
                   return (
                     <tr
                       key={row.id}

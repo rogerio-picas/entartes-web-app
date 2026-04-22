@@ -414,9 +414,14 @@ export default function Horario() {
         setError('')
         try {
             // Buscar todas as aulas e eventos para todos os perfis
-            const { aulasService: as } = await import('../services/aulasService')
+            const { coachingService: cs } = await import('../services/coachingService')
+            const fetchAulas = async () => {
+                if (role === 1) return await cs.getAdminPedidos('1,2,3,4,5').catch(()=>[])
+                if (role === 2) return await cs.getDocenteAulas().catch(()=>[])
+                return await cs.getAlunoPedidos().catch(()=>[])
+            }
             const [aulasRes, evRes] = await Promise.allSettled([
-                as.getTodas(),
+                fetchAulas(),
                 eventService.getAll(),
             ])
             setAulas(aulasRes.status === 'fulfilled' ? aulasRes.value : [])
