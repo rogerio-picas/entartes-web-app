@@ -12,6 +12,8 @@ import AulasAdmin     from './views/AulasAdmin'
 
 import Modalidades    from './views/Modalidades'
 import NovoEventoModal from './views/NovoEventoModal'
+import GestaoUtilizadores from './views/GestaoUtilizadores'
+import PainelGestao from './views/PainelGestao'
 import { authService } from './services/authService'
 
 import ProtectedRoute from './components/ProtectedRoute'
@@ -44,6 +46,8 @@ export default function App() {
           <Route path="/eventos/:id" element={<EventDetailsView />} />
 
           <Route path="/modalidades" element={<Modalidades />} />
+          <Route path="/gestao" element={<PainelGestao />} />
+          <Route path="/gestao/utilizadores" element={<GestaoUtilizadores />} />
         </Route>
 
         {/* Fallback para rotas inexistentes */}
