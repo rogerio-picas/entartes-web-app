@@ -1,8 +1,10 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Clock, CalendarCheck, Megaphone, Loader2 } from 'lucide-react'
-// REMOVIDO: import DashboardHeader from '../components/DashboardHeader'
-import { ActionCard, ClassCard, EventCard, DashboardSection } from '../components/Cards'
+
+
+import {  ClassCard, EventCard, DashboardSection } from '../components/Cards'
+import { Clock, CalendarCheck, Megaphone, Loader2, Check, X, AlertCircle } from 'lucide-react'
+
 import EventModal from '../components/EventModal'
 import { eventService } from '../services/eventService'
 import coachingService from '../services/coachingService'
@@ -18,6 +20,7 @@ export default function Home() {
   const [pendentes, setPendentes] = useState([])
   const [eventos, setEventos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingAction, setLoadingAction] = useState(null)
   const [selectedEventId, setSelectedEventId] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -89,12 +92,8 @@ export default function Home() {
   }
 
   return (
-    /* REMOVIDO: div com min-h-screen e DashboardHeader interno. 
-       O conteúdo agora flui dentro do max-w-1400px definido nas páginas anteriores ou no Layout. */
     <div className="font-['Sora']">
-      
-      {/* Título de Boas-vindas opcional (já que o Header diz "Bem-vindo") */}
-      <div className="mb-8 px-6 md:px-0">
+      <div className="mb-8">
         <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Painel Geral</p>
         <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
           O teu <span className="text-[#006A68] font-semibold">Resumo</span>
@@ -191,40 +190,22 @@ export default function Home() {
                 <Megaphone size={28} className="text-brand-dark" />
                 <h2 className="text-2xl font-bold text-black font-sans">Próximos eventos</h2>
               </div>
+            ) : (
+              <p className="text-sm text-gray-400 italic">
+                Sem eventos de momento.
+              </p>
+            )}
+          </section>
 
-              {eventos.length > 0 ? (
-                <div className="flex flex-col gap-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {eventos.slice(0, 3).map((item) => (
-                      <EventCard key={`evt-${item.id_evento || item.id}`} event={item} onOpen={() => setSelectedEventId(item.id_evento)} />
-                    ))}
-                  </div>
+                    {/* Modal de evento */}
+          {selectedEventId && (
+            <EventModal
+              eventId={selectedEventId}
+              onClose={() => setSelectedEventId(null)}
+            />
+          )}
 
-                  <div className="flex justify-start">
-                    <button
-                      onClick={() => navigate('/Events')}
-                      className="group flex items-center gap-2 text-[#006A68] font-semibold text-sm hover:gap-3 transition-all"
-                    >
-                      Ver todos os eventos
-                      <span className="bg-[#CCE8E6] p-1 rounded-full group-hover:bg-[#006A68] group-hover:text-white transition-colors">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                          <path d="M9 18l6-6-6-6" />
-                        </svg>
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400 italic font-['Sora']">
-                  Sem eventos agendados de momento.
-                </p>
-              )}
-            </section>
-          </>
-        )}
-      </main>
-      {selectedEventId && (
-        <EventModal eventId={selectedEventId} onClose={() => setSelectedEventId(null)} />
+        </main>
       )}
     </div>
   )

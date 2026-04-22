@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-
 const authController = require('../controllers/authController');
+const { loginLimiter } = require('../middlewares/rateLimitMiddleware');  // ✅ Aqui
 
 /**
  * @swagger
@@ -26,6 +26,8 @@ const authController = require('../controllers/authController');
  *       401:
  *         description: Credenciais inválidas
  */
-router.post('/login', authController.login);
+
+
+router.post('/login', loginLimiter, authController.login);  // ✅ Aqui sim
 
 module.exports = router;
