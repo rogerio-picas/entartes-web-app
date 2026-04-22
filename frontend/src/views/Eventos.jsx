@@ -5,7 +5,6 @@ import { EventCard } from '../components/Cards'
 import { useNavigate } from 'react-router-dom'
 import NovoEventoModal from './NovoEventoModal'
 import { authService } from '../services/authService'
-
 export default function Events() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -23,6 +22,7 @@ export default function Events() {
       .then((data) => setEvents(Array.isArray(data) ? data : []))
       .catch((err) => setError(err.message || 'Erro ao carregar eventos.'))
       .finally(() => setLoading(false))
+  
   }
 
   useEffect(() => { loadEvents() }, [])
@@ -30,7 +30,7 @@ export default function Events() {
   return (
     // Removidas divs externas de navegação. O Layout já cuida disso.
     <div className="font-['Sora']">
-      
+
       {/* Cabeçalho de Conteúdo (Seguindo o padrão de Aulas) */}
       <div className="mb-8 flex items-end justify-between">
         <div>
@@ -89,6 +89,7 @@ export default function Events() {
       {!loading && events.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {events.map((event) => (
+            <EventCard key={event.id_evento} event={event} onOpen={() => setSelectedEventId(event.id_evento)} />
             <EventCard key={event.id_evento} event={event} onOpen={() => navigate(`/eventos/${event.id_evento}`)} />
           ))}
         </div>
@@ -102,4 +103,3 @@ export default function Events() {
       )}
     </div>
   )
-}
