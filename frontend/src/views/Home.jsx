@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
-import { coachingService } from '../services/coachingService'
+import coachingService  from '../services/coachingService'
 import { eventService } from '../services/eventService'
 
 import { ClassCard, EventCard as SimpleEventCard } from '../components/Cards'
@@ -58,6 +58,18 @@ function PresencaAlunoCard({ item, onConfirm, onReject, loading }) {
   )
 }
 
+// ── Botão "Ver mais" para as listagens limitadas a 3 cards ──
+function ViewMoreCard({ onClick, label = "Ver mais" }) {
+  return (
+    <button onClick={onClick} className="min-w-[200px] h-auto min-h-[180px] bg-[#F4FBF9]/50 border-2 border-dashed border-[#006A68]/30 rounded-xl p-4 flex flex-col items-center justify-center gap-3 hover:bg-[#CCE8E6] transition-colors text-[#006A68] shrink-0">
+      <div className="w-12 h-12 rounded-full bg-[#006A68] text-white flex items-center justify-center shadow-sm">
+        <Plus size={24} />
+      </div>
+      <span className="text-sm font-bold text-center">{label}</span>
+    </button>
+  )
+}
+
 export default function Home() {
   const navigate = useNavigate()
   const user = authService.getUser()
@@ -107,23 +119,58 @@ export default function Home() {
       // Always fetch events
       const evRes = await eventService.getAll().catch(() => [])
       const evs = Array.isArray(evRes) ? evRes : []
-      setEventos(evs.slice(0, 3))
+      setEventos(evs)
+
+      const normalizeAula = (m) => {
+          let dt = m.data ? new Date(m.data) : null;
+          if (dt && m.hora_inicio) {
+              const hr = new Date(m.hora_inicio);
+              dt.setHours(hr.getHours(), hr.getMinutes(), 0, 0);
+          }
+          
+          let resolvedIdEstado = m.id_estado;
+          if (!resolvedIdEstado && m.estado) {
+              const estadoStr = m.estado.toLowerCase();
+              if (estadoStr.includes('pend') || estadoStr.includes('agend')) resolvedIdEstado = 1;
+              else if (estadoStr.includes('valida')) resolvedIdEstado = 2;
+              else if (estadoStr.includes('confirm')) resolvedIdEstado = 3;
+              else if (estadoStr.includes('conclui') || estadoStr.includes('finaliz')) resolvedIdEstado = 4;
+              else if (estadoStr.includes('cancel')) resolvedIdEstado = 5;
+          }
+
+          return {
+              ...m,
+              id: m.id_marcacao || m.id,
+              _data_raw: dt || m.data,
+              data: dt ? dt.toLocaleDateString('pt-PT') : '—',
+              hora: m.hora_inicio ? new Date(m.hora_inicio).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—',
+              duracao: m.duracao_minutos ? `${m.duracao_minutos} min` : '—',
+              docente: role === 2 
+                  ? (m.alunos?.length > 0 ? m.alunos.map(a => a.nome).join(', ') : 'A aguardar aluno(s)') 
+                  : (m.docente || '—'),
+              ja_validou: m.ja_validou,
+              id_estado: resolvedIdEstado,
+              estado_nome: m.estado || m.estado_nome || '—',
+          };
+      }
 
       if (isAdmin) {
         const [pendentes, todasRes, horasRes, alunosRes] = await Promise.allSettled([
-          coachingService.getAdminPedidos('1,2'), // PENDENTE, EM_VALIDACAO
-          coachingService.getAdminPedidos(), // TODAS (sem filtro para ver confirmadas e concluidas e cancelar?) -- Wait: AdminPedidos só devolve PENDENTES se não tiver estado?
+          coachingService.listarPedidosPendentes({ estados: '1,2' }),
+          coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' }),
           api.get('/relatorio/horas-docente'),
           api.get('/relatorio/alunos'),
         ])
-        const pedPendentes = pendentes.status === 'fulfilled' ? pendentes.value : []
-        const todas = todasRes.status === 'fulfilled' ? todasRes.value : []
+        const rawPendentes = pendentes.status === 'fulfilled' ? (Array.isArray(pendentes.value) ? pendentes.value : (pendentes.value?.data || [])) : []
+        const rawTodas = todasRes.status === 'fulfilled' ? (Array.isArray(todasRes.value) ? todasRes.value : (todasRes.value?.data || [])) : []
+        const pedPendentes = rawPendentes.map(normalizeAula)
+        const todas = rawTodas.map(normalizeAula)
         const horas = horasRes.status === 'fulfilled' && Array.isArray(horasRes.value) ? horasRes.value : []
         const alunos = alunosRes.status === 'fulfilled' && Array.isArray(alunosRes.value) ? alunosRes.value : []
         
         setHorasData(horas)
         setAlunosData(alunos)
-        setCoachings48h(pedPendentes.slice(0, 3))
+        setCoachings48h(pedPendentes)
 
         const hoje = todas.filter(a => new Date(a._data_raw).toDateString() === now.toDateString())
         setStats({
@@ -131,18 +178,20 @@ export default function Home() {
             porValidar: pedPendentes.length,
             concluidas: todas.filter(a => a.id_estado === 4).length
         })
-        setLiveAulas(hoje.filter(a => a.id_estado === 3).slice(0, 3)) // CONFIRMADA
-        setAulasConfirmadas(todas.filter(a => a.id_estado === 3 && new Date(a._data_raw) >= now).slice(0, 3))
+        setLiveAulas(hoje.filter(a => a.id_estado === 3)) // CONFIRMADA
+        setAulasConfirmadas(todas.filter(a => a.id_estado === 3 && new Date(a._data_raw) >= now))
 
       } else if (isDocente) {
-        const minhasAulas = await coachingService.getDocenteAulas().catch(() => [])
+        const res = await coachingService.listarMinhasAulas().catch(() => [])
+        const raw = Array.isArray(res) ? res : (res?.data || [])
+        const minhasAulas = raw.map(normalizeAula)
         
         // Docente não vê Pedidos Pendentes de Coaching (a Coordenação trata da confirmação).
         // Vê apenas Confirmadas e Concluídas.
         setAulasConfirmadas(minhasAulas.filter(a => {
             const d = new Date(a._data_raw)
             return a.id_estado === 3 && d >= now
-        }).slice(0, 3))
+        }))
 
         // Aulas que o docente tem de "concluir" (validar presença pós-aula)
         // Só marcacoes CONFIRMADA mas no passado (aulas dadas recentement). Ou seja, < now
@@ -152,7 +201,9 @@ export default function Home() {
         }))
 
       } else if (isAluno) {
-        const meusPedidos = await coachingService.getAlunoPedidos().catch(() => [])
+        const res = await coachingService.listarMeusPedidos().catch(() => [])
+        const raw = Array.isArray(res) ? res : (res?.data || [])
+        const meusPedidos = raw.map(normalizeAula)
         
         // Pendentes e Confirmação
         setInscricoesAluno(meusPedidos.filter(a => a.id_estado === 1 || a.id_estado === 2))
@@ -161,7 +212,7 @@ export default function Home() {
         setAulasConfirmadas(meusPedidos.filter(a => {
             const d = new Date(a._data_raw)
             return a.id_estado === 3 && d >= now
-        }).slice(0, 3))
+        }))
 
         // Aulas dadas, à espera da validação dupla (CONFIRMADAS no passado)
         setPresencasAluno(meusPedidos.filter(a => {
@@ -311,12 +362,13 @@ export default function Home() {
           <section>
               <SectionHeader icon={Star} title="Aulas a decorrer" action="Ver todas" onAction={() => navigate('/aulas')} />
               <ScrollRow>
-                  {liveAulas.map((a, i) => <LiveClassCard key={a.id} aula={a} idx={i} />)}
+                  {liveAulas.slice(0, 3).map((a, i) => <LiveClassCard key={a.id} aula={a} idx={i} />)}
+                  {liveAulas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais aulas" />}
               </ScrollRow>
           </section>
         )}
 
-        {/* ── ADMIN/DOCENTE: pending requests 48h ──────────────── */}
+        {/* ── ADMIN/DOCENTE: pending requests 48h ────────────────
         {(isAdmin || isDocente) && (
           <section>
             <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Requisições a expirar em 48h"} />
@@ -332,7 +384,7 @@ export default function Home() {
                 </ScrollRow>
             )}
           </section>
-        )}
+        )} */}
 
         {/* ── DOCENTE: Presenças a confirmar ──────────────── */}
         {isDocente && (
@@ -342,9 +394,10 @@ export default function Home() {
                 <p className="text-sm text-gray-400 italic">Sem presenças a confirmar.</p>
             ) : (
                 <ScrollRow>
-                    {presencasDocente.map(item => (
+                    {presencasDocente.slice(0, 3).map(item => (
                         <PresencaDocenteCard key={item.id} item={item} onConfirm={handleConfirmPresencaDocente} onReject={handleRejectAdminDocente} loading={loadingAction} />
                     ))}
+                    {presencasDocente.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais" />}
                 </ScrollRow>
             )}
           </section>
@@ -355,9 +408,10 @@ export default function Home() {
           <section>
             <SectionHeader icon={Clock} title="Presenças por confirmar" />
             <ScrollRow>
-              {presencasAluno.map(item => (
+              {presencasAluno.slice(0, 3).map(item => (
                 <PresencaAlunoCard key={item.id} item={item} onConfirm={handleConfirmarPresencaAluno} onReject={handleRecusarPresencaAluno} loading={loadingAction} />
               ))}
+              {presencasAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais" />}
             </ScrollRow>
           </section>
         )}
@@ -369,11 +423,12 @@ export default function Home() {
                 <p className="text-sm text-[#4A6362] italic">Sem aulas confirmadas agendadas.</p>
             ) : (
                 <ScrollRow>
-                    {aulasConfirmadas.map(a => (
+                    {aulasConfirmadas.slice(0, 3).map(a => (
                         isAdmin 
                         ? <ConfirmedCard key={a.id} aula={a} />
                         : <ClassCard key={a.id} item={a} statusType="confirmada" />
                     ))}
+                    {aulasConfirmadas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais aulas" />}
                 </ScrollRow>
             )}
         </section>
@@ -383,9 +438,10 @@ export default function Home() {
           <section>
             <SectionHeader icon={CalendarCheck} title="Inscrições pendentes" />
             <ScrollRow>
-              {inscricoesAluno.map((item, idx) => (
+              {inscricoesAluno.slice(0, 3).map((item, idx) => (
                 <ClassCard key={item.id || idx} item={item} statusType="pendente" />
               ))}
+              {inscricoesAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais" />}
             </ScrollRow>
           </section>
         )}
@@ -396,15 +452,16 @@ export default function Home() {
                 icon={isAdmin ? CalendarDays : Megaphone}
                 title={isAluno ? "Descobrir eventos" : "Próximos eventos"}
                 action={isAdmin ? "Ver todos" : null}
-                onAction={isAdmin ? () => navigate('/events') : null}
+                onAction={isAdmin ? () => navigate('/eventos') : null}
             />
             {eventos.length === 0 ? (
                 <p className="text-sm text-[#4A6362] italic">Sem eventos agendados.</p>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {eventos.map(item => (
+                    {eventos.slice(0, 3).map(item => (
                       <SimpleEventCard key={item.id_evento} event={item} onOpen={() => setSelectedEventId(item.id_evento)} />
                     ))}
+                    {eventos.length > 3 && <ViewMoreCard onClick={() => navigate('/eventos')} label="Ver todos os eventos" />}
                 </div>
             )}
         </section>

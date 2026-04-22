@@ -62,11 +62,13 @@ const STATUS_COLOR = {
 }
 const STATUS_LABEL = { 1: 'Pendente', 2: 'Confirmado', 3: 'Cancelado', 4: 'Finalizado' }
 
+
+
 // ─── Custom Calendar Event ───────────────────────────────────────────────────
 function EventComponent({ event }) {
     const color = event._isEvent
         ? EVENT_COLOR
-        : getModalityColor(event.modalidade)
+        : getModalityColor(event.modalidade);
 
     return (
         <div
@@ -75,14 +77,55 @@ function EventComponent({ event }) {
                 color: color.text,
                 border: `1px solid ${color.border}`,
             }}
-            className="rounded px-1.5 py-0.5 text-[11px] font-medium truncate overflow-hidden"
+            className="rounded px-1.5 py-0.5 text-[11px] font-medium truncate overflow-hidden h-full"
         >
             <span className="font-semibold">{format(event.start, 'HH:mm')}</span>
             {' '}
             <span className="truncate">{event.title}</span>
         </div>
-    )
+    );
 }
+
+// 2. Componente para renderizar o FUNDO do dia (a célula do calendário)
+// Coloca-o FORA do EventComponent
+const DateCellWrapper = ({ children, value, disponibilidades, onAddClick }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    const temDisponibilidade = useMemo(() => {
+        // Lógica para data específica ou dia da semana
+        const dataStr = format(value, 'yyyy-MM-dd');
+        const diaSemana = value.getDay(); // 0 (Dom) a 6 (Sáb)
+
+        return disponibilidades.some(d => {
+            if (d.data_especifica) {
+                return format(new Date(d.data_especifica), 'yyyy-MM-dd') === dataStr;
+            }
+            return d.dia_semana === diaSemana;
+        });
+    }, [value, disponibilidades]);
+
+    return (
+        <div 
+            className="relative h-full w-full group"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            {children}
+            
+            {temDisponibilidade && isHovered && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onAddClick(value); 
+                    }}
+                    className="absolute top-1 right-1 z-20 bg-[#006A68] text-white p-1 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center"
+                >
+                    <Plus size={14} strokeWidth={3} />
+                </button>
+            )}
+        </div>
+    );
+};
 
 // ─── Custom Toolbar ──────────────────────────────────────────────────────────
 function CustomToolbar({ label, onNavigate, onView, view }) {
