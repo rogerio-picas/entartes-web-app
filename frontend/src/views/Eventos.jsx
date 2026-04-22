@@ -14,7 +14,7 @@ export default function Events() {
   const navigate = useNavigate()
 
   const user = authService.getUser()
-  const isAdmin = user?.role === 1 || user?.role === 2
+  const isAdmin = user?.role === 1
 
   function loadEvents() {
     setLoading(true)
