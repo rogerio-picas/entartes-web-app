@@ -26,8 +26,20 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  get: (path) => request(path),
-  post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) }),
-  put: (path, body) => request(path, { method: 'PUT', body: JSON.stringify(body) }),
-  delete: (path) => request(path, { method: 'DELETE' }),
+  get: (path, options = {}) => {
+    let finalPath = path;
+    if (options.params) {
+      // Limpa params nulos/undefined e constrói a query string ?id_estado=1...
+      const validParams = Object.fromEntries(Object.entries(options.params).filter(([_, v]) => v != null));
+      if (Object.keys(validParams).length > 0) {
+        finalPath += '?' + new URLSearchParams(validParams).toString();
+      }
+      // Remove params de dentro do options para não conflituar com a tag Headers do fetch original
+      delete options.params;
+    }
+    return request(finalPath, options);
+  },
+  post: (path, body, options = {}) => request(path, { method: 'POST', body: JSON.stringify(body), ...options }),
+  put: (path, body, options = {}) => request(path, { method: 'PUT', body: JSON.stringify(body), ...options }),
+  delete: (path, options = {}) => request(path, { method: 'DELETE', ...options }),
 }

@@ -6,7 +6,7 @@ import {
     Users, MapPin, Music, User, TrendingUp, Star, Megaphone
 } from 'lucide-react'
 import { api } from '../services/api'
-import { aulasService } from '../services/aulasService'
+import coachingService from '../services/coachingService'
 import { eventService } from '../services/eventService'
 import NovoEventoModal from './NovoEventoModal'
 
@@ -327,13 +327,23 @@ export default function HomeAdmin() {
         setLoading(true)
         try {
             const [todasRes, eventosRes, horasRes, alunosRes] = await Promise.allSettled([
-                aulasService.getTodas(),
+                coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' }),
                 eventService.getAll(),
                 api.get('/relatorio/horas-docente'),
                 api.get('/relatorio/alunos'),
             ])
 
-            const todas = todasRes.status === 'fulfilled' ? todasRes.value : []
+            const rawTodas = todasRes.status === 'fulfilled' ? (Array.isArray(todasRes.value) ? todasRes.value : (todasRes.value?.data || [])) : []
+            const todas = rawTodas.map(a => ({
+                ...a,
+                id: a.id_marcacao,
+                _data_raw: a.data,
+                data: new Date(a.data).toLocaleDateString('pt-PT'),
+                hora: new Date(a.hora_inicio).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+                duracao: formatDuration(a.duracao_minutos),
+                sala: a.sala_atual
+            }))
+            
             const evs = eventosRes.status === 'fulfilled' && Array.isArray(eventosRes.value) ? eventosRes.value : []
             const horas = horasRes.status === 'fulfilled' && Array.isArray(horasRes.value) ? horasRes.value : []
             const alunos = alunosRes.status === 'fulfilled' && Array.isArray(alunosRes.value) ? alunosRes.value : []
@@ -348,23 +358,23 @@ export default function HomeAdmin() {
             })
             setStats({
                 hoje: hoje.length,
-                porValidar: todas.filter(a => a.id_estado === 1).length,
+                porValidar: todas.filter(a => a.id_estado === 1 || a.id_estado === 2).length,
                 concluidas: todas.filter(a => a.id_estado === 4).length
             })
 
             // Live — happening now (simplification: today + confirmed)
-            setLiveAulas(hoje.filter(a => a.id_estado === 2).slice(0, 3))
+            setLiveAulas(hoje.filter(a => a.id_estado === 3).slice(0, 3))
 
             // Coachings to validate in 48h
             setCoachings48h(todas.filter(a => {
                 const d = new Date(a._data_raw)
-                return a.id_estado === 1 && d >= now && d <= in48h
+                return (a.id_estado === 1 || a.id_estado === 2) && d >= now && d <= in48h
             }).slice(0, 3))
 
             // Confirmed upcoming
             setConfirmedAulas(todas.filter(a => {
                 const d = new Date(a._data_raw)
-                return a.id_estado === 2 && d >= now
+                return a.id_estado === 3 && d >= now
             }).slice(0, 3))
 
             setEventos(evs.slice(0, 3))
@@ -380,24 +390,28 @@ export default function HomeAdmin() {
     useEffect(() => { loadAll() }, [loadAll])
 
     async function handleConfirm(id) {
+        const id_sala = window.prompt("Para confirmar, insira o ID numérico da Sala (ex: 1):");
+        if (!id_sala) return;
         setLoadingAction(id)
         try {
-            await aulasService.updateEstado(id, aulasService.ESTADOS.CONFIRMADA)
+            await coachingService.confirmarMarcacao(id, parseInt(id_sala))
             setCoachings48h(prev => prev.filter(a => a.id !== id))
             setStats(s => ({ ...s, porValidar: Math.max(0, s.porValidar - 1) }))
             showToast('Coaching confirmado!')
-        } catch { showToast('Erro ao confirmar.', 'error') }
+        } catch(e) { showToast(e.response?.data?.message || 'Erro ao confirmar.', 'error') }
         finally { setLoadingAction(null) }
     }
 
     async function handleReject(id) {
+        const motivo = window.prompt("Motivo da rejeição:");
+        if (!motivo) return;
         setLoadingAction(id)
         try {
-            await aulasService.updateEstado(id, aulasService.ESTADOS.CANCELADA)
+            await coachingService.rejeitarMarcacao(id, motivo)
             setCoachings48h(prev => prev.filter(a => a.id !== id))
             setStats(s => ({ ...s, porValidar: Math.max(0, s.porValidar - 1) }))
-            showToast('Coaching cancelado.', 'error')
-        } catch { showToast('Erro ao cancelar.', 'error') }
+            showToast('Coaching rejeitado.', 'error')
+        } catch(e) { showToast(e.response?.data?.message || 'Erro ao rejeitar.', 'error') }
         finally { setLoadingAction(null) }
     }
 

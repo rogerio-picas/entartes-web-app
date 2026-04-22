@@ -3,16 +3,16 @@ import {
     ArrowUpDown, Plus, RefreshCw, AlertCircle, CheckCircle2,
     XCircle, Clock, Check, X, BookOpen, Filter, ChevronDown
 } from 'lucide-react'
-import { aulasService } from '../services/aulasService'
+import coachingService from '../services/coachingService'
 import NovoEventoModal from './NovoEventoModal'
 
 // ─── Status config ─────────────────────────────────────────────────────────────
 const ESTADOS = {
-    1: { label: 'Pendente',   icon: '!', color: 'text-[#C32E81]',  ring: '' },
-    2: { label: 'Confirmado', icon: '✓', color: 'text-[#45C92B]',  ring: '' },
-    3: { label: 'Cancelado',  icon: '✗', color: 'text-[#BA1A1A]',  ring: '' },
-    4: { label: 'Finalizado', icon: '✓', color: 'text-[#006A68]',  ring: '' },
-    5: { label: 'A decorrer', icon: '🩰', color: 'text-[#FFC69C]', ring: '' },
+    1: { label: 'Pendente',     icon: '!', color: 'text-[#C32E81]' },
+    2: { label: 'Em Validação', icon: '?', color: 'text-[#F59E0B]' },
+    3: { label: 'Confirmada',   icon: '✓', color: 'text-[#45C92B]' },
+    4: { label: 'Concluída',    icon: '★', color: 'text-[#006A68]' },
+    5: { label: 'Cancelada',    icon: '✗', color: 'text-[#BA1A1A]' },
 }
 function getEstado(id, nome) {
     if (ESTADOS[id]) return ESTADOS[id]
@@ -84,16 +84,77 @@ export default function AulasAdmin() {
         setLoading(true)
         setError('')
         try {
-            const data = await aulasService.getTodas()
-            setAulas(data)
+            // Passamos os estados todos para a coordenadora poder ver o histórico e cancelar confirmadas
+            const response = await coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' })
+            
+            // A instância da API pode retornar diretamente o array, validamos isso:
+            const rawData = Array.isArray(response) ? response : (response?.data || [])
+            
+            const formatted = rawData.map(m => {
+                const dt = m.data ? new Date(m.data) : null;
+                const hr = m.hora_inicio ? new Date(m.hora_inicio) : null;
+                
+                return {
+                id: m.id_marcacao,
+                data: (dt && !isNaN(dt)) ? dt.toLocaleDateString('pt-PT') : '—',
+                hora: (hr && !isNaN(hr)) ? hr.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—',
+                docente: m.docente || '—',
+                modalidade: m.modalidade || '—',
+                numero_alunos_pretendidos: m.numero_alunos_pretendidos,
+                alunos: m.alunos || [],
+                id_estado: m.id_estado,
+                estado_nome: m.estado || '—',
+                sala: m.sala_atual || '—'
+            }})
+            setAulas(formatted)
         } catch (e) {
-            setError(e.message || 'Erro ao carregar coachings.')
+            setError(e.response?.data?.message || e.message || 'Erro ao carregar coachings.')
         } finally {
             setLoading(false)
         }
     }, [])
 
     useEffect(() => { fetchAulas() }, [fetchAulas])
+
+    // ─── Ações da Coordenação ──────────────────────────────────────────────────
+    const handleConfirm = async (id_marcacao) => {
+        const id_sala = window.prompt("Para confirmar, insira o ID numérico da Sala (ex: 1):");
+        if (!id_sala) return;
+
+        try {
+            await coachingService.confirmarMarcacao(id_marcacao, parseInt(id_sala));
+            showToast('Marcação confirmada com sucesso!');
+            fetchAulas();
+        } catch (e) {
+            showToast(e.response?.data?.message || e.message || 'Erro ao confirmar.', 'error');
+        }
+    }
+
+    const handleReject = async (id_marcacao) => {
+        const motivo = window.prompt("Motivo da rejeição:");
+        if (!motivo) return;
+
+        try {
+            await coachingService.rejeitarMarcacao(id_marcacao, motivo);
+            showToast('Marcação rejeitada com sucesso!');
+            fetchAulas();
+        } catch (e) {
+            showToast(e.response?.data?.message || e.message || 'Erro ao rejeitar.', 'error');
+        }
+    }
+
+    const handleCancel = async (id_marcacao) => {
+        const motivo = window.prompt("Motivo do cancelamento:");
+        if (!motivo) return;
+
+        try {
+            await coachingService.cancelarMarcacaoConfirmada(id_marcacao, motivo);
+            showToast('Marcação cancelada com sucesso!');
+            fetchAulas();
+        } catch (e) {
+            showToast(e.response?.data?.message || e.message || 'Erro ao cancelar.', 'error');
+        }
+    }
 
     const modalidades = ['todas', ...new Set(aulas.map(a => a.modalidade).filter(Boolean))]
     const estados = ['todos', ...new Set(aulas.map(a => a.estado_nome).filter(Boolean))]
@@ -110,9 +171,9 @@ export default function AulasAdmin() {
                 {/* Header */}
                 <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
                     <div>
-                        <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Gestão de Sessões</p>
+                        <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Gestão da Coordenação</p>
                         <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
-                            Lista de <span className="text-[#006A68] font-semibold">Coachings</span>
+                            Pedidos de <span className="text-[#006A68] font-semibold">Coaching</span>
                         </h1>
                     </div>
                     <div className="flex items-center gap-3">
@@ -179,7 +240,7 @@ export default function AulasAdmin() {
                         <TH>Modalidade</TH>
                         <TH>N.º Inscritos</TH>
                         <TH>Estado</TH>
-                        <div className="flex-1 px-3 py-3" />
+                        <TH>Ações</TH>
                     </div>
 
                     {loading ? (
@@ -230,9 +291,20 @@ export default function AulasAdmin() {
                                     </div>
                                     {/* Action */}
                                     <div className="flex-1 flex items-center justify-center px-4 py-3.5">
-                                        <button className="text-xs font-semibold text-[#006A68] hover:underline">
-                                            Ver mais
-                                        </button>
+                                        <div className="flex gap-2">
+                                            {(a.id_estado === 1 || a.id_estado === 2) && (
+                                                <>
+                                                    <button onClick={() => handleConfirm(a.id)} className="text-[10px] font-bold text-white bg-[#049A59] px-2 py-1 rounded hover:bg-[#037A47] transition-colors">Confirmar</button>
+                                                    <button onClick={() => handleReject(a.id)} className="text-[10px] font-bold text-white bg-[#BA1A1A] px-2 py-1 rounded hover:bg-[#93000A] transition-colors">Rejeitar</button>
+                                                </>
+                                            )}
+                                            {a.id_estado === 3 && (
+                                                <button onClick={() => handleCancel(a.id)} className="text-[10px] font-bold text-white bg-[#BA1A1A] px-2 py-1 rounded hover:bg-[#93000A] transition-colors">Cancelar</button>
+                                            )}
+                                            {a.id_estado > 3 && (
+                                                <span className="text-xs text-gray-400">—</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             )
