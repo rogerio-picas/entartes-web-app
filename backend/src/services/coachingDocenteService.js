@@ -31,6 +31,10 @@ async function listarMinhasAulas(id_docente, { id_estado = null } = {}) {
           },
         },
       },
+      participacao_conclusao: {
+        where: { id_docente },
+        select: { confirmou_conclusao: true }
+      },
     },
     orderBy: { data_a_realizar: 'desc' },
   });
@@ -44,6 +48,7 @@ async function listarMinhasAulas(id_docente, { id_estado = null } = {}) {
     duracao_minutos: m.duracao_minutos,
     estado: m.estado_marcacao?.nome ?? '—',
     id_estado: m.id_estado,
+    ja_validou: m.participacao_conclusao?.some(p => p.confirmou_conclusao) ?? false,
     alunos: m.aluno_marcacao.map((am) => ({
       id_aluno: am.id_aluno,
       nome: `${am.aluno.utilizador.nome} ${am.aluno.utilizador.apelido}`,
