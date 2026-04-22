@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
-import { aulasService, mapMarcacao } from '../services/aulasService'
+import { coachingService } from '../services/coachingService'
 import { eventService } from '../services/eventService'
 
 import { ClassCard, EventCard as SimpleEventCard } from '../components/Cards'
@@ -109,57 +109,65 @@ export default function Home() {
       const evs = Array.isArray(evRes) ? evRes : []
       setEventos(evs.slice(0, 3))
 
-      if (isAdmin || isDocente) {
-        const [todasRes, horasRes, alunosRes] = await Promise.allSettled([
-          aulasService.getTodas(),
-          isAdmin ? api.get('/relatorio/horas-docente') : Promise.resolve([]),
-          isAdmin ? api.get('/relatorio/alunos') : Promise.resolve([]),
+      if (isAdmin) {
+        const [pendentes, todasRes, horasRes, alunosRes] = await Promise.allSettled([
+          coachingService.getAdminPedidos('1,2'), // PENDENTE, EM_VALIDACAO
+          coachingService.getAdminPedidos(), // TODAS (sem filtro para ver confirmadas e concluidas e cancelar?) -- Wait: AdminPedidos só devolve PENDENTES se não tiver estado?
+          api.get('/relatorio/horas-docente'),
+          api.get('/relatorio/alunos'),
         ])
-
+        const pedPendentes = pendentes.status === 'fulfilled' ? pendentes.value : []
         const todas = todasRes.status === 'fulfilled' ? todasRes.value : []
+        const horas = horasRes.status === 'fulfilled' && Array.isArray(horasRes.value) ? horasRes.value : []
+        const alunos = alunosRes.status === 'fulfilled' && Array.isArray(alunosRes.value) ? alunosRes.value : []
+        
+        setHorasData(horas)
+        setAlunosData(alunos)
+        setCoachings48h(pedPendentes.slice(0, 3))
 
-        if (isAdmin) {
-          const horas = horasRes.status === 'fulfilled' && Array.isArray(horasRes.value) ? horasRes.value : []
-          const alunos = alunosRes.status === 'fulfilled' && Array.isArray(alunosRes.value) ? alunosRes.value : []
-          setHorasData(horas)
-          setAlunosData(alunos)
+        const hoje = todas.filter(a => new Date(a._data_raw).toDateString() === now.toDateString())
+        setStats({
+            hoje: hoje.length,
+            porValidar: pedPendentes.length,
+            concluidas: todas.filter(a => a.id_estado === 4).length
+        })
+        setLiveAulas(hoje.filter(a => a.id_estado === 3).slice(0, 3)) // CONFIRMADA
+        setAulasConfirmadas(todas.filter(a => a.id_estado === 3 && new Date(a._data_raw) >= now).slice(0, 3))
 
-          const hoje = todas.filter(a => new Date(a._data_raw).toDateString() === now.toDateString())
-          setStats({
-              hoje: hoje.length,
-              porValidar: todas.filter(a => a.id_estado === 1).length,
-              concluidas: todas.filter(a => a.id_estado === 4).length
-          })
-          setLiveAulas(hoje.filter(a => a.id_estado === 2).slice(0, 3))
-        }
-
-        // Shared logic for Admin & Docente: id_estado === 1 in 48h
-        setCoachings48h(todas.filter(a => {
+      } else if (isDocente) {
+        const minhasAulas = await coachingService.getDocenteAulas().catch(() => [])
+        
+        // Docente não vê Pedidos Pendentes de Coaching (a Coordenação trata da confirmação).
+        // Vê apenas Confirmadas e Concluídas.
+        setAulasConfirmadas(minhasAulas.filter(a => {
             const d = new Date(a._data_raw)
-            return a.id_estado === 1 && d >= now && d <= in48h
-        }).slice(0, 3)) // Docentes see requisicoes, Admins see "Coachings a validar"
-
-        if (isDocente) {
-          setPresencasDocente(todas.filter(a => {
-            const d = new Date(a._data_raw)
-            return a.id_estado === 4 && d >= new Date(now - 48*3600000)
-          }))
-        }
-
-        setAulasConfirmadas(todas.filter(a => {
-            const d = new Date(a._data_raw)
-            return a.id_estado === 2 && d >= now
+            return a.id_estado === 3 && d >= now
         }).slice(0, 3))
 
-      } else if (isAluno) {
-        // Aluno fetch logic
-        const aulasRes = await api.get('/horario/minhas-aulas').catch(() => [])
-        const objArray = Array.isArray(aulasRes?.data) ? aulasRes.data : Array.isArray(aulasRes) ? aulasRes : []
-        const minhas = objArray.map(mapMarcacao)
+        // Aulas que o docente tem de "concluir" (validar presença pós-aula)
+        // Só marcacoes CONFIRMADA mas no passado (aulas dadas recentement). Ou seja, < now
+        setPresencasDocente(minhasAulas.filter(a => {
+            const d = new Date(a._data_raw)
+            return a.id_estado === 3 && d < now
+        }))
 
-        setPresencasAluno(minhas.filter(a => a.id_estado === 4))
-        setAulasConfirmadas(minhas.filter(a => a.id_estado === 2))
-        setInscricoesAluno(minhas.filter(a => a.id_estado === 1))
+      } else if (isAluno) {
+        const meusPedidos = await coachingService.getAlunoPedidos().catch(() => [])
+        
+        // Pendentes e Confirmação
+        setInscricoesAluno(meusPedidos.filter(a => a.id_estado === 1 || a.id_estado === 2))
+        
+        // Aulas Agendadas Efetivas (CONFIRMADAS no futuro)
+        setAulasConfirmadas(meusPedidos.filter(a => {
+            const d = new Date(a._data_raw)
+            return a.id_estado === 3 && d >= now
+        }).slice(0, 3))
+
+        // Aulas dadas, à espera da validação dupla (CONFIRMADAS no passado)
+        setPresencasAluno(meusPedidos.filter(a => {
+            const d = new Date(a._data_raw)
+            return a.id_estado === 3 && d < now
+        }))
       }
 
     } catch (e) {
@@ -171,61 +179,69 @@ export default function Home() {
 
   useEffect(() => { loadData() }, [loadData])
 
-
-  // Actions (Admin & Docente)
-  async function handleConfirmAdminDocente(id, id_sala = null) {
-    setLoadingAction(id)
+  // ── Actions (Admin) ──
+  async function handleConfirmAdminDocente(id_marcacao, id_sala = null) {
+    if (!isAdmin) return; // Coachings são confirmados apenas pelo admin
+    if (!id_sala) {
+        showToast('Tens de escolher uma sala primeiro!', 'error')
+        return;
+    }
+    setLoadingAction(id_marcacao)
     try {
-      await aulasService.updateEstado(id, 2)
-      if (isAdmin && id_sala) {
-        await api.patch(`/aulas/${id}/sala`, { id_sala }).catch(() => {})
-      }
-      setCoachings48h(prev => prev.filter(a => a.id !== id))
-      if (isAdmin) setStats(s => ({ ...s, porValidar: Math.max(0, s.porValidar - 1) }))
-      showToast(isAdmin ? 'Coaching confirmado!' : 'Requisição aceite com sucesso!')
-    } catch { showToast('Erro na ação.', 'error') }
+      await api.post('/coaching/confirmar-marcacao', { id_marcacao, id_sala })
+      setCoachings48h(prev => prev.filter(a => a.id !== id_marcacao))
+      setStats(s => ({ ...s, porValidar: Math.max(0, s.porValidar - 1) }))
+      showToast('Coaching confirmado. A sala foi alocada!', 'success')
+      loadData()
+    } catch (err) { showToast(err.response?.data?.message || 'Erro ao confirmar.', 'error') }
     finally { setLoadingAction(null) }
   }
 
-  async function handleRejectAdminDocente(id) {
-    setLoadingAction(id)
+  async function handleRejectAdminDocente(id_marcacao) {
+    if (!isAdmin) return;
+    setLoadingAction(id_marcacao)
     try {
-      await aulasService.updateEstado(id, 3) 
-      setCoachings48h(prev => prev.filter(a => a.id !== id))
-      if (isAdmin) setStats(s => ({ ...s, porValidar: Math.max(0, s.porValidar - 1) }))
-      showToast('Cancelado com sucesso.', 'success')
-    } catch { showToast('Erro na ação.', 'error') }
+      await api.post('/coaching/rejeitar-marcacao', { id_marcacao, motivo: 'Cancelado via Dashboard' })
+      setCoachings48h(prev => prev.filter(a => a.id !== id_marcacao))
+      setStats(s => ({ ...s, porValidar: Math.max(0, s.porValidar - 1) }))
+      showToast('Coaching rejeitado.', 'success')
+    } catch (err) { showToast(err.response?.data?.message || 'Erro ao rejeitar.', 'error') }
     finally { setLoadingAction(null) }
   }
 
-  async function handleConfirmPresencaDocente(id) {
-    setLoadingAction(id)
+  // ── Actions (Docente) ──
+  async function handleConfirmPresencaDocente(id_marcacao) {
+    setLoadingAction(id_marcacao)
     try {
-      await aulasService.updateEstado(id, 4)
-      setPresencasDocente(prev => prev.filter(a => a.id !== id))
-    } catch(e) { showToast('Erro ao validar.', 'error') }
+      await api.post(`/coaching/docente/conclusao-sessao/${id_marcacao}`)
+      setPresencasDocente(prev => prev.filter(a => a.id !== id_marcacao))
+      showToast('Sessão validada com sucesso!', 'success')
+      loadData()
+    } catch(err) { showToast(err.response?.data?.message || 'Erro ao validar a sessão.', 'error') }
     finally { setLoadingAction(null) }
   }
 
-
-  // Actions (Aluno)
-  async function handleConfirmarPresencaAluno(id) {
-    setLoadingAction(id)
+  // ── Actions (Aluno) ──
+  async function handleConfirmarPresencaAluno(id_marcacao) {
+    setLoadingAction(id_marcacao)
     try {
-      await api.patch(`/aulas/${id}/estado`, { novoEstadoId: 5 })
-      setPresencasAluno(prev => prev.filter(a => a.id !== id))
-      showToast('Presença confirmada!', 'success')
-    } catch (err) { showToast('Erro ao confirmar.', 'error') }
+      await api.post(`/coaching/aluno/conclusao-sessao/${id_marcacao}`)
+      setPresencasAluno(prev => prev.filter(a => a.id !== id_marcacao))
+      showToast('Sessão validada da tua parte!', 'success')
+      loadData()
+    } catch (err) { showToast(err.response?.data?.message || 'Erro ao validar.', 'error') }
     finally { setLoadingAction(null) }
   }
 
   async function handleRecusarPresencaAluno(id) {
     setLoadingAction(id)
     try {
-      await api.patch(`/aulas/${id}/estado`, { novoEstadoId: 6 }) // Ex: "Marcou falta"
+      // API aluno para cancelar um pedido
+      await api.delete(`/coaching/pedido/${id}/cancelar`)
       setPresencasAluno(prev => prev.filter(a => a.id !== id))
-      showToast('Falta marcada.', 'success')
-    } catch (err) { showToast('Erro ao rejeitar.', 'error') }
+      showToast('Pedido cancelado ou recusado.', 'success')
+      loadData()
+    } catch (err) { showToast(err.response?.data?.message || 'Erro ao cancelar.', 'error') }
     finally { setLoadingAction(null) }
   }
 
