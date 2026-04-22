@@ -1,4 +1,4 @@
-import { Clock, CalendarCheck, CalendarDays, X, Check, Megaphone, User, Calendar as CalendarIcon } from 'lucide-react'
+import { Clock, CalendarCheck, CalendarDays, X, Check, Megaphone, User, Calendar as CalendarIcon, MapPin } from 'lucide-react'
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -22,14 +22,18 @@ export function EventCard({ event, onOpen }) {
         </span>
       </div>
 
+      <div className="flex items-center gap-1.5 text-sm text-[#4A6362] font-medium">
+        <MapPin size={14} />
+        {event.local || 'Local a definir'}
+      </div>
+
       {event.descricao && (
         <p className="text-[#4A6362] text-sm leading-relaxed line-clamp-3 font-['Sora']">
           {event.descricao}
         </p>
       )}
 
-      <div className="mt-auto pt-4 border-t border-[#4a6362]/10 flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">ID #{event.id_evento}</span>
+      <div className="mt-auto pt-4 border-t border-[#4a6362]/10 flex items-center justify-end">
         <button onClick={onOpen} className="text-xs font-semibold text-[#006A68] hover:underline">Ver detalhes</button>
       </div>
     </div>

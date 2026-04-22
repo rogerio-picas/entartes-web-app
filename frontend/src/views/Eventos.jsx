@@ -1,33 +1,52 @@
 import { useState, useEffect } from 'react'
 import { eventService } from '../services/eventService'
-import { Calendar as CalendarIcon, AlertCircle, Loader2 } from 'lucide-react'
-import EventModal from '../components/EventModal'
+import { Calendar as CalendarIcon, AlertCircle, Loader2, Plus } from 'lucide-react'
 import { EventCard } from '../components/Cards'
+import { useNavigate } from 'react-router-dom'
+import NovoEventoModal from './NovoEventoModal'
+import { authService } from '../services/authService'
 
 export default function Events() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [selectedEventId, setSelectedEventId] = useState(null)
+  const [showNovo, setShowNovo] = useState(false)
+  const navigate = useNavigate()
 
-  useEffect(() => {
+  const user = authService.getUser()
+  const isAdmin = user?.role === 1 || user?.role === 2
+
+  function loadEvents() {
+    setLoading(true)
     eventService
       .getAll()
       .then((data) => setEvents(Array.isArray(data) ? data : []))
       .catch((err) => setError(err.message || 'Erro ao carregar eventos.'))
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { loadEvents() }, [])
 
   return (
     // Removidas divs externas de navegação. O Layout já cuida disso.
     <div className="font-['Sora']">
       
       {/* Cabeçalho de Conteúdo (Seguindo o padrão de Aulas) */}
-      <div className="mb-8">
-        <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Agenda Cultural & Académica</p>
-        <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
-          Próximos <span className="text-[#006A68] font-semibold">Eventos</span>
-        </h1>
+      <div className="mb-8 flex items-end justify-between">
+        <div>
+          <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Agenda Cultural & Académica</p>
+          <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
+            Próximos <span className="text-[#006A68] font-semibold">Eventos</span>
+          </h1>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={() => setShowNovo(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#006A68] text-white font-semibold rounded-xl hover:bg-[#00504E] transition-colors text-sm"
+          >
+            <Plus size={16} /> Criar Evento
+          </button>
+        )}
       </div>
 
       {/* Estado: Carregando */}
@@ -70,13 +89,16 @@ export default function Events() {
       {!loading && events.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {events.map((event) => (
-            <EventCard key={event.id_evento} event={event} onOpen={() => setSelectedEventId(event.id_evento)} />
+            <EventCard key={event.id_evento} event={event} onOpen={() => navigate(`/eventos/${event.id_evento}`)} />
           ))}
         </div>
       )}
 
-      {selectedEventId && (
-        <EventModal eventId={selectedEventId} onClose={() => setSelectedEventId(null)} />
+      {showNovo && (
+        <NovoEventoModal
+          onClose={() => setShowNovo(false)}
+          onSuccess={() => { setShowNovo(false); loadEvents() }}
+        />
       )}
     </div>
   )
