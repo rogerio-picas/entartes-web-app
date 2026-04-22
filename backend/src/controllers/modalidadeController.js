@@ -5,7 +5,8 @@ const mapDocentes = (docente_modalidade) =>
     docente_modalidade.map(dm => ({
         id_docente: dm.id_docente,
         nome: dm.docente.utilizador.nome,
-        apelido: dm.docente.utilizador.apelido
+        apelido: dm.docente.utilizador.apelido,
+        codigo_username: dm.docente.utilizador.codigo_username,
     }));
 
 const listModalidades = async (req, res) => {
@@ -27,7 +28,7 @@ const listModalidades = async (req, res) => {
                     include: {
                         docente: {
                             include: {
-                                utilizador: { select: { nome: true, apelido: true } }
+                                utilizador: { select: { nome: true, apelido: true, codigo_username: true } }
                             }
                         }
                     }
@@ -58,7 +59,7 @@ const getModalidade = async (req, res) => {
                     include: {
                         docente: {
                             include: {
-                                utilizador: { select: { nome: true, apelido: true } }
+                                utilizador: { select: { nome: true, apelido: true, codigo_username: true } }
                             }
                         }
                     }
@@ -156,7 +157,7 @@ const associarDocente = async (req, res) => {
             include: {
                 docente: {
                     include: {
-                        utilizador: { select: { nome: true, apelido: true } }
+                        utilizador: { select: { nome: true, apelido: true, codigo_username: true } }
                     }
                 }
             }

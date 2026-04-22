@@ -15,15 +15,16 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
     }
 
 
+    const isAdmin = user?.role === 1
+
     const navItems = [
         { label: 'Início', path: '/home', icon: Home },
         { label: 'Horário', path: '/horario', icon: Calendar },
         { label: 'Aulas', path: '/aulas', icon: CalendarDays },
+        ...(isAdmin ? [{ label: 'Painel de Gestão', path: '/gestao', icon: LayoutGrid }] : []),
         { label: 'Escola', path: '/escola', icon: GraduationCap },
         { label: 'Eventos', path: '/eventos', icon: Calendar },
-
         { label: 'Perfil', path: '/profile', icon: User },
-
     ]
 
     return (
@@ -52,13 +53,13 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                         <button
                             key={item.label}
                             onClick={() => navigate(item.path)}
-                            className="relative flex flex-col items-center justify-center w-[88px] h-16 group outline-none"
+                            className="relative flex flex-col items-center justify-center min-w-[88px] px-2 h-16 group outline-none"
                         >
                             <div className={`flex items-center justify-center w-16 h-8 rounded-full mb-1 transition-colors
                                 ${isActive ? 'bg-brand-light' : 'bg-transparent group-hover:bg-brand-light/50'}`}>
                                 <Icon size={20} className={isActive ? 'text-[#324B4A]' : 'text-brand-darkest group-hover:text-[#324B4A]'} />
                             </div>
-                            <span className={`text-xs font-medium tracking-wide ${isActive ? 'text-[#324B4A]' : 'text-brand-darkest'}`}>
+                            <span className={`text-xs font-medium tracking-wide text-center leading-tight ${isActive ? 'text-[#324B4A]' : 'text-brand-darkest'}`}>
                                 {item.label}
                             </span>
                         </button>
