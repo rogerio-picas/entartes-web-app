@@ -6,7 +6,7 @@ import {
 import { api } from '../services/api'
 import { authService } from '../services/authService'
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Field wrapper ─────────────────────────────────────────────────────────────
 function Field({ label, icon: Icon, error, children }) {
     return (
         <div className="flex flex-col gap-1.5">
@@ -30,7 +30,7 @@ const inputCls = (hasError) =>
         ? 'border-red-300 focus:border-red-500'
         : 'border-[#BEC9C7] focus:border-[#006A68]'}`
 
-// Password strength meter
+// ─── Password strength meter ──────────────────────────────────────────────────
 function PasswordStrength({ password }) {
     if (!password) return null
     const checks = [
@@ -59,11 +59,7 @@ function PasswordStrength({ password }) {
     )
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-/**
- * Lê o payload do JWT guardado no localStorage sem verificar a assinatura.
- * Serve apenas para extrair o `id` do utilizador no frontend.
- */
+// ─── Lê o id do utilizador directamente do JWT (sem verificar assinatura) ─────
 function getIdFromToken() {
     try {
         const token = localStorage.getItem('token')
@@ -80,10 +76,8 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
     const user = authService.getUser()
     const panelRef = useRef(null)
 
-    // Tabs
     const [tab, setTab] = useState('dados') // 'dados' | 'password'
 
-    // Dados pessoais form
     const [form, setForm] = useState({
         nome: '',
         apelido: '',
@@ -93,7 +87,6 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
         nif: '',
     })
 
-    // Password form
     const [passForm, setPassForm] = useState({
         password_atual: '',
         nova_password: '',
@@ -101,7 +94,6 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
     })
     const [showPass, setShowPass] = useState({ atual: false, nova: false, confirmar: false })
 
-    // UI state
     const [loading, setLoading] = useState(true)
     const [loadError, setLoadError] = useState('')
     const [saving, setSaving] = useState(false)
@@ -109,7 +101,8 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
     const [passErrors, setPassErrors] = useState({})
     const [successMsg, setSuccessMsg] = useState('')
 
-    // Load user data — usa /auth/me para não depender de permissões de role
+    // ── Carregar dados via GET /api/auth/me ───────────────────────────────────
+    // Acessível a qualquer role autenticado — não depende de permissões de utilizador.
     useEffect(() => {
         api.get('/auth/me')
             .then(data => {
@@ -123,7 +116,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                         : '',
                     nif: data.nif ?? '',
                 })
-                // Actualiza localStorage com dados completos
+                // Actualiza localStorage para o header mostrar o nome correcto
                 const stored = authService.getUser()
                 localStorage.setItem('user', JSON.stringify({
                     ...stored,
@@ -132,25 +125,22 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                     apelido: data.apelido,
                 }))
             })
-            .catch(err => {
-                setLoadError(err.message || 'Erro ao carregar os teus dados.')
-            })
+            .catch(err => setLoadError(err.message || 'Erro ao carregar os teus dados.'))
             .finally(() => setLoading(false))
     }, [])
 
-    // Close on Escape
+    // Fechar com Escape
     useEffect(() => {
         const onKey = (e) => { if (e.key === 'Escape') onClose() }
         document.addEventListener('keydown', onKey)
         return () => document.removeEventListener('keydown', onKey)
     }, [onClose])
 
-    // Close on outside click
+    // Fechar ao clicar fora
     useEffect(() => {
         const onClick = (e) => {
             if (panelRef.current && !panelRef.current.contains(e.target)) onClose()
         }
-        // Delay to avoid instant close on open
         const t = setTimeout(() => document.addEventListener('mousedown', onClick), 100)
         return () => { clearTimeout(t); document.removeEventListener('mousedown', onClick) }
     }, [onClose])
@@ -158,18 +148,13 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
     function set(k, v) { setForm(prev => ({ ...prev, [k]: v })); setErrors(prev => ({ ...prev, [k]: '' })) }
     function setPass(k, v) { setPassForm(prev => ({ ...prev, [k]: v })); setPassErrors(prev => ({ ...prev, [k]: '' })) }
 
-    // Validate dados pessoais
     function validateDados() {
         const e = {}
         if (!form.nome.trim()) e.nome = 'Nome é obrigatório'
-        if (!form.email.trim()) e.email = 'Email é obrigatório'
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Email inválido'
         if (form.telemovel && !/^\d{9,}$/.test(form.telemovel.replace(/\s/g, ''))) e.telemovel = 'Telemóvel inválido'
-        if (form.nif && !/^\d{9}$/.test(form.nif)) e.nif = 'NIF deve ter 9 dígitos'
         return e
     }
 
-    // Validate password
     function validatePassword() {
         const e = {}
         if (!passForm.password_atual) e.password_atual = 'Insere a password atual'
@@ -179,6 +164,8 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
         return e
     }
 
+    // ── Guardar dados pessoais ────────────────────────────────────────────────
+    // PUT /api/users/perfil/dados-pessoais/:id  (role [1,2,3])
     async function handleSaveDados() {
         const e = validateDados()
         if (Object.keys(e).length) { setErrors(e); return }
@@ -187,17 +174,12 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
         setSaving(true)
         setSuccessMsg('')
         try {
-            const payload = {
+            await api.put(`/users/${id}`, {
                 nome: form.nome.trim(),
                 apelido: form.apelido.trim() || null,
-                email: form.email.trim(),
                 telemovel: form.telemovel.trim() || null,
-                data_nascimento: form.data_nascimento || null,
-                nif: form.nif.trim() || null,
-            }
-            await api.put(`/users/${id}`, payload)
-
-            // Actualiza localStorage
+            })
+            // Reflectir alterações no localStorage (header actualiza o nome)
             const stored = authService.getUser()
             localStorage.setItem('user', JSON.stringify({
                 ...stored,
@@ -205,7 +187,6 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                 nome: form.nome.trim(),
                 apelido: form.apelido.trim() || stored?.apelido,
             }))
-
             setSuccessMsg('Dados guardados com sucesso!')
             onSuccess?.()
             setTimeout(() => setSuccessMsg(''), 3000)
@@ -216,6 +197,9 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
         }
     }
 
+    // ── Alterar password ──────────────────────────────────────────────────────
+    // PUT /api/users/perfil/password/:id  (role [1,2,3])
+    // Body esperado pelo userProfileService: { oldPassword, newPassword }
     async function handleSavePassword() {
         const e = validatePassword()
         if (Object.keys(e).length) { setPassErrors(e); return }
@@ -225,8 +209,8 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
         setSuccessMsg('')
         try {
             await api.put(`/users/${id}`, {
-                password_atual: passForm.password_atual,
-                password: passForm.nova_password,
+                oldPassword: passForm.password_atual,
+                newPassword: passForm.nova_password,
             })
             setPassForm({ password_atual: '', nova_password: '', confirmar_password: '' })
             setSuccessMsg('Password alterada com sucesso!')
@@ -271,7 +255,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                         </button>
                     </div>
 
-                    {/* Avatar */}
+                    {/* Avatar + nome */}
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-14 h-14 rounded-full bg-[#006A68] flex items-center justify-center shrink-0 shadow-md">
                             <span className="text-[#9CF1EE] text-xl font-bold">
@@ -280,8 +264,9 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                         </div>
                         <div>
                             <p className="font-bold text-[#324B4A] text-base leading-tight">
-                                {form.nome || form.apelido ? `${form.nome} ${form.apelido}`.trim() : user?.nome}
+                                {`${form.nome} ${form.apelido}`.trim() || user?.nome}
                             </p>
+                            <p className="text-xs text-[#4A6362] mt-0.5">{form.email || '—'}</p>
                         </div>
                     </div>
 
@@ -310,14 +295,12 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-8 py-7 space-y-5">
 
-                    {/* Global success */}
                     {successMsg && (
                         <div className="flex items-center gap-2.5 bg-emerald-50 text-emerald-700 text-sm px-4 py-3 rounded-xl border border-emerald-200 font-semibold">
                             <Check size={16} className="shrink-0" /> {successMsg}
                         </div>
                     )}
 
-                    {/* Loading / Load error */}
                     {loading ? (
                         <div className="flex items-center justify-center py-16">
                             <RefreshCw size={24} className="text-[#006A68] animate-spin" />
@@ -328,7 +311,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                         </div>
                     ) : tab === 'dados' ? (
 
-                        /* ── Dados Pessoais ── */
+                        /* ── Tab: Dados Pessoais ── */
                         <>
                             {errors._global && (
                                 <div className="flex items-center gap-2 bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl border border-red-200">
@@ -355,13 +338,14 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                 </Field>
                             </div>
 
-                            <Field label="Email" icon={Mail} error={errors.email}>
+                            {/* Email — só leitura */}
+                            <Field label="Email" icon={Mail}>
                                 <input
                                     type="email"
                                     value={form.email}
-                                    readOnly // Impede a escrita
-                                    disabled //estilo desativado
-                                    className={`${inputCls(false)} bg-gray-100 cursor-not-allowed opacity-70`} 
+                                    readOnly
+                                    disabled
+                                    className={`${inputCls(false)} bg-gray-100 cursor-not-allowed opacity-70`}
                                 />
                             </Field>
 
@@ -374,17 +358,19 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                         className={inputCls(errors.telemovel)}
                                     />
                                 </Field>
-                                <Field label="NIF" error={errors.nif}>
+                                {/* NIF — só leitura */}
+                                <Field label="NIF">
                                     <input
                                         value={form.nif}
                                         readOnly
                                         disabled
-                                        className={`${inputCls(false)} bg-gray-100 cursor-not-allowed opacity-70`} 
+                                        className={`${inputCls(false)} bg-gray-100 cursor-not-allowed opacity-70`}
                                     />
                                 </Field>
                             </div>
 
-                            <Field label="Data de Nascimento" icon={Calendar} error={errors.data_nascimento}>
+                            {/* Data de nascimento — só leitura */}
+                            <Field label="Data de Nascimento" icon={Calendar}>
                                 <input
                                     type="date"
                                     value={form.data_nascimento}
@@ -394,10 +380,10 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                 />
                             </Field>
 
-                            {/* Info note */}
                             <div className="flex items-start gap-2.5 bg-[#CCE8E6]/50 border border-[#80D5D2] rounded-xl px-4 py-3">
                                 <ShieldCheck size={15} className="text-[#006A68] shrink-0 mt-0.5" />
                                 <p className="text-xs text-[#324B4A] leading-relaxed">
+                                    Podes alterar o nome, apelido e telemóvel. Email, NIF e data de nascimento são dados fixos do sistema.
                                     Os teus dados são protegidos e nunca partilhados com terceiros.
                                 </p>
                             </div>
@@ -405,7 +391,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
 
                     ) : (
 
-                        /* ── Password ── */
+                        /* ── Tab: Password ── */
                         <>
                             {passErrors._global && (
                                 <div className="flex items-center gap-2 bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl border border-red-200">
@@ -422,8 +408,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                         placeholder="••••••••"
                                         className={`${inputCls(passErrors.password_atual)} pr-11`}
                                     />
-                                    <button
-                                        type="button"
+                                    <button type="button"
                                         onClick={() => setShowPass(s => ({ ...s, atual: !s.atual }))}
                                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4A6362] hover:text-[#006A68] transition-colors"
                                     >
@@ -444,8 +429,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                             placeholder="Mínimo 8 caracteres"
                                             className={`${inputCls(passErrors.nova_password)} pr-11`}
                                         />
-                                        <button
-                                            type="button"
+                                        <button type="button"
                                             onClick={() => setShowPass(s => ({ ...s, nova: !s.nova }))}
                                             className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4A6362] hover:text-[#006A68] transition-colors"
                                         >
@@ -464,8 +448,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                             placeholder="Repete a nova password"
                                             className={`${inputCls(passErrors.confirmar_password)} pr-11`}
                                         />
-                                        <button
-                                            type="button"
+                                        <button type="button"
                                             onClick={() => setShowPass(s => ({ ...s, confirmar: !s.confirmar }))}
                                             className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4A6362] hover:text-[#006A68] transition-colors"
                                         >
@@ -480,7 +463,6 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                 </Field>
                             </div>
 
-                            {/* Requirements */}
                             <div className="bg-[#CCE8E6]/40 border border-[#80D5D2] rounded-xl px-4 py-3 space-y-1.5">
                                 <p className="text-[11px] font-bold text-[#4A6362] uppercase tracking-wider mb-2">Requisitos</p>
                                 {[
