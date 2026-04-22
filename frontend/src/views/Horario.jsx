@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { horarioService } from '../services/horarioService'
 import { eventService } from '../services/eventService'
+import coachingService from '../services/coachingService'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
@@ -189,7 +190,7 @@ function DetailModal({ item, onClose, role }) {
                                 </div>
                             </div>
                         )}
-                        {item.docente && (
+                        {item.docente && role !== 2 && (
                             <div className="flex items-start gap-2 col-span-2">
                                 <User size={14} className="text-[#006A68] mt-0.5 shrink-0" />
                                 <div>
@@ -212,7 +213,7 @@ function DetailModal({ item, onClose, role }) {
                             </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {item.alunos.map((a, i) => (
-                                    <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full">{a}</span>
+                                    <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full">{a.nome || a}</span>
                                 ))}
                             </div>
                         </div>
@@ -413,13 +414,14 @@ export default function Horario() {
         setLoading(true)
         setError('')
         try {
-            // Buscar todas as aulas e eventos para todos os perfis
-            const { aulasService: as } = await import('../services/aulasService')
             const [aulasRes, evRes] = await Promise.allSettled([
-                as.getTodas(),
+                role === 1 
+                  ? coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' })
+                  : (role === 2 ? coachingService.listarMinhasAulas() : coachingService.listarMeusPedidos()),
                 eventService.getAll(),
             ])
-            setAulas(aulasRes.status === 'fulfilled' ? aulasRes.value : [])
+            const rawAulas = aulasRes.status === 'fulfilled' ? (Array.isArray(aulasRes.value) ? aulasRes.value : (aulasRes.value?.data || [])) : []
+            setAulas(rawAulas.map(a => ({ ...a, id: a.id_marcacao, data_de_realizacao: a.data, _data_raw: a.data })))
             setEventos(evRes.status === 'fulfilled' && Array.isArray(evRes.value) ? evRes.value : [])
         } catch (e) {
             setError(e.message || 'Erro ao carregar horário.')
