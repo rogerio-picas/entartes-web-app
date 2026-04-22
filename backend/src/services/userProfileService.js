@@ -1,89 +1,115 @@
-const bcrypt = require('bcrypt'); // Use 'bcrypt' para performance (C++) ou 'bcryptjs' para portabilidade (JS puro)
+const bcrypt = require('bcrypt');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Helpers de validação centralizados
-const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const regex = /^[239]\d{8}$/;
-
-/**
- * Atualiza a password com verificação prévia
- */
-const atualizarPassword = async (id_utilizador, oldPassword, newPassword) => {
-    if (!newPassword || newPassword.length < 6) {
-        throw new Error('A nova password deve ter pelo menos 6 caracteres.');
-    }
-
-    // Otimização: Selecionamos apenas o campo necessário
-    const user = await prisma.utilizador.findUnique({
-        where: { id_utilizador },
-        select: { password: true },
-    });
-
-    if (!user) throw new Error('Utilizador não encontrado.');
-
-    const match = await bcrypt.compare(oldPassword, user.password);
-    if (!match) throw new Error('A password atual está incorreta.');
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    await prisma.utilizador.update({
-        where: { id_utilizador },
-        data: { password: hashedPassword },
-    });
-
-    return { success: true, message: 'Password atualizada com sucesso.' };
+// Função para validar email
+const validarEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
 };
 
-/**
- * Atualiza dados pessoais (nome, apelido, email, telemovel)
- */
-const atualizarDadosPessoais = async (id_utilizador, dados) => {
-    const { nome, apelido, email, telemovel } = dados;
-    const dataToUpdate = {};
+// Função para validar número de telemóvel (Portugal: 9xxxxxxxx)
+const validarTelemovel = (telemovel) => {
+    const regex = /^9\d{8}$/;
+    return regex.test(telemovel);
+};
 
-    // 1. Validação de Email
-    if (email !== undefined) {
-        if (!regexEmail.test(email)) throw new Error('Email inválido.');
-        
-        const emailExists = await prisma.utilizador.findFirst({
-            where: { email, id_utilizador: { not: id_utilizador } }
+// Atualizar password do utilizador
+const atualizarPassword = async (userId, oldPassword, newPassword) => {
+    try {
+        // Buscar utilizador
+        const utilizador = await prisma.utilizador.findUnique({
+            where: { id_utilizador: userId }
         });
-        if (emailExists) throw new Error('Este email já está em uso.');
-        dataToUpdate.email = email;
-    }
 
-    // 2. Validação de Telemóvel (limpa espaços antes de validar)
-    if (telemovel !== undefined) {
-        const telemovelLimpo = telemovel.replace(/\s/g, '');
-        if (!regexTelemovel.test(telemovelLimpo)) {
-            throw new Error('Telemóvel inválido (deve ter 9 dígitos e começar por 9).');
+        if (!utilizador) {
+            throw new Error('Utilizador não encontrado');
         }
-        dataToUpdate.telemovel = telemovelLimpo;
+
+        // Verificar se a password antiga está correta
+        const isOldPasswordValid = await bcrypt.compare(oldPassword, utilizador.password);
+        if (!isOldPasswordValid) {
+            throw new Error('Password antiga incorreta');
+        }
+
+        // Validar nova password (mínimo 6 caracteres)
+        if (!newPassword || newPassword.length < 6) {
+            throw new Error('Nova password deve ter pelo menos 6 caracteres');
+        }
+
+        // Hash da nova password
+        const salt = await bcrypt.genSalt(10);
+        const hashedNewPassword = await bcrypt.hash(newPassword, salt);
+
+        // Atualizar password
+        await prisma.utilizador.update({
+            where: { id_utilizador: userId },
+            data: { password: hashedNewPassword }
+        });
+
+        return { success: true, message: 'Password atualizada com sucesso' };
+    } catch (error) {
+        throw new Error(error.message);
     }
-
-    // 3. Outros campos
-    if (nome !== undefined) dataToUpdate.nome = nome;
-    if (apelido !== undefined) dataToUpdate.apelido = apelido;
-
-    if (Object.keys(dataToUpdate).length === 0) {
-        throw new Error('Nenhum dado válido para atualizar.');
-    }
-
-    const updatedUser = await prisma.utilizador.update({
-        where: { id_utilizador },
-        data: dataToUpdate,
-        select: { // Não devolvemos a password no retorno
-            id_utilizador: true,
-            nome: true,
-            apelido: true,
-            email: true,
-            telemovel: true,
-        },
-    });
-
-    return { success: true, message: 'Dados atualizados.', user: updatedUser };
 };
 
-module.exports = { atualizarPassword, atualizarDadosPessoais };
+// Atualizar dados pessoais (email e telemovel)
+const atualizarDadosPessoais = async (userId, dados) => {
+    try {
+        const { email, telemovel } = dados;
+
+        // Buscar utilizador
+        const utilizador = await prisma.utilizador.findUnique({
+            where: { id_utilizador: userId }
+        });
+
+        if (!utilizador) {
+            throw new Error('Utilizador não encontrado');
+        }
+
+        const updateData = {};
+
+        // Validar e preparar email
+        if (email !== undefined) {
+            if (!validarEmail(email)) {
+                throw new Error('Email inválido');
+            }
+            // Verificar se email já existe em outro utilizador
+            const emailExists = await prisma.utilizador.findFirst({
+                where: { email: email, id_utilizador: { not: userId } }
+            });
+            if (emailExists) {
+                throw new Error('Email já está em uso');
+            }
+            updateData.email = email;
+        }
+
+        // Validar e preparar telemovel
+        if (telemovel !== undefined) {
+            if (!validarTelemovel(telemovel)) {
+                throw new Error('Número de telemóvel inválido (deve começar com 9 e ter 9 dígitos)');
+            }
+            updateData.telemovel = telemovel;
+        }
+
+        // Se não há dados para atualizar
+        if (Object.keys(updateData).length === 0) {
+            throw new Error('Nenhum dado válido para atualizar');
+        }
+
+        // Atualizar dados
+        await prisma.utilizador.update({
+            where: { id_utilizador: userId },
+            data: updateData
+        });
+
+        return { success: true, message: 'Dados pessoais atualizados com sucesso' };
+    } catch (error) {
+        throw new Error(error.message);
+    }
+};
+
+module.exports = {
+    atualizarPassword,
+    atualizarDadosPessoais
+};

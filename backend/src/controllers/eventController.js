@@ -43,7 +43,7 @@ const adicionarParticipante = async (req, res) => {
 
     // id do utilizador e tipo vêm no body
     // { "id_utilizador": 3, "tipo": 3 }
-    const { codigo_username, id_tipo } = req.body;
+    const { codigo_username } = req.body;
 
     if (!codigo_username) {
       return res.status(400).json({

@@ -112,8 +112,9 @@ const verificarMarcacoesAtivas = async (id_disponibilidade) => {
  */
 const criarDisponibilidade = async (id_docente, dados) => {
   const { dia_semana, data_especifica, hora_inicio, hora_fim } = dados;
-
-  // Validações
+  // const {id_tipo} = req.user.id_tipo;
+  // // Validações
+  // validarDocente(id_tipo);
   validarParametrosCreate(dia_semana, data_especifica, hora_inicio, hora_fim);
 
   // Verificar sobreposição
