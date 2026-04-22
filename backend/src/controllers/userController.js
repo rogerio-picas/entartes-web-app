@@ -164,5 +164,57 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const userProfileService = require('../services/userProfileService');
 
-module.exports = { getUsers, getUser, createUser, updateUser, deleteUser };
+const atualizarPassword = async (req, res) => {
+  try {
+    const { id_utilizador } = req.params;
+    const { oldPassword, newPassword } = req.body;
+
+    // Validação básica
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ 
+        error: 'Password antiga e nova password são obrigatórias.' 
+      });
+    }
+
+    const resultado = await userProfileService.atualizarPassword(
+      parseInt(id_utilizador),
+      oldPassword,
+      newPassword
+    );
+
+    res.status(200).json(resultado);
+  } catch (error) {
+    res.status(400).json({ 
+      error: error.message 
+    });
+  }
+};
+
+const atualizarDadosPessoais = async (req, res) => {
+  try {
+    const { id_utilizador } = req.params;
+    const dados = req.body;
+
+    // Validação básica
+    if (!dados.email && !dados.telemovel) {
+      return res.status(400).json({ 
+        error: 'Pelo menos email ou telemovel deve ser fornecido.' 
+      });
+    }
+
+    const resultado = await userProfileService.atualizarDadosPessoais(
+      parseInt(id_utilizador),
+      dados
+    );
+
+    res.status(200).json(resultado);
+  } catch (error) {
+    res.status(400).json({ 
+      error: error.message 
+    });
+  }
+};
+
+module.exports = { getUsers, getUser, createUser, updateUser, deleteUser, atualizarPassword, atualizarDadosPessoais };

@@ -119,5 +119,71 @@ router.delete('/:id_utilizador', tokenValidation, authorize([1]), userController
 // ROTAS DE ACESSO GERAL [1,2,3] (1- Coordenadora, 2 - Docente, 3 - Aluno)
 router.get('/:id_utilizador', tokenValidation, authorize([1, 2, 3]), userController.getUser);
 
+/**
+ * @swagger
+ * /api/users/perfil/password/{id_utilizador}:
+ *   put:
+ *     summary: Atualiza a password do utilizador autenticado
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_utilizador
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               oldPassword:
+ *                 type: string
+ *                 description: Password antiga
+ *               newPassword:
+ *                 type: string
+ *                 description: Nova password (mínimo 6 caracteres)
+ *     responses:
+ *       200:
+ *         description: Password atualizada com sucesso
+ *       400:
+ *         description: Erro na validação ou password incorreta
+ *
+ * /api/users/perfil/dados-pessoais/{id_utilizador}:
+ *   put:
+ *     summary: Atualiza dados pessoais (email e/ou telemóvel) do utilizador
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_utilizador
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: Novo email (opcional)
+ *               telemovel:
+ *                 type: string
+ *                 description: Novo telemóvel (opcional, formato Portugal 9xxxxxxxx)
+ *     responses:
+ *       200:
+ *         description: Dados pessoais atualizados com sucesso
+ *       400:
+ *         description: Email ou telemóvel inválido
+ */
+router.put('/perfil/password/:id_utilizador', tokenValidation, authorize([1, 2, 3]), userController.atualizarPassword);
+router.put('/perfil/dados-pessoais/:id_utilizador', tokenValidation, authorize([1, 2, 3]), userController.atualizarDadosPessoais);
 
 module.exports = router;
