@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './views/Login'
 import Events from './views/Eventos'
+import EventDetailsView from './views/EventDetailsView'
 import Home from './views/Home'
 import Aulas from './views/Aulas'
 import Horario from './views/Horario'
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/escola" element={<Escola />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/eventos" element={<Events />} />
+          <Route path="/eventos/:id" element={<EventDetailsView />} />
 
           <Route path="/modalidades" element={<Modalidades />} />
         </Route>
