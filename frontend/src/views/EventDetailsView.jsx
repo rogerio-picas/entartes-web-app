@@ -22,6 +22,7 @@ export default function EventDetailsView() {
     const [groups, setGroups] = useState([])
     const [selectedGroup, setSelectedGroup] = useState(null)
     const [announcements, setAnnouncements] = useState([])
+    const [participants, setParticipants] = useState({ alunos: [], docentes: [] })
 
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
@@ -30,6 +31,7 @@ export default function EventDetailsView() {
     const [showCreateGroup, setShowCreateGroup] = useState(false)
     const [showEditEvent, setShowEditEvent] = useState(false)
     const [showAddMember, setShowAddMember] = useState(false)
+    const [showParticipants, setShowParticipants] = useState(false)
     const [editGroupData, setEditGroupData] = useState(null)
     const [newMsg, setNewMsg] = useState('')
     const [msgTitle, setMsgTitle] = useState('')
@@ -53,9 +55,13 @@ export default function EventDetailsView() {
             if (evData.status === 'fulfilled') setEvent(evData.value)
             else setError('Erro ao carregar o evento principal.')
 
-            if (grpData.status === 'fulfilled' && Array.isArray(grpData.value)) {
-                setGroups(grpData.value)
-            }
+            if (grpData.status === 'fulfilled') setGroups(grpData.value || [])
+
+            // Load participants
+            try {
+                const pData = await api.get(`/evento/${id}/participantes`)
+                setParticipants({ alunos: pData.alunos || [], docentes: pData.docentes || [] })
+            } catch {}
         } catch (e) {
             setError(e.message || 'Erro inesperado ao contactar base de dados.')
         } finally {
@@ -218,6 +224,14 @@ export default function EventDetailsView() {
                         <p className="text-[#4A6362] flex items-center gap-2 text-sm font-medium mt-1.5">
                             <MapPin size={15}/> {event?.local || 'Local a definir'}
                         </p>
+                        {/* Botao discreto de participantes */}
+                        <button
+                            onClick={() => setShowParticipants(true)}
+                            className="mt-2.5 inline-flex items-center gap-1.5 text-xs text-[#006A68] font-semibold hover:underline"
+                        >
+                            <Users size={13} />
+                            {participants.alunos.length + participants.docentes.length} participantes inscritos
+                        </button>
                     </div>
 
                     {isAdmin && (
@@ -248,8 +262,10 @@ export default function EventDetailsView() {
             {/* Layout Divisório 70/30 */}
             <div className="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto px-4 lg:px-8 gap-8 pb-10">
                 
-                {/* 70% Mural Principal de Anúncios */}
+                {/* 70% Mural Principal */}
                 <div className="flex-1 flex flex-col gap-6">
+
+                    {/* === MURAL DE ANÚNCIOS === */}
                     <div className="bg-white rounded-2xl border border-brand-dark/20 p-6 flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
                             <Megaphone size={28} className="text-brand-dark" />
@@ -261,7 +277,8 @@ export default function EventDetailsView() {
                         </div>
                     </div>
 
-                    {/* Caixa de Criação de Anúncios */}
+                    {/* Caixa de Criação de Anúncios — apenas Admin */}
+                    {isAdmin && (
                     <div className="bg-white rounded-2xl border border-brand-dark/20 p-5 shadow-sm">
                         <input 
                             type="text"
@@ -287,6 +304,7 @@ export default function EventDetailsView() {
                             </button>
                         </div>
                     </div>
+                    )}
 
                     {/* Feed de Anúncios */}
                     <div className="flex flex-col gap-4">
@@ -408,6 +426,7 @@ export default function EventDetailsView() {
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
+                            {isAdmin && (
                             <div className="bg-white rounded-2xl border border-brand-dark/20 p-5 shadow-sm mb-6">
                                 <input 
                                     type="text"
@@ -433,6 +452,7 @@ export default function EventDetailsView() {
                                     </button>
                                 </div>
                             </div>
+                            )}
 
                             <div className="flex flex-col gap-4">
                                 {groupAnnouncements.length === 0 ? (
@@ -525,6 +545,79 @@ export default function EventDetailsView() {
                         onSuccess={() => loadEventData()}
                     />
                 </>
+            )}
+
+            {/* Modal Participantes */}
+            {showParticipants && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowParticipants(false)}>
+                    <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+                    <div
+                        className="relative bg-[#F4FBF9] rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-7 pt-7 pb-4 border-b border-[#006A68]/15">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-[#CCE8E6] flex items-center justify-center shrink-0">
+                                    <Users size={18} className="text-[#006A68]" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-[#324B4A] font-['Sora']">Participantes</h2>
+                                    <p className="text-xs text-[#4A6362]">{participants.alunos.length + participants.docentes.length} inscritos neste evento</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowParticipants(false)} className="w-8 h-8 rounded-full hover:bg-[#CCE8E6] flex items-center justify-center text-[#4A6362]">
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="flex-1 overflow-y-auto px-7 py-5 space-y-5">
+                            {participants.alunos.length === 0 && participants.docentes.length === 0 ? (
+                                <p className="text-sm text-center text-[#4A6362] italic py-8">Ainda não há participantes inscritos.</p>
+                            ) : (
+                                <>
+                                    {participants.docentes.length > 0 && (
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-[#4A6362] mb-3">Docentes · {participants.docentes.length}</p>
+                                            <div className="space-y-2">
+                                                {participants.docentes.map((d, i) => (
+                                                    <div key={i} className="flex items-center gap-3 px-3 py-2.5 bg-white rounded-xl border border-[#006A68]/15">
+                                                        <div className="w-9 h-9 rounded-full bg-[#006A68] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                                                            {((d.nome?.[0] || '') + (d.apelido?.[0] || '')).toUpperCase() || '?'}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-[#161D1C]">{d.nome} {d.apelido}</p>
+                                                            <p className="text-[10px] text-[#4A6362]">{d.codigo_username || d.email || ''}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {participants.alunos.length > 0 && (
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-[#4A6362] mb-3">Alunos · {participants.alunos.length}</p>
+                                            <div className="space-y-2">
+                                                {participants.alunos.map((a, i) => (
+                                                    <div key={i} className="flex items-center gap-3 px-3 py-2.5 bg-white rounded-xl border border-[#BEC9C7]">
+                                                        <div className="w-9 h-9 rounded-full bg-[#CCE8E6] flex items-center justify-center text-[#006A68] text-xs font-bold shrink-0">
+                                                            {((a.nome?.[0] || '') + (a.apelido?.[0] || '')).toUpperCase() || '?'}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-[#161D1C]">{a.nome} {a.apelido}</p>
+                                                            <p className="text-[10px] text-[#4A6362]">{a.codigo_username || a.email || ''}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
 
         </div>
