@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 
 import {  ClassCard, EventCard, DashboardSection } from '../components/Cards'
 import { Clock, CalendarCheck, Megaphone, Loader2, Check, X, AlertCircle } from 'lucide-react'
+import EventModal from '../components/EventModal'
 
-import EventModal from '../views/NovoEventoModal'
 import { eventService } from '../services/eventService'
 import { api } from '../services/api'
 import { authService } from '../services/authService'
@@ -151,6 +151,7 @@ export default function Home() {
                 Sem presenças a confirmar de momento.</p>
             )}
           </DashboardSection>
+
            {/* Próximas aulas confirmadas */}
           <DashboardSection title="Próximas aulas confirmadas" icon={CalendarCheck}>
             {aulas.length > 0 ? aulas.map(item => (
@@ -162,7 +163,7 @@ export default function Home() {
             )}
           </DashboardSection>
 
-          {/* Inscrições pendentes */}
+          {/* Inscrições aguardar validação */}
           <DashboardSection title="Inscrições a aguardar validação" icon={Clock}>
             {inscricoes.length > 0 ? inscricoes.map(item => (
               <ClassCard key={item.id} item={item} statusType="pendente" />
