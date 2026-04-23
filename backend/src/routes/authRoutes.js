@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
+
 const authController = require('../controllers/authController');
-const { loginLimiter } = require('../middlewares/rateLimitMiddleware');  // ✅ Aqui
+const tokenValidation = require('../middlewares/authMiddleware');
+const { loginLimiter } = require('../middlewares/rateLimitMiddleware');
 
 /**
  * @swagger
@@ -22,12 +24,24 @@ const { loginLimiter } = require('../middlewares/rateLimitMiddleware');  // ✅ 
  *                 type: string
  *     responses:
  *       200:
- *         description: Login efetuado com sucesso (Retorna o JWT)
+ *         description: Login efetuado com sucesso
  *       401:
- *         description: Credenciais inválidas
+ *         description: Credenciais invalidas
  */
+router.post('/login', loginLimiter, authController.login);
 
-
-router.post('/login', loginLimiter, authController.login);  // ✅ Aqui sim
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Dados do utilizador
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ */
+router.get('/me', tokenValidation, authController.getMe);
 
 module.exports = router;

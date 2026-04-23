@@ -10,16 +10,16 @@ import EventModal from '../components/EventModal'
 import NovoEventoModal from './NovoEventoModal'
 
 import {
-  CalendarCheck, CalendarDays, Clock, CheckCircle2, XCircle,
-  AlertCircle, RefreshCw, Check, X, Plus, ChevronRight,
-  Users, MapPin, Music, User, TrendingUp, Star, Megaphone
+  CalendarCheck, CalendarDays, Clock,
+  RefreshCw, Check, X, Plus,
+  User, Star, Megaphone
 } from 'lucide-react'
 
 // Widgets Extracted
 import {
   StatCard, ModalityChart, CoachingHoursChart, EnrollmentChart,
   LiveClassCard, CoachingCard, ConfirmedCard, RequisicaoCard, PresencaDocenteCard,
-  PerfilModal, SectionHeader, ScrollRow, Toast, formatDate, formatTime, formatDuration, timeRemaining
+  PerfilModal, SectionHeader, ScrollRow, Toast
 } from '../components/HomeWidgets'
 
 // ── Presence confirmation card (aluno confirma a SUA presença) ──
@@ -102,7 +102,6 @@ export default function Home() {
     setLoading(true)
     try {
       const now = new Date()
-      const in48h = new Date(now.getTime() + 48 * 3600000)
 
       // Always fetch events
       const evRes = await eventService.getAll().catch(() => [])

@@ -1,13 +1,11 @@
-
 const bcrypt = require('bcryptjs');
-const {PrismaClient} = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const userService = require('../services/userService');
-
-// const userModel = require('../models/userModel');
-
+const userProfileService = require('../services/userProfileService');
 
 const getUsers = async (req, res) => {
+    
   try
   {
     const { id_tipo } = req.query;
@@ -40,39 +38,33 @@ const getUsers = async (req, res) => {
 };
 
 const getUser = async (req, res) => {
-  try 
-  {
-    const { id_utilizador } = req.params;
-    const id_utilizador_int = parseInt(id_utilizador);
+    try {
+        const { id_utilizador } = req.params;
+        const id_utilizador_int = parseInt(id_utilizador);
 
-    if (isNaN(id_utilizador_int)) {
-      return res.status(400).json({ 
-        message: 'O ID fornecido não possui um formato válido.' 
-      });
-    }
+        if (isNaN(id_utilizador_int)) {
+            return res.status(400).json({ message: 'O ID fornecido não possui um formato válido.' });
+        }
 
-    const user = await prisma.utilizador.findUnique({
-      where:{
-        id_utilizador: id_utilizador_int, 
-      },
-      select: {
-          id_utilizador: true,
-          codigo_username: true,
-          nome: true,
-          apelido: true,
-          email: true,
-          telemovel: true,
-          data_nascimento: true,
-          nif: true,
-          estado: true,      
-          tipo_utilizador: true
-      }
-    });
-    
+        const user = await prisma.utilizador.findUnique({
+            where: { id_utilizador: id_utilizador_int },
+            select: {
+                id_utilizador: true,
+                codigo_username: true,
+                nome: true,
+                apelido: true,
+                email: true,
+                telemovel: true,
+                data_nascimento: true,
+                nif: true,
+                estado: true,
+                tipo_utilizador: true,
+            },
+        });
+
     if (!user) {
       return res.status(404).json({ message: 'Utilizador não encontrado' });
     }
-    
     res.status(200).json(user);
   }
   catch (error)
@@ -159,8 +151,7 @@ const deleteUser = async (req, res) => {
   }
 };
 
-const userProfileService = require('../services/userProfileService');
-
+          
 const atualizarPassword = async (req, res) => {
   try {
     const { id_utilizador } = req.params;
@@ -190,26 +181,22 @@ const atualizarPassword = async (req, res) => {
 const atualizarDadosPessoais = async (req, res) => {
   try {
     const { id_utilizador } = req.params;
-    const dados = req.body;
-
-    // Validação básica
-    if (!dados.email && !dados.telemovel) {
-      return res.status(400).json({ 
-        error: 'Pelo menos email ou telemovel deve ser fornecido.' 
-      });
+    if (!req.body.email && !req.body.telemovel) {
+      return res.status(400).json({ error: 'Forneça pelo menos o email ou telemóvel.' });
     }
 
-    const resultado = await userProfileService.atualizarDadosPessoais(
-      parseInt(id_utilizador),
-      dados
-    );
-
+    const resultado = await userProfileService.atualizarDadosPessoais(parseInt(id_utilizador), req.body);
     res.status(200).json(resultado);
   } catch (error) {
-    res.status(400).json({ 
-      error: error.message 
-    });
+    res.status(400).json({ error: error.message });
   }
 };
-
-module.exports = { getUsers, getUser, createUser, updateUser, deleteUser, atualizarPassword, atualizarDadosPessoais };
+module.exports = { 
+  getUsers, 
+  getUser, 
+  createUser, 
+  updateUser, 
+  deleteUser, 
+  atualizarPassword, 
+  atualizarDadosPessoais 
+};
