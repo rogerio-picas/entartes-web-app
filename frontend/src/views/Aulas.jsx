@@ -3,7 +3,8 @@ import {
   CalendarDays, Clock, User, MapPin, Music, CheckCircle2,
   XCircle, AlertCircle, RefreshCw, Plus, X, BookOpen, ArrowUpDown, Check
 } from 'lucide-react'
-import { aulasService } from '../services/aulasService.js'
+import coachingService from '../services/coachingService.js'
+import { api } from '../services/api'
 import { authService } from '../services/authService'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 
@@ -63,11 +64,11 @@ function AulaModal({ aula, onClose }) {
             <InfoItem icon={Clock} label="Hora" value={aula.hora} />
             <InfoItem icon={Clock} label="Duração" value={aula.duracao} />
             <InfoItem icon={MapPin} label="Sala / Estúdio" value={aula.sala} />
-            <InfoItem icon={User} label="Professor" value={aula.docente} />
+            <InfoItem icon={User} label={User.role === 2 ? "Aluno(s)" : "Professor"} value={aula.docente} />
             <InfoItem icon={Music} label="Modalidade" value={aula.modalidade} />
             <InfoItem label="Tipo de Aula" value={aula.tipo_aula} icon={BookOpen} />
           </div>
-          {aula.alunos && aula.alunos.length > 0 && (
+          {role !== 2 && aula.alunos && aula.alunos.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-[#4A6362] uppercase tracking-wider mb-2">
                 Alunos inscritos ({aula.alunos.length}
@@ -167,44 +168,78 @@ export default function Aulas() {
     setLoading(true)
     setError('')
     try {
-      const data = showAll
-        ? await aulasService.getTodas()
-        : await aulasService.getParaConfirmar()
-      setMarcacoes(data)
+      const data = role === 2 
+        ? await coachingService.listarMinhasAulas() 
+        : await coachingService.listarMeusPedidos()
+      
+      const rawData = Array.isArray(data) ? data : (data?.data || [])
+      
+      // Normalizamos os dados para a tabela
+      const formatadas = rawData.map(m => {
+        const dt = m.data ? new Date(m.data) : null;
+        const hr = m.hora_inicio ? new Date(m.hora_inicio) : null;
+        return {
+          id: m.id_marcacao,
+          modalidade: m.modalidade || '—',
+          data: (dt && !isNaN(dt)) ? dt.toLocaleDateString('pt-PT') : '—',
+          hora: (hr && !isNaN(hr)) ? hr.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—',
+          duracao: `${m.duracao_minutos} min`,
+          tipo_aula: m.numero_alunos_pretendidos > 1 ? 'Grupo' : 'Individual',
+          sala: m.sala || m.sala_atual || 'Por atribuir',
+              docente: role === 2 
+                ? (m.alunos?.length > 0 ? m.alunos.map(a => a.nome).join(', ') : 'A aguardar alunos') 
+                : (m.docente || '—'),
+          id_estado: m.id_estado,
+          estado_nome: m.estado || '—',
+          alunos: m.alunos?.map(a => a.nome) || [],
+          numero_alunos_pretendidos: m.numero_alunos_pretendidos,
+          ja_validou: m.ja_validou
+        }
+      })
+      setMarcacoes(formatadas)
     } catch (err) {
-      setError(err.message || 'Erro ao carregar as aulas.')
+      setError(err.response?.data?.message || err.message || 'Erro ao carregar as aulas.')
     } finally {
       setLoading(false)
     }
-  }, [showAll])
+  }, [role])
 
   useEffect(() => { fetchMarcacoes() }, [fetchMarcacoes])
 
   const handleConfirm = async (id) => {
+    // "Confirmar" aqui é Validar Conclusão da Aula (disponível só após o estado passar a Confirmada)
     setLoadingId(id)
     try {
-      await aulasService.updateEstado(id, aulasService.ESTADOS.CONFIRMADA)
-      setMarcacoes(prev => prev.map(r =>
-        r.id === id ? { ...r, id_estado: aulasService.ESTADOS.CONFIRMADA, estado_nome: 'Confirmada' } : r
-      ))
-      showToast('Aula confirmada com sucesso!', 'success')
+      if (role === 2) {
+        await coachingService.validarConclusaoSessaoDocente(id)
+      } else {
+        await coachingService.validarConclusaoSessaoAluno(id)
+      }
+      showToast('Conclusão da aula validada com sucesso!', 'success')
+      fetchMarcacoes()
     } catch (err) {
-      showToast(err.message || 'Erro ao confirmar aula.', 'error')
+      showToast(err.response?.data?.message || err.message || 'Erro ao validar conclusão da sessão.', 'error')
     } finally {
       setLoadingId(null)
     }
   }
 
   const handleReject = async (id) => {
+    // "Cancelar" marcação ou pedido pendente
+    const motivo = window.prompt("Motivo do cancelamento" + (role === 2 ? ":" : " (opcional):"));
+    if (motivo === null) return;
+
     setLoadingId(id)
     try {
-      await aulasService.updateEstado(id, aulasService.ESTADOS.CANCELADA)
-      setMarcacoes(prev => prev.map(r =>
-        r.id === id ? { ...r, id_estado: aulasService.ESTADOS.CANCELADA, estado_nome: 'Cancelada' } : r
-      ))
-      showToast('Aula cancelada.', 'error')
+      if (role === 2) {
+        await coachingService.cancelarMarcacaoDocente(id, motivo)
+      } else {
+        await coachingService.cancelarPedidoPendente(id)
+      }
+      showToast('Aula cancelada com sucesso.', 'success')
+      fetchMarcacoes()
     } catch (err) {
-      showToast(err.message || 'Erro ao cancelar aula.', 'error')
+      showToast(err.response?.data?.message || err.message || 'Erro ao cancelar aula.', 'error')
     } finally {
       setLoadingId(null)
     }
@@ -215,6 +250,7 @@ export default function Aulas() {
   const estados = ['todos', ...new Set(marcacoes.map(a => a.estado_nome).filter(Boolean))]
 
   const marcacoesFiltradas = marcacoes.filter(a => {
+    if (!showAll && [4, 5].includes(a.id_estado)) return false // Se o histórico estiver oculto (só pendentes/confirmadas)
     if (filtroEstado !== 'todos' && a.estado_nome !== filtroEstado) return false
     if (filtroModalidade !== 'todas' && a.modalidade !== filtroModalidade) return false
     return true
@@ -225,7 +261,7 @@ export default function Aulas() {
     return acc
   }, {})
 
-  const pendentes = counts[aulasService.ESTADOS.PENDENTE] ?? 0
+  const pendentes = counts[1] ?? 0 // 1 = Estado Pendente
 
   return (
     <>
@@ -235,8 +271,7 @@ export default function Aulas() {
           <div>
             <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Gestão de Presenças</p>
             <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
-              {showAll ? 'Todas as Aulas' : 'Confirmação de Aulas'}
-              {!showAll && <span className="text-[#006A68] font-semibold"> (48h)</span>}
+              {role === 2 ? 'As Minhas Aulas' : 'As Minhas Sessões'}
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -258,7 +293,7 @@ export default function Aulas() {
             <button onClick={() => setShowAll(v => !v)}
               className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#006A68] text-[#006A68] text-sm font-medium hover:bg-[#CCE8E6] transition-colors">
               <BookOpen size={15} />
-              {showAll ? 'Ver próximas 48h' : 'Ver todas'}
+              {showAll ? 'Ocultar Histórico' : 'Ver Histórico Completo'}
             </button>
             <button onClick={fetchMarcacoes} disabled={loading} title="Atualizar"
               className="w-9 h-9 rounded-full border border-[#4a6362]/30 flex items-center justify-center hover:bg-[#EFF5F4] transition-colors disabled:opacity-40">
@@ -327,7 +362,7 @@ export default function Aulas() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#EFF5F4] border-b-2 border-[#4a6362]/20">
-                {['Modalidade', 'Data', 'Hora', 'Duração', 'Tipo Aula', 'Sala', 'Estado', 'Ação', ''].map((col, i) => (
+                {['Modalidade', 'Data', 'Hora', 'Duração', role === 2 ? 'Aluno(s)' : 'Professor', 'Sala', 'Estado', 'Ação', ''].map((col, i) => (
                   <th
                     key={col || i}
                     className="px-4 py-3.5 text-left text-xs font-bold text-[#006A68] uppercase tracking-wider whitespace-nowrap"
@@ -350,18 +385,14 @@ export default function Aulas() {
                   <td colSpan={9} className="py-20 text-center">
                     <BookOpen size={40} className="mx-auto text-[#006A68]/15 mb-3" />
                     <p className="text-sm text-[#4A6362] font-medium">
-                      {showAll
-                        ? 'Não existem aulas registadas.'
-                        : 'Nenhuma aula para confirmar nas próximas 48h.'}
+                      Não existem registos com os filtros selecionados.
                     </p>
                   </td>
                 </tr>
               ) : (
                 marcacoesFiltradas.map((row, idx) => {
                   const cfg = getStatusCfg(row.id_estado, row.estado_nome)
-                  const StatusIcon = cfg.icon
                   const isLoading = loadingId === row.id
-                  const isPendente = row.id_estado === aulasService.ESTADOS.PENDENTE
                   return (
                     <tr
                       key={row.id}
@@ -376,7 +407,7 @@ export default function Aulas() {
                       <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.data}</td>
                       <td className="px-4 py-4 text-gray-700 whitespace-nowrap font-medium">{row.hora}</td>
                       <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.duracao}</td>
-                      <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.tipo_aula}</td>
+                      <td className="px-4 py-4 text-gray-700 font-medium max-w-[200px] truncate" title={row.docente}>{row.docente}</td>
                       <td className="px-4 py-4 text-gray-700">{row.sala}</td>
                       <td className="px-4 py-4">
                         <StatusBadge id_estado={row.id_estado} estado_nome={row.estado_nome} />
@@ -384,19 +415,31 @@ export default function Aulas() {
                       <td className="px-4 py-4">
                         {isLoading ? (
                           <RefreshCw size={18} className="text-[#006A68] animate-spin" />
-                        ) : isPendente ? (
-                          <div className="flex gap-2">
-                            <button onClick={() => handleConfirm(row.id)} title="Confirmar"
-                              className="w-8 h-8 bg-[#049A59] border border-[#0A7659] rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
-                              <Check size={15} strokeWidth={3} className="text-white" />
-                            </button>
-                            <button onClick={() => handleReject(row.id)} title="Cancelar"
-                              className="w-8 h-8 bg-[#BA1A1A] border border-[#93000A] rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
-                              <X size={15} strokeWidth={3} className="text-white" />
-                            </button>
-                          </div>
                         ) : (
-                          <span className="text-xs text-gray-300 font-['Sora']">—</span>
+                          <div className="flex gap-2">
+                            {/* Validação de Aula só se faz após ter sido Confirmada e o momento chegar */}
+                            {row.id_estado === 3 && !row.ja_validou && (
+                              <button onClick={() => handleConfirm(row.id)} title="Validar Conclusão da Sessão"
+                                className="w-8 h-8 bg-[#049A59] border border-[#0A7659] rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
+                                <Check size={15} strokeWidth={3} className="text-white" />
+                              </button>
+                            )}
+                            {row.id_estado === 3 && row.ja_validou && (
+                              <div title={`A aguardar validação do ${role === 2 ? 'aluno' : 'docente'}`} className="w-8 h-8 bg-[#E3E9E8] border border-[#BEC9C7] rounded-lg flex items-center justify-center cursor-help">
+                                <Clock size={15} strokeWidth={2.5} className="text-[#4A6362]" />
+                              </div>
+                            )}
+                            {/* Cancelamento obedece a permissões: Docente pode cancelar [1,2,3]. Aluno pode cancelar apenas [1,2] */}
+                            {((role === 2 && [1, 2, 3].includes(row.id_estado)) || (role !== 2 && [1, 2].includes(row.id_estado))) && (
+                              <button onClick={() => handleReject(row.id)} title="Cancelar Marcação"
+                                className="w-8 h-8 bg-[#BA1A1A] border border-[#93000A] rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
+                                <X size={15} strokeWidth={3} className="text-white" />
+                              </button>
+                            )}
+                            {row.id_estado >= 4 || (role !== 2 && row.id_estado === 3) ? (
+                              <span className="text-xs text-gray-300 font-['Sora']">—</span>
+                            ) : null}
+                          </div>
                         )}
                       </td>
                       <td className="px-4 py-4">
@@ -438,7 +481,7 @@ export default function Aulas() {
 
       {/* Modal de detalhes */}
       {modalAula && (
-        <AulaModal aula={modalAula} onClose={() => setModalAula(null)} />
+        <AulaModal aula={modalAula} onClose={() => setModalAula(null)} role={role} />
       )}
 
       {showNovaDisponibilidade && (
