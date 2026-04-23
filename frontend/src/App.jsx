@@ -15,13 +15,13 @@ import RoleRoute from './components/RoleRoute'
 import Grupos from './views/Grupos'
 import DashboardLayout from './components/DashboardLayout'
 import { authService } from './services/authService'
-
+import Modalidades    from './views/Modalidades'
+import NovoEventoModal from './views/NovoEventoModal'
 
 function HomeRedirect() {
   const user = authService.getUser()
   const role = user?.role // Pode ser 1, 2, 3 ou undefined
-import Modalidades    from './views/Modalidades'
-import NovoEventoModal from './views/NovoEventoModal'
+
 
   if (role === 1) return <Navigate to="/admin/home" replace />
   if (role === 2) return <Navigate to="/docente/home" replace />
