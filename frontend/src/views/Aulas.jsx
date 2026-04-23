@@ -28,7 +28,7 @@ function getStatusCfg(id_estado, estado_nome) {
 
 
 // ─── Modal Detalhe ─────────────────────────────────────────────
-function AulaModal({ aula, onClose }) {
+function AulaModal({ aula, onClose, role }) {
   if (!aula) return null
   const cfg = getStatusCfg(aula.id_estado, aula.estado_nome)
   const StatusIcon = cfg.icon
@@ -64,7 +64,7 @@ function AulaModal({ aula, onClose }) {
             <InfoItem icon={Clock} label="Hora" value={aula.hora} />
             <InfoItem icon={Clock} label="Duração" value={aula.duracao} />
             <InfoItem icon={MapPin} label="Sala / Estúdio" value={aula.sala} />
-            <InfoItem icon={User} label={User.role === 2 ? "Aluno(s)" : "Professor"} value={aula.docente} />
+            <InfoItem icon={User} label={role === 2 ? "Aluno(s)" : "Professor"} value={aula.docente} />
             <InfoItem icon={Music} label="Modalidade" value={aula.modalidade} />
             <InfoItem label="Tipo de Aula" value={aula.tipo_aula} icon={BookOpen} />
           </div>
@@ -168,9 +168,14 @@ export default function Aulas() {
     setLoading(true)
     setError('')
     try {
-      const data = role === 2 
-        ? await coachingService.listarMinhasAulas() 
-        : await coachingService.listarMeusPedidos()
+      let data;
+      if (role === 1) {
+          data = await coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' });
+      } else if (role === 2) {
+          data = await coachingService.listarMinhasAulas();
+      } else {
+          data = await coachingService.listarMeusPedidos();
+      }
       
       const rawData = Array.isArray(data) ? data : (data?.data || [])
       

@@ -20,8 +20,8 @@ export function timeRemaining(dateRaw) {
     if (!dateRaw) return null
     const diff = new Date(dateRaw) - new Date()
     if (diff <= 0) return 'Expirado'
-    const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000)
-    return `${h}h${m.toString().padStart(2, '0')}min restantes`
+    const h = Math.ceil(diff / 3600000)
+    return `${h}h restantes`
 }
 
 export function StatCard({ count, label, color, bg, border }) {
