@@ -54,7 +54,7 @@ const adicionarParticipante = async (req, res) => {
     const resultado = await eventService.adicionarParticipante(
       id,
       codigo_username,
-      id_tipo
+      //id_tipo
     );
 
     return res.status(201).json(resultado);
