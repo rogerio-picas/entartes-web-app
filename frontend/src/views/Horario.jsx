@@ -416,7 +416,7 @@ export default function Horario() {
         try {
             // Buscar todas as aulas e eventos para todos os perfis
             const fetchAulas = async () => {
-                if (role === 1) return await coachingService.listarPedidosPendentes({ id_estado: '1,2,3,4,5' }).then(r => r.data || r).catch(()=>[])
+                if (role === 1) return await coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' }).then(r => r.data || r).catch(()=>[])
                 if (role === 2) return await coachingService.listarMinhasAulas().then(r => r.data || r).catch(()=>[])
                 return await coachingService.listarMeusPedidos().then(r => r.data || r).catch(()=>[])
             }

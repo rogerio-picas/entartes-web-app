@@ -160,11 +160,10 @@ export default function Aulas() {
     try {
       let data = []
       if (role === 1) { // Admin
-        const pendentesResp = await coachingService.listarPedidosPendentes({ id_estado: '1,2' })
+        const pendentesResp = await coachingService.listarPedidosPendentes({ estados: '1,2' })
         const pendentes = pendentesResp.data || pendentesResp
         if (showAll) {
-          const concluidasResp = await coachingService.listarPedidosPendentes({ id_estado: '3,4,5' }) // Na verdade a API não recebe múltiplos estados facilmente senao mudarmos o backend. Assumimos tudo.
-          data = await coachingService.listarPedidosPendentes().then(r => r.data || r) // Pode nao devolver todos, mas tentamos
+          data = await coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' }).then(r => r.data || r)
         } else {
           data = pendentes
         }
