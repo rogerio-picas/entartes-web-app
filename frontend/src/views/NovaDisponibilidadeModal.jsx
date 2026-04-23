@@ -138,6 +138,7 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess }) {
                                 onChange={e => setModalidade(Number(e.target.value))}
                                 className={`${inputCls} appearance-none cursor-pointer pr-10`}
                             >
+                                
                                 {modalidades.map(m => (
                                     <option key={m.id_modalidade} value={m.id_modalidade}>{m.nome}</option>
                                 ))}

@@ -151,7 +151,10 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
     function validateDados() {
         const e = {}
         if (!form.nome.trim()) e.nome = 'Nome é obrigatório'
-        if (form.telemovel && !/^\d{9,}$/.test(form.telemovel.replace(/\s/g, ''))) e.telemovel = 'Telemóvel inválido'
+        if (form.telemovel) {
+            const t = form.telemovel.replace(/\s/g, '')
+            if (!/^[239]\d{8}$/.test(t)) e.telemovel = 'Telemóvel inválido (9 dígitos, começa por 9, 2 ou 3)'
+        }
         return e
     }
 
@@ -174,10 +177,10 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
         setSaving(true)
         setSuccessMsg('')
         try {
-            await api.put(`/users/${id}`, {
+            await api.put(`/users/perfil/dados-pessoais/${id}`, {
                 nome: form.nome.trim(),
-                apelido: form.apelido.trim() || null,
-                telemovel: form.telemovel.trim() || null,
+                apelido: form.apelido.trim() || undefined,
+                telemovel: form.telemovel.trim() || undefined,
             })
             // Reflectir alterações no localStorage (header actualiza o nome)
             const stored = authService.getUser()
@@ -191,7 +194,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
             onSuccess?.()
             setTimeout(() => setSuccessMsg(''), 3000)
         } catch (err) {
-            setErrors({ _global: err.message || 'Erro ao guardar dados.' })
+            setErrors({ _global: err.response?.data?.error || err.message || 'Erro ao guardar dados.' })
         } finally {
             setSaving(false)
         }
@@ -208,7 +211,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
         setSaving(true)
         setSuccessMsg('')
         try {
-            await api.put(`/users/${id}`, {
+            await api.put(`/users/perfil/password/${id}`, {
                 oldPassword: passForm.password_atual,
                 newPassword: passForm.nova_password,
             })
@@ -216,7 +219,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
             setSuccessMsg('Password alterada com sucesso!')
             setTimeout(() => setSuccessMsg(''), 3000)
         } catch (err) {
-            setPassErrors({ _global: err.message || 'Erro ao alterar password.' })
+            setPassErrors({ _global: err.response?.data?.error || err.message || 'Erro ao alterar password.' })
         } finally {
             setSaving(false)
         }

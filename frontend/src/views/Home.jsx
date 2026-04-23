@@ -10,16 +10,16 @@ import EventModal from '../components/EventModal'
 import NovoEventoModal from './NovoEventoModal'
 
 import {
-  CalendarCheck, CalendarDays, Clock, CheckCircle2, XCircle,
-  AlertCircle, RefreshCw, Check, X, Plus, ChevronRight,
-  Users, MapPin, Music, User, TrendingUp, Star, Megaphone
+  CalendarCheck, CalendarDays, Clock,
+  RefreshCw, Check, X, Plus,
+  User, Star, Megaphone
 } from 'lucide-react'
 
 // Widgets Extracted
 import {
   StatCard, ModalityChart, CoachingHoursChart, EnrollmentChart,
   LiveClassCard, CoachingCard, ConfirmedCard, RequisicaoCard, PresencaDocenteCard,
-  PerfilModal, SectionHeader, ScrollRow, Toast, formatDate, formatTime, formatDuration, timeRemaining
+  PerfilModal, SectionHeader, ScrollRow, Toast
 } from '../components/HomeWidgets'
 
 // ── Presence confirmation card (aluno confirma a SUA presença) ──
@@ -114,7 +114,6 @@ export default function Home() {
     setLoading(true)
     try {
       const now = new Date()
-      const in48h = new Date(now.getTime() + 48 * 3600000)
 
       // Always fetch events
       const evRes = await eventService.getAll().catch(() => [])
@@ -371,7 +370,7 @@ export default function Home() {
         {/* ── ADMIN/DOCENTE: pending requests 48h ────────────────
         {(isAdmin || isDocente) && (
           <section>
-            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Requisições a expirar em 48h"} />
+            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Requisições a expirar em 48h"} action="Ver todas" onAction={() => navigate('/aulas')} />
             {coachings48h.length === 0 ? (
                 <p className="text-sm text-[#4A6362] italic">Sem pendentes nas próximas 48h.</p>
             ) : (
@@ -389,7 +388,7 @@ export default function Home() {
         {/* ── DOCENTE: Presenças a confirmar ──────────────── */}
         {isDocente && (
           <section>
-            <SectionHeader icon={CalendarCheck} title="Presenças a confirmar (48h)" />
+            <SectionHeader icon={CalendarCheck} title="Presenças a confirmar (48h)" action="Ver todas" onAction={() => navigate('/aulas')} />
             {presencasDocente.length === 0 ? (
                 <p className="text-sm text-gray-400 italic">Sem presenças a confirmar.</p>
             ) : (
@@ -418,7 +417,7 @@ export default function Home() {
 
         {/* ── ALUNO/DOCENTE: Aulas confirmadas using ClassCard, ADMIN: ConfirmedCard ──────────────── */}
         <section>
-            <SectionHeader icon={CalendarCheck} title={isAluno ? "As minhas aulas" : "Próximas aulas confirmadas"} action={isAdmin ? "Ver todas" : null} onAction={isAdmin ? () => navigate('/aulas') : null} />
+            <SectionHeader icon={CalendarCheck} title={isAluno ? "As minhas aulas" : "Próximas aulas confirmadas"} action="Ver todas" onAction={() => navigate('/aulas')} />
             {aulasConfirmadas.length === 0 ? (
                 <p className="text-sm text-[#4A6362] italic">Sem aulas confirmadas agendadas.</p>
             ) : (
@@ -436,7 +435,7 @@ export default function Home() {
         {/* ── ALUNO: Inscrições pendentes ──────────────── */}
         {isAluno && inscricoesAluno.length > 0 && (
           <section>
-            <SectionHeader icon={CalendarCheck} title="Inscrições pendentes" />
+            <SectionHeader icon={CalendarCheck} title="Inscrições pendentes" action="Ver todas" onAction={() => navigate('/aulas')} />
             <ScrollRow>
               {inscricoesAluno.slice(0, 3).map((item, idx) => (
                 <ClassCard key={item.id || idx} item={item} statusType="pendente" />
