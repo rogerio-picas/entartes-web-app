@@ -452,6 +452,7 @@ async function listarMeusPedidos(id_aluno, { id_estado = null } = {}) {
     hora_inicio: a.marcacao.hora_inicio,
     duracao_minutos: a.marcacao.duracao_minutos,
     estado: a.marcacao.estado_marcacao?.nome ?? '—',
+    id_estado: a.marcacao.id_estado ?? null,
     data_criacao: a.marcacao.data_criacao,
   }));
 }

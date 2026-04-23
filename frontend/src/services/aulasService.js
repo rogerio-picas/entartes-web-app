@@ -36,8 +36,15 @@ function formatDate(raw) {
  */
 function formatTime(raw) {
     if (!raw) return '—'
+    // Se vier como string HH:mm:ss simples (sem data), extrai directamente
+    if (typeof raw === 'string' && !raw.includes('T') && raw.includes(':')) {
+        const parts = raw.split(':')
+        return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`
+    }
+    // hora_inicio é guardado como DateTime base 1970-01-01THH:mm:ssZ (UTC).
+    // Usar timeZone:'UTC' para não adicionar o offset de Portugal (+1h no Verão).
     const d = new Date(raw)
-    return d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+    return d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
 }
 
 /**
