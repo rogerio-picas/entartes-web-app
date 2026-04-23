@@ -318,7 +318,7 @@ export default function Home() {
         {/* ── ADMIN/DOCENTE: pending requests 48h ──────────────── */}
         {(isAdmin || isDocente) && (
           <section>
-            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Requisições a expirar em 48h"} />
+            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Requisições a expirar em 48h"} action="Ver todas" onAction={() => navigate('/aulas')} />
             {coachings48h.length === 0 ? (
                 <p className="text-sm text-[#4A6362] italic">Sem pendentes nas próximas 48h.</p>
             ) : (
@@ -336,7 +336,7 @@ export default function Home() {
         {/* ── DOCENTE: Presenças a confirmar ──────────────── */}
         {isDocente && (
           <section>
-            <SectionHeader icon={CalendarCheck} title="Presenças a confirmar (48h)" />
+            <SectionHeader icon={CalendarCheck} title="Presenças a confirmar (48h)" action="Ver todas" onAction={() => navigate('/aulas')} />
             {presencasDocente.length === 0 ? (
                 <p className="text-sm text-gray-400 italic">Sem presenças a confirmar.</p>
             ) : (
@@ -363,7 +363,7 @@ export default function Home() {
 
         {/* ── ALUNO/DOCENTE: Aulas confirmadas using ClassCard, ADMIN: ConfirmedCard ──────────────── */}
         <section>
-            <SectionHeader icon={CalendarCheck} title={isAluno ? "As minhas aulas" : "Próximas aulas confirmadas"} action={isAdmin ? "Ver todas" : null} onAction={isAdmin ? () => navigate('/aulas') : null} />
+            <SectionHeader icon={CalendarCheck} title={isAluno ? "As minhas aulas" : "Próximas aulas confirmadas"} action="Ver todas" onAction={() => navigate('/aulas')} />
             {aulasConfirmadas.length === 0 ? (
                 <p className="text-sm text-[#4A6362] italic">Sem aulas confirmadas agendadas.</p>
             ) : (
@@ -380,7 +380,7 @@ export default function Home() {
         {/* ── ALUNO: Inscrições pendentes ──────────────── */}
         {isAluno && inscricoesAluno.length > 0 && (
           <section>
-            <SectionHeader icon={CalendarCheck} title="Inscrições pendentes" />
+            <SectionHeader icon={CalendarCheck} title="Inscrições pendentes" action="Ver todas" onAction={() => navigate('/aulas')} />
             <ScrollRow>
               {inscricoesAluno.map((item, idx) => (
                 <ClassCard key={item.id || idx} item={item} statusType="pendente" />
@@ -394,8 +394,8 @@ export default function Home() {
             <SectionHeader
                 icon={isAdmin ? CalendarDays : Megaphone}
                 title={isAluno ? "Descobrir eventos" : "Próximos eventos"}
-                action={isAdmin ? "Ver todos" : null}
-                onAction={isAdmin ? () => navigate('/events') : null}
+                action="Ver todos"
+                onAction={() => navigate('/eventos')}
             />
             {eventos.length === 0 ? (
                 <p className="text-sm text-[#4A6362] italic">Sem eventos agendados.</p>

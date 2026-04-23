@@ -100,11 +100,11 @@ export default function GestaoUtilizadores() {
         }
     }
 
-    const handleModalSuccess = () => {
+    const handleModalSuccess = (wasEdit) => {
         setShowModal(false)
         setEditTarget(null)
         fetchData()
-        showToast(editTarget ? 'Utilizador atualizado com sucesso.' : 'Utilizador criado com sucesso.')
+        showToast(wasEdit ? 'Utilizador atualizado com sucesso.' : 'Utilizador criado com sucesso.')
     }
 
     return (
