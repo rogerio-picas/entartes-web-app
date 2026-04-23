@@ -434,6 +434,10 @@ async function listarMeusPedidos(id_aluno, { id_estado = null } = {}) {
           modalidade: { select: { nome: true } },
           sala: { select: { nome: true } },
           estado_marcacao: { select: { nome: true } },
+          participacao_conclusao: {
+            where: { id_aluno },
+            select: { confirmou_conclusao: true }
+          },
         },
       },
     },
@@ -452,7 +456,9 @@ async function listarMeusPedidos(id_aluno, { id_estado = null } = {}) {
     hora_inicio: a.marcacao.hora_inicio,
     duracao_minutos: a.marcacao.duracao_minutos,
     estado: a.marcacao.estado_marcacao?.nome ?? '—',
+    id_estado: a.marcacao.id_estado,
     data_criacao: a.marcacao.data_criacao,
+    ja_validou: a.marcacao.participacao_conclusao?.some(p => p.confirmou_conclusao) ?? false,
   }));
 }
  

@@ -11,6 +11,7 @@ import { horarioService } from '../services/horarioService'
 import { eventService } from '../services/eventService'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
+import coachingService from '../services/coachingService'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovoEventoModal from './NovoEventoModal'
 // ─── Localizer para português ───────────────────────────────────────────────
@@ -414,11 +415,10 @@ export default function Horario() {
         setError('')
         try {
             // Buscar todas as aulas e eventos para todos os perfis
-            const { coachingService: cs } = await import('../services/coachingService')
             const fetchAulas = async () => {
-                if (role === 1) return await cs.getAdminPedidos('1,2,3,4,5').catch(()=>[])
-                if (role === 2) return await cs.getDocenteAulas().catch(()=>[])
-                return await cs.getAlunoPedidos().catch(()=>[])
+                if (role === 1) return await coachingService.listarPedidosPendentes({ id_estado: '1,2,3,4,5' }).then(r => r.data || r).catch(()=>[])
+                if (role === 2) return await coachingService.listarMinhasAulas().then(r => r.data || r).catch(()=>[])
+                return await coachingService.listarMeusPedidos().then(r => r.data || r).catch(()=>[])
             }
             const [aulasRes, evRes] = await Promise.allSettled([
                 fetchAulas(),

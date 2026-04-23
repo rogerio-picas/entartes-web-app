@@ -3,7 +3,7 @@ import {
   CalendarDays, Clock, User, MapPin, Music, CheckCircle2,
   XCircle, AlertCircle, RefreshCw, Plus, X, BookOpen, ArrowUpDown, Check
 } from 'lucide-react'
-import { coachingService } from '../services/coachingService'
+import coachingService from '../services/coachingService'
 import { api } from '../services/api'
 import { authService } from '../services/authService'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
@@ -160,17 +160,18 @@ export default function Aulas() {
     try {
       let data = []
       if (role === 1) { // Admin
-        const pendentes = await coachingService.getAdminPedidos('1,2')
+        const pendentesResp = await coachingService.listarPedidosPendentes({ id_estado: '1,2' })
+        const pendentes = pendentesResp.data || pendentesResp
         if (showAll) {
-          const concluidas = await coachingService.getAdminPedidos('3,4,5') // Na verdade a API não recebe múltiplos estados facilmente senao mudarmos o backend. Assumimos tudo.
-          data = await coachingService.getAdminPedidos() // Pode nao devolver todos, mas tentamos
+          const concluidasResp = await coachingService.listarPedidosPendentes({ id_estado: '3,4,5' }) // Na verdade a API não recebe múltiplos estados facilmente senao mudarmos o backend. Assumimos tudo.
+          data = await coachingService.listarPedidosPendentes().then(r => r.data || r) // Pode nao devolver todos, mas tentamos
         } else {
           data = pendentes
         }
       } else if (role === 2) { // Docente
-        data = await coachingService.getDocenteAulas()
+        data = await coachingService.listarMinhasAulas().then(r => r.data || r)
       } else { // Aluno
-        data = await coachingService.getAlunoPedidos()
+        data = await coachingService.listarMeusPedidos().then(r => r.data || r)
       }
       setMarcacoes(data || [])
     } catch (err) {

@@ -1,97 +1,89 @@
-import { api } from './api'
+import { api } from './api'; 
 
-// ── Helpers de Formatação ────────────────────────────────────────────────────────
+const coachingService = {
 
-function formatDate(raw) {
-    if (!raw) return '—'
-    const d = new Date(raw)
-    return d.toLocaleDateString('pt-PT', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    })
-}
-
-function formatTime(raw) {
-    if (!raw) return '—'
-    const d = new Date(raw)
-    // Caso seja formato HH:mm:ss vindo cru
-    if (raw.toString().includes('T') === false && raw.toString().includes(':')) {
-        const parts = raw.split(':')
-        return `${parts[0]}:${parts[1]}`
-    }
-    return d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatDuration(minutos) {
-    if (!minutos) return '—'
-    if (minutos < 60) return `${minutos} min`
-    const h = Math.floor(minutos / 60)
-    const m = minutos % 60
-    return m > 0 ? `${h}h ${m}min` : `${h}h`
-}
-
-/**
- * Normaliza os variados formatos vindos dos diferentes Endpoints de Coaching
- * para o formato unificado aceite pelas Views e ClassCards/ConfirmedCards.
- */
-function mapCoachingParaCartoes(m) {
-    // Alunos vêm como [{ nome: '...' }] dependendo se pedimos do docente ou coordenadora
-    const nomesAlunos = Array.isArray(m.alunos) 
-        ? m.alunos.map(a => a.nome ?? 'Aluno Desconhecido') 
-        : []
-
-    return {
-        id:           m.id_marcacao,
-        data:         formatDate(m.data),
-        hora:         formatTime(m.hora_inicio),
-        duracao:      formatDuration(m.duracao_minutos),
-        duracao_min:  m.duracao_minutos ?? 0,
-        docente:      m.docente ?? 'Docente logado',
-        modalidade:   m.modalidade ?? '—',
-        // Na coordenação chama-se sala_atual
-        sala:         m.sala_atual ?? m.sala ?? '—',
-        id_estado:    m.id_estado ?? null,
-        estado_nome:  m.estado ?? 'Desconhecido',
-        alunos:       nomesAlunos,
-        _data_raw:    m.data,
-    }
-}
-
-// ── API calls para as Roles ───────────────────────────────────────────────────────
-
-export const coachingService = {
-    // 1 = AGENDADA (PENDENTE)
-    // 2 = EM_VALIDACAO
-    // 3 = CONFIRMADA
-    // 4 = CONCLUIDA
-    // 5 = CANCELADA
-    ESTADOS: {
-        PENDENTE:    1,
-        EM_VALIDACAO: 2,
-        CONFIRMADA:  3,
-        CONCLUIDA:   4,
-        CANCELADA:   5,
+  ESTADOS: {
+    PENDENTE:     1,
+    EM_VALIDACAO: 2,
+    CONFIRMADA:   3,
+    CONCLUIDA:    4,
+    CANCELADA:    5,
     },
 
-    // ── ADMIN (COORDENAÇÃO) ──
-    async getAdminPedidos(estados = null) {
-        const query = estados ? `?estados=${estados}` : ''
-        const data = await api.get(`/coaching/pedidos-pendentes${query}`)
-        return Array.isArray(data) ? data.map(mapCoachingParaCartoes) : []
-    },
+  // ==========================================
+  // ROTAS DO ALUNO
+  // ==========================================
+  
+  consultarDisponibilidades: async (filtros = {}) => {
+    // filtros pode conter { id_modalidade, data }
+    const response = await api.get('/coaching/disponibilidades/consultar', { params: filtros });
+    return response;
+  },
 
-    // ── DOCENTE ──
-    async getDocenteAulas(id_estado = null) {
-        const query = id_estado ? `?id_estado=${id_estado}` : ''
-        const data = await api.get(`/coaching/minhas-aulas${query}`)
-        return Array.isArray(data) ? data.map(mapCoachingParaCartoes) : []
-    },
+  solicitarMarcacao: async (dados) => {
+    // dados: { id_docente, id_modalidade, data_a_realizar, hora_inicio, duracao_minutos, ... }
+    const response = await api.post('/coaching/marcacao/solicitar', dados);
+    return response;
+  },
 
-    // ── ALUNO ──
-    async getAlunoPedidos(id_estado = null) {
-        const query = id_estado ? `?id_estado=${id_estado}` : ''
-        const data = await api.get(`/coaching/meus-pedidos${query}`)
-        return Array.isArray(data) ? data.map(mapCoachingParaCartoes) : []
-    }
+  listarMeusPedidos: async (id_estado = null) => {
+    const response = await api.get('/coaching/meus-pedidos', { params: { id_estado } });
+    return response;
+  },
+
+  cancelarPedidoPendente: async (id_marcacao) => {
+    const response = await api.delete(`/coaching/pedido/${id_marcacao}/cancelar`);
+    return response;
+  },
+
+  validarConclusaoSessaoAluno: async (id_marcacao) => {
+    const response = await api.post(`/coaching/aluno/conclusao-sessao/${id_marcacao}`);
+    return response;
+  },
+
+  // ==========================================
+  // ROTAS DA COORDENADORA
+  // ==========================================
+
+  listarPedidosPendentes: async (filtros = {}) => {
+    const response = await api.get('/coaching/pedidos-pendentes', { params: filtros });
+    return response;
+  },
+
+  confirmarMarcacao: async (id_marcacao, id_sala) => {
+    const response = await api.post('/coaching/confirmar-marcacao', { id_marcacao, id_sala });
+    return response;
+  },
+
+  rejeitarMarcacao: async (id_marcacao, motivo) => {
+    const response = await api.post('/coaching/rejeitar-marcacao', { id_marcacao, motivo });
+    return response;
+  },
+
+  cancelarMarcacaoConfirmada: async (id_marcacao, motivo) => {
+    const response = await api.post('/coaching/cancelar-marcacao', { id_marcacao, motivo });
+    return response;
+  },
+
+  // ==========================================
+  // ROTAS DO DOCENTE
+  // ==========================================
+
+  listarMinhasAulas: async (id_estado = null) => {
+    const response = await api.get('/coaching/minhas-aulas', { params: { id_estado } });
+    return response;
+  },
+
+  validarConclusaoSessaoDocente: async (id_marcacao) => {
+    const response = await api.post(`/coaching/docente/conclusao-sessao/${id_marcacao}`);
+    return response;
+  },
+
+  cancelarMarcacaoDocente: async (id_marcacao, motivo) => {
+    const response = await api.post(`/coaching/cancelar-marcacao/${id_marcacao}`, { motivo });
+    return response;
+  }
+
 }
+
+export default coachingService;
