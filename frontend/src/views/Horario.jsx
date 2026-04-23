@@ -9,9 +9,9 @@ import {
 } from 'lucide-react'
 import { horarioService } from '../services/horarioService'
 import { eventService } from '../services/eventService'
-import coachingService from '../services/coachingService'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
+import coachingService from '../services/coachingService'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovoEventoModal from './NovoEventoModal'
 // ─── Localizer para português ───────────────────────────────────────────────
@@ -62,13 +62,11 @@ const STATUS_COLOR = {
 }
 const STATUS_LABEL = { 1: 'Pendente', 2: 'Confirmado', 3: 'Cancelado', 4: 'Finalizado' }
 
-
-
 // ─── Custom Calendar Event ───────────────────────────────────────────────────
 function EventComponent({ event }) {
     const color = event._isEvent
         ? EVENT_COLOR
-        : getModalityColor(event.modalidade);
+        : getModalityColor(event.modalidade)
 
     return (
         <div
@@ -77,55 +75,14 @@ function EventComponent({ event }) {
                 color: color.text,
                 border: `1px solid ${color.border}`,
             }}
-            className="rounded px-1.5 py-0.5 text-[11px] font-medium truncate overflow-hidden h-full"
+            className="rounded px-1.5 py-0.5 text-[11px] font-medium truncate overflow-hidden"
         >
             <span className="font-semibold">{format(event.start, 'HH:mm')}</span>
             {' '}
             <span className="truncate">{event.title}</span>
         </div>
-    );
+    )
 }
-
-// 2. Componente para renderizar o FUNDO do dia (a célula do calendário)
-// Coloca-o FORA do EventComponent
-const DateCellWrapper = ({ children, value, disponibilidades, onAddClick }) => {
-    const [isHovered, setIsHovered] = useState(false);
-
-    const temDisponibilidade = useMemo(() => {
-        // Lógica para data específica ou dia da semana
-        const dataStr = format(value, 'yyyy-MM-dd');
-        const diaSemana = value.getDay(); // 0 (Dom) a 6 (Sáb)
-
-        return disponibilidades.some(d => {
-            if (d.data_especifica) {
-                return format(new Date(d.data_especifica), 'yyyy-MM-dd') === dataStr;
-            }
-            return d.dia_semana === diaSemana;
-        });
-    }, [value, disponibilidades]);
-
-    return (
-        <div 
-            className="relative h-full w-full group"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
-            {children}
-            
-            {temDisponibilidade && isHovered && (
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onAddClick(value); 
-                    }}
-                    className="absolute top-1 right-1 z-20 bg-[#006A68] text-white p-1 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center"
-                >
-                    <Plus size={14} strokeWidth={3} />
-                </button>
-            )}
-        </div>
-    );
-};
 
 // ─── Custom Toolbar ──────────────────────────────────────────────────────────
 function CustomToolbar({ label, onNavigate, onView, view }) {
@@ -233,7 +190,7 @@ function DetailModal({ item, onClose, role }) {
                                 </div>
                             </div>
                         )}
-                        {item.docente && role !== 2 && (
+                        {item.docente && (
                             <div className="flex items-start gap-2 col-span-2">
                                 <User size={14} className="text-[#006A68] mt-0.5 shrink-0" />
                                 <div>
@@ -256,7 +213,7 @@ function DetailModal({ item, onClose, role }) {
                             </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {item.alunos.map((a, i) => (
-                                    <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full">{a.nome || a}</span>
+                                    <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full">{a}</span>
                                 ))}
                             </div>
                         </div>
@@ -457,14 +414,17 @@ export default function Horario() {
         setLoading(true)
         setError('')
         try {
+            // Buscar todas as aulas e eventos para todos os perfis
+            const fetchAulas = async () => {
+                if (role === 1) return await coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' }).then(r => r.data || r).catch(()=>[])
+                if (role === 2) return await coachingService.listarMinhasAulas().then(r => r.data || r).catch(()=>[])
+                return await coachingService.listarMeusPedidos().then(r => r.data || r).catch(()=>[])
+            }
             const [aulasRes, evRes] = await Promise.allSettled([
-                role === 1 
-                  ? coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' })
-                  : (role === 2 ? coachingService.listarMinhasAulas() : coachingService.listarMeusPedidos()),
+                fetchAulas(),
                 eventService.getAll(),
             ])
-            const rawAulas = aulasRes.status === 'fulfilled' ? (Array.isArray(aulasRes.value) ? aulasRes.value : (aulasRes.value?.data || [])) : []
-            setAulas(rawAulas.map(a => ({ ...a, id: a.id_marcacao, data_de_realizacao: a.data, _data_raw: a.data })))
+            setAulas(aulasRes.status === 'fulfilled' ? aulasRes.value : [])
             setEventos(evRes.status === 'fulfilled' && Array.isArray(evRes.value) ? evRes.value : [])
         } catch (e) {
             setError(e.message || 'Erro ao carregar horário.')
