@@ -7,6 +7,7 @@ import EditarPerfilModal from '../components/EditarPerfilModal'
 export default function ProfileManagement() {
   const navigate = useNavigate()
   const [showEditarPerfil, setShowEditarPerfil] = useState(false)
+  const role = authService.getUser()?.role ?? 3
 
   const handleLogout = () => {
     authService.logout()
@@ -22,6 +23,7 @@ export default function ProfileManagement() {
     { title: 'Gestão de Notificações', icon: BellRing, onClick: () => {} },
     { title: 'Gerir modalidades',      icon: Music2,  onClick: () => {} },
     { title: 'Ajuda e Suporte',        icon: LifeBuoy, onClick: () => {} },
+    ...(role !== 3 ? [{ title: 'Gerir modalidades', icon: Music2, onClick: () => navigate('/modalidades') }] : []),
   ]
 
   return (
@@ -62,6 +64,7 @@ export default function ProfileManagement() {
             )
           })}
         </div>
+      
 
         {/* Logout */}
         <div className="mt-12 pt-8 border-t border-[#4a6362]/10">
@@ -76,7 +79,7 @@ export default function ProfileManagement() {
             Ao sair, terás de introduzir as tuas credenciais novamente para aceder ao dashboard.
           </p>
         </div>
-      </div>
+      
 
       {/* Editar Perfil Modal */}
       {showEditarPerfil && (

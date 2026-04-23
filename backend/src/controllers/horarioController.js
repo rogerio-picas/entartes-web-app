@@ -231,7 +231,7 @@ const getAulasDisponiveis = async (req, res) => {
         const marcacoes = await prisma.marcacao.findMany({
             where: {
                 data_a_realizar: { gte: agora },
-                id_estado: { in: [1, 2] } // Pendente ou Confirmada
+                id_estado: { in: [1, 3] } // Pendente ou Confirmada
             },
             include: {
                 estado_marcacao: true,

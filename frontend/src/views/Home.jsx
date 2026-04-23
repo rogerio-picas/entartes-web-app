@@ -1,8 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+
+
+import {  ClassCard, EventCard, DashboardSection } from '../components/Cards'
 import { Clock, CalendarCheck, Megaphone, Loader2, Check, X, AlertCircle } from 'lucide-react'
-import { ClassCard, EventCard, DashboardSection } from '../components/Cards'
 import EventModal from '../components/EventModal'
+
 import { eventService } from '../services/eventService'
 import { api } from '../services/api'
 import { authService } from '../services/authService'
@@ -149,13 +152,14 @@ export default function Home() {
             )}
           </DashboardSection>
 
-          {/* Próximas aulas confirmadas */}
+           {/* Próximas aulas confirmadas */}
           <DashboardSection title="Próximas aulas confirmadas" icon={CalendarCheck}>
             {aulas.length > 0 ? aulas.map(item => (
               <ClassCard key={item.id} item={item} statusType="confirmada" />
             )) : (
               <p className="px-6 md:px-0 text-sm text-gray-400 italic">
-                Sem aulas confirmadas agendadas.</p>
+                Sem aulas confirmadas agendadas.
+              </p>
             )}
           </DashboardSection>
 
@@ -165,7 +169,8 @@ export default function Home() {
               <ClassCard key={item.id} item={item} statusType="pendente" />
             )) : (
               <p className="px-6 md:px-0 text-sm text-gray-400 italic">
-                Nenhuma inscrição pendente.</p>
+                Nenhuma inscrição pendente.
+              </p>
             )}
           </DashboardSection>
 
@@ -175,21 +180,51 @@ export default function Home() {
               <Megaphone size={28} className="text-brand-dark" />
               <h2 className="text-2xl font-bold text-black">Próximos eventos</h2>
             </div>
+
             {eventos.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {eventos.slice(0, 3).map(item => (
-                  <EventCard key={item.id_evento} event={item}
-                    onOpen={() => setSelectedEventId(item.id_evento)} />
-                ))}
+              <div className="flex flex-col gap-6">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {eventos.slice(0, 3).map(item => (
+                    <EventCard
+                      key={item.id_evento || item.id}
+                      event={item}
+                      onOpen={() => setSelectedEventId(item.id_evento || item.id)}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex justify-start">
+                  <button
+                    onClick={() => navigate('/Events')}
+                    className="group flex items-center gap-2 text-[#006A68] font-semibold text-sm hover:gap-3 transition-all"
+                  >
+                    Ver todos os eventos
+                    <span className="bg-[#CCE8E6] p-1 rounded-full group-hover:bg-[#006A68] group-hover:text-white transition-colors">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <path d="M9 18l6-6-6-6" />
+                      </svg>
+                    </span>
+                  </button>
+                </div>
+
               </div>
             ) : (
-              <p className="text-sm text-gray-400 italic">Sem eventos de momento.</p>
+              <p className="text-sm text-gray-400 italic">
+                Sem eventos de momento.
+              </p>
             )}
           </section>
+
+                    {/* Modal de evento */}
+          {selectedEventId && (
+            <EventModal
+              eventId={selectedEventId}
+              onClose={() => setSelectedEventId(null)}
+            />
+          )}
+
         </main>
-      )}
-      {selectedEventId && (
-        <EventModal eventId={selectedEventId} onClose={() => setSelectedEventId(null)} />
       )}
     </div>
   )

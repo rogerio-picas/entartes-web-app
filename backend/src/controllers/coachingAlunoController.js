@@ -37,28 +37,13 @@ const consultarDisponibilidades = async (req, res) => {
 const solicitarMarcacao = async (req, res) => {
   try {
     const id_aluno = req.user?.id;
-    const {
-      id_docente,
-      id_modalidade,
-      data_a_realizar,
-      hora_inicio,
-      duracao_minutos,
-      numero_alunos_pretendidos = 1,
-    } = req.body;
+    const dados = req.body;
 
-    if (!id_docente || !id_modalidade || !data_a_realizar || !hora_inicio || !duracao_minutos) {
-      return res.status(400).json({ message: 'Todos os campos são obrigatórios: id_docente, id_modalidade, data_a_realizar, hora_inicio, duracao_minutos.' });
+    if (!dados.id_docente || !dados.id_modalidade || !dados.data_a_realizar || !dados.hora_inicio || !dados.duracao_minutos) {
+      return res.status(400).json({ message: 'id_docente, id_modalidade, data_a_realizar, hora_inicio e duracao_minutos são obrigatórios.' });
     }
 
-    const marcacao = await coachingAlunoService.solicitarMarcacao(id_aluno, {
-      id_docente: Number(id_docente),
-      id_modalidade: Number(id_modalidade),
-      data_a_realizar,
-      hora_inicio,
-      duracao_minutos: Number(duracao_minutos),
-      numero_alunos_pretendidos: Number(numero_alunos_pretendidos),
-    });
-
+    const marcacao = await coachingAlunoService.solicitarMarcacao(id_aluno, dados);
     return res.status(201).json({ message: 'Pedido de marcação enviado com sucesso.', details: marcacao });
   } catch (error) {
     return _handleError(res, error);

@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { authService } from '../services/authService'
-import { Home, CalendarDays, Users, GraduationCap, User, Bell, Calendar, LogOut , LayoutGrid} from 'lucide-react'
+import { Home, CalendarDays, GraduationCap, User, Bell, Calendar, LogOut, LayoutGrid } from 'lucide-react'
 
 export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
     const navigate = useNavigate()
@@ -17,7 +17,7 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
         navigate('/login')
     }
 
-  
+
   const navItems = role === 1
   ? [
       { label: 'Início',   path: '/admin/home',  icon: Home },
@@ -61,7 +61,8 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                     <span className={`text-lg font-medium transition-colors ${isProfileActive ? 'text-brand-darkest' : 'text-[#9CF1EE]'}`}>
                         {firstName?.[0] ?? 'A'}
                     </span>
-                </div>
+ 
+            </div>
                 <div className="flex flex-col">
                     <span className="text-[#4A6362] text-sm tracking-wide">Olá,</span>
                     <span className={`font-semibold text-xl leading-tight transition-colors ${isProfileActive ? 'text-brand-dark' : 'text-black'}`}>
@@ -69,7 +70,7 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                     </span>
                 </div>
             </button>
-
+ 
             {/* Centre: Navigation */}
             <div className="hidden md:flex items-center justify-center gap-1">
                 {navItems.map((item) => {
@@ -94,12 +95,15 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                 })}
             </div>
 
+ 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
+                {/* Bell with unread badge */}
                 <button
                     onClick={onBellClick}
                     className="relative flex items-center justify-center w-10 h-10 bg-[#4A6362] rounded-full hover:bg-[#3A504F] transition-colors"
                     title="Notificações"
+                    aria-label={`Notificações${unreadCount > 0 ? ` — ${unreadCount} por ler` : ''}`}
                 >
                     <Bell size={20} className="text-white" />
                     {unreadCount > 0 && (
@@ -109,6 +113,7 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                     )}
                 </button>
 
+ 
                 <button
                     onClick={handleLogout}
                     className="flex items-center justify-center w-10 h-10 bg-brand-bg border border-brand-dark rounded-full hover:bg-red-50 hover:border-red-300 transition-colors group"
@@ -119,4 +124,3 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
             </div>
         </nav>
     )
-}
