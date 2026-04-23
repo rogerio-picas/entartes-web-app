@@ -23,7 +23,7 @@ export const modalidadeService = {
 
     async listarDocentes() {
         const users = await api.get('/users?id_tipo=2')
-        return users.map(u => ({ id_docente: u.id_utilizador, nome: u.nome, apelido: u.apelido }))
+        return users.map(u => ({ id_docente: u.id_utilizador, nome: u.nome, apelido: u.apelido, codigo_username: u.codigo_username }))
     },
 
     async associarDocente(id_modalidade, id_docente) {

@@ -8,11 +8,10 @@ import Horario from './views/Horario'
 import Escola from './views/Escola'
 import Profile from './views/Profile'
 
-import AulasAdmin     from './views/AulasAdmin'
-
-import Modalidades    from './views/Modalidades'
-import NovoEventoModal from './views/NovoEventoModal'
-import { authService } from './services/authService'
+import AulasAdmin from './views/AulasAdmin'
+import Modalidades from './views/Modalidades'
+import GestaoUtilizadores from './views/GestaoUtilizadores'
+import PainelGestao from './views/PainelGestao'
 
 import ProtectedRoute from './components/ProtectedRoute'
 import DashboardLayout from './components/DashboardLayout' 
@@ -37,13 +36,16 @@ export default function App() {
           <Route path="/"  element={<Home />} />  
           <Route path="/home" element={<Navigate to="/" replace />} />
           <Route path="/horario" element={<Horario />} />
-          <Route path="/aulas" element={<Aulas  />} />
+          <Route path="/aulas" element={<Aulas />} />
+          <Route path="/admin/aulas" element={<AulasAdmin />} />
           <Route path="/escola" element={<Escola />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/eventos" element={<Events />} />
           <Route path="/eventos/:id" element={<EventDetailsView />} />
 
           <Route path="/modalidades" element={<Modalidades />} />
+          <Route path="/gestao" element={<PainelGestao />} />
+          <Route path="/gestao/utilizadores" element={<GestaoUtilizadores />} />
         </Route>
 
         {/* Fallback para rotas inexistentes */}
