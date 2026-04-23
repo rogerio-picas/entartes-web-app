@@ -61,8 +61,9 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                     <span className={`text-lg font-medium transition-colors ${isProfileActive ? 'text-brand-darkest' : 'text-[#9CF1EE]'}`}>
                         {firstName?.[0] ?? 'A'}
                     </span>
+                </div>
  
-            </div>
+            
                 <div className="flex flex-col">
                     <span className="text-[#4A6362] text-sm tracking-wide">Olá,</span>
                     <span className={`font-semibold text-xl leading-tight transition-colors ${isProfileActive ? 'text-brand-dark' : 'text-black'}`}>
@@ -124,3 +125,4 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
             </div>
         </nav>
     )
+}
