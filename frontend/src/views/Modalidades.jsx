@@ -179,7 +179,7 @@ export default function Modalidades() {
                                                                     key={d.id_docente}
                                                                     className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full font-medium"
                                                                 >
-                                                                    {d.nome} {d.apelido}
+                                                                    {[d.nome, d.apelido].filter(Boolean).join(' ') || d.codigo_username}
                                                                 </span>
                                                             ))}
                                                         </div>

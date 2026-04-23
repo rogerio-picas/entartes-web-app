@@ -5,12 +5,9 @@ import { Home, CalendarDays, GraduationCap, User, Bell, Calendar, LogOut, Layout
 export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
     const navigate = useNavigate()
     const location = useLocation()
-    const user = authService.getUser() || {}
-    const role = user.role ?? 3    
+    const user = authService.getUser() || { nome: 'Ana Pinto' }
     const [firstName, ...rest] = (user.nome ?? '').split(' ')
     const lastName = rest.at(-1) ?? ''
-    
-    const isProfileActive = location.pathname === '/profile'
 
     function handleLogout() {
         authService.logout()
@@ -18,60 +15,34 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
     }
 
 
-  const navItems = role === 1
-  ? [
-      { label: 'Início',   path: '/admin/home',  icon: Home },
-      { label: 'Horário',  path: '/horario',      icon: Calendar },
-      { label: 'Aulas',    path: '/admin/aulas',  icon: CalendarDays },
-      { label: 'Escola',   path: '/escola',       icon: GraduationCap },
-      { label: 'Eventos',  path: '/eventos',      icon: CalendarDays },
-      { label: 'Grupos',   path: '/grupos',       icon: LayoutGrid },
-      { label: 'Perfil',   path: '/profile',      icon: User },
-    ]
-  : role === 2
-  ? [
-      { label: 'Início',   path: '/docente/home', icon: Home },
-      { label: 'Horário',  path: '/horario',      icon: Calendar },
-      { label: 'Aulas',    path: '/aulas',        icon: CalendarDays },
-      { label: 'Escola',   path: '/escola',       icon: GraduationCap },
-      { label: 'Eventos',  path: '/eventos',      icon: CalendarDays },
-      { label: 'Perfil',   path: '/profile',      icon: User },
-    ]
-  : [
-      { label: 'Início',   path: '/aluno/home',   icon: Home },
-      { label: 'Horário',  path: '/horario',      icon: Calendar },
-      { label: 'Aulas',    path: '/aulas',        icon: CalendarDays },
-      { label: 'Eventos',  path: '/eventos',      icon: CalendarDays },
-      { label: 'Perfil',   path: '/profile',      icon: User },
+    const isAdmin = user?.role === 1
+
+    const navItems = [
+        { label: 'Início', path: '/home', icon: Home },
+        { label: 'Horário', path: '/horario', icon: Calendar },
+        { label: 'Aulas', path: '/aulas', icon: CalendarDays },
+        ...(isAdmin ? [{ label: 'Painel de Gestão', path: '/gestao', icon: LayoutGrid }] : []),
+        { label: 'Escola', path: '/escola', icon: GraduationCap },
+        { label: 'Eventos', path: '/eventos', icon: Calendar },
+        { label: 'Perfil', path: '/profile', icon: User },
     ]
 
-  return (
+    return (
         <nav className="bg-[#EFF5F4] border-b-[3px] border-brand-dark px-6 py-4 flex items-center justify-between sticky top-0 z-30">
 
-            {/* Left: Greeting - Agora clicável e com efeito de estado ativo */}
-            <button 
-                onClick={() => navigate('/profile')}
-                className="flex items-center gap-3 hover:opacity-80 transition-all outline-none text-left group"
-            >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all 
-                    ${isProfileActive 
-                        ? 'ring-2 ring-brand-dark bg-brand-light' 
-                        : 'bg-brand-dark group-hover:shadow-md'}`}
-                >
-                    <span className={`text-lg font-medium transition-colors ${isProfileActive ? 'text-brand-darkest' : 'text-[#9CF1EE]'}`}>
-                        {firstName?.[0] ?? 'A'}
-                    </span>
+            {/* Left: Greeting */}
+            <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-brand-dark flex items-center justify-center shrink-0">
+                    <span className="text-[#9CF1EE] text-lg font-medium">{firstName?.[0] ?? 'A'}</span>
                 </div>
- 
-            
                 <div className="flex flex-col">
                     <span className="text-[#4A6362] text-sm tracking-wide">Olá,</span>
-                    <span className={`font-semibold text-xl leading-tight transition-colors ${isProfileActive ? 'text-brand-dark' : 'text-black'}`}>
+                    <span className="text-black font-semibold text-xl leading-tight">
                         {firstName} {lastName}
                     </span>
                 </div>
-            </button>
- 
+            </div>
+
             {/* Centre: Navigation */}
             <div className="hidden md:flex items-center justify-center gap-1">
                 {navItems.map((item) => {
@@ -82,13 +53,13 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                         <button
                             key={item.label}
                             onClick={() => navigate(item.path)}
-                            className="relative flex flex-col items-center justify-center w-[88px] h-16 group outline-none"
+                            className="relative flex flex-col items-center justify-center min-w-[88px] px-2 h-16 group outline-none"
                         >
                             <div className={`flex items-center justify-center w-16 h-8 rounded-full mb-1 transition-colors
                                 ${isActive ? 'bg-brand-light' : 'bg-transparent group-hover:bg-brand-light/50'}`}>
                                 <Icon size={20} className={isActive ? 'text-[#324B4A]' : 'text-brand-darkest group-hover:text-[#324B4A]'} />
                             </div>
-                            <span className={`text-xs font-medium tracking-wide ${isActive ? 'text-[#324B4A]' : 'text-brand-darkest'}`}>
+                            <span className={`text-xs font-medium tracking-wide text-center leading-tight ${isActive ? 'text-[#324B4A]' : 'text-brand-darkest'}`}>
                                 {item.label}
                             </span>
                         </button>
@@ -96,7 +67,6 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                 })}
             </div>
 
- 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
                 {/* Bell with unread badge */}
@@ -114,7 +84,6 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                     )}
                 </button>
 
- 
                 <button
                     onClick={handleLogout}
                     className="flex items-center justify-center w-10 h-10 bg-brand-bg border border-brand-dark rounded-full hover:bg-red-50 hover:border-red-300 transition-colors group"

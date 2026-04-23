@@ -50,7 +50,7 @@ export default function NovaModalidadeModal({ onClose, onSuccess, modalidade }) 
         if (!addingId) return
         const d = allDocentes.find(d => d.id_docente === parseInt(addingId))
         if (!d) return
-        setSelectedDocentes(prev => [...prev, { id_docente: d.id_docente, nome: d.nome, apelido: d.apelido }])
+        setSelectedDocentes(prev => [...prev, { id_docente: d.id_docente, nome: d.nome, apelido: d.apelido, codigo_username: d.codigo_username }])
         setAddingId('')
     }
 
@@ -132,7 +132,7 @@ export default function NovaModalidadeModal({ onClose, onSuccess, modalidade }) 
                                         key={d.id_docente}
                                         className="inline-flex items-center gap-1.5 text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full font-medium"
                                     >
-                                        {d.nome} {d.apelido}
+                                        {[d.nome, d.apelido].filter(Boolean).join(' ') || d.codigo_username}
                                         <button
                                             onClick={() => removeDocente(d.id_docente)}
                                             className="hover:text-red-600 transition-colors"
@@ -158,7 +158,7 @@ export default function NovaModalidadeModal({ onClose, onSuccess, modalidade }) 
                                         <option value="">Selecionar...</option>
                                         {availableDocentes.map(d => (
                                             <option key={d.id_docente} value={d.id_docente}>
-                                                {d.nome} {d.apelido}
+                                                {[d.nome, d.apelido].filter(Boolean).join(' ') || d.codigo_username}
                                             </option>
                                         ))}
                                     </select>
