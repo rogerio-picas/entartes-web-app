@@ -152,7 +152,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                 await syncDocenteModalidades(userId)
             }
 
-            onSuccess()
+            onSuccess(isEdit)
         } catch (err) {
             setServerError(err.message || 'Erro ao guardar utilizador.')
         } finally {
