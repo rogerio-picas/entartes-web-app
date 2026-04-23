@@ -27,6 +27,24 @@ const listarEventos = async (req, res) => {
   }
 };
 
+const listarMeusEventos = async (req, res) => {
+  try {
+    const id_utilizador = req.user.id;
+    const role = req.user.role; // Assuming token sets role, or id_tipo
+    // The role is probably req.user.id_tipo or req.user.role. Let's check tokenMiddleware.
+    const userRole = req.user.id_tipo || req.user.role;
+    if (userRole === 1) {
+      const eventos = await eventService.listarEventos();
+      return res.status(200).json(eventos);
+    }
+    const eventos = await eventService.listarMeusEventos(id_utilizador, userRole);
+    return res.status(200).json(eventos);
+  } catch (error) {
+    return res.status(500).json({ error: "Erro ao listar meus eventos." });
+  }
+};
+
+
 const buscarEventoPorId = async (req, res) => {
   try {
     const evento = await eventService.buscarEventoPorId(req.params.id);
@@ -157,6 +175,7 @@ const removerDocenteDoEvento = async (req, res) => {
 module.exports = {
   criarEvento,
   listarEventos,
+  listarMeusEventos,
   editarEvento,
   cancelarEvento,
   buscarEventoPorId,

@@ -19,8 +19,8 @@ export default function Events() {
 
   function loadEvents() {
     setLoading(true)
-    eventService
-      .getAll()
+    const fetchPromise = isAdmin ? eventService.getAll() : eventService.getMyEvents()
+    fetchPromise
       .then((data) => setEvents(Array.isArray(data) ? data : []))
       .catch((err) => setError(err.message || 'Erro ao carregar eventos.'))
       .finally(() => setLoading(false))

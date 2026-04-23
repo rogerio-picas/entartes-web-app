@@ -116,7 +116,12 @@ export default function Home() {
       const now = new Date()
 
       // Always fetch events
-      const evRes = await eventService.getAll().catch(() => [])
+      let evRes;
+      if (isAdmin) {
+          evRes = await eventService.getAll().catch(() => []);
+      } else {
+          evRes = await eventService.getMyEvents().catch(() => []);
+      }
       const evs = Array.isArray(evRes) ? evRes : []
       setEventos(evs)
 
@@ -455,7 +460,7 @@ export default function Home() {
         <section>
             <SectionHeader
                 icon={isAdmin ? CalendarDays : Megaphone}
-                title={isAluno ? "Descobrir eventos" : "Próximos eventos"}
+                title={isAdmin ? "Próximos eventos" : "Os meus eventos"}
                 action="Ver todos"
                 onAction={() => navigate('/eventos')}
             />
@@ -479,7 +484,11 @@ export default function Home() {
           onSuccess={(nome) => {
             setShowNovoEvento(false)
             showToast(`Evento "${nome}" criado com sucesso!`)
-            eventService.getAll().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
+            if (isAdmin) {
+              eventService.getAll().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
+            } else {
+              eventService.getMyEvents().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
+            }
           }}
         />
       )}
