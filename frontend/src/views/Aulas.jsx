@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   CalendarDays, Clock, User, MapPin, Music, CheckCircle2,
   XCircle, AlertCircle, RefreshCw, Plus, X, BookOpen, ArrowUpDown, Check
@@ -12,8 +13,8 @@ import { disponibilidadeService } from '../services/disponibilidadeService'
 
 // ─── Mapeamento de estados e Funções Auxiliares ───────────
 const STATUS_CFG = {
-  1: { label: 'Pendente', icon: Clock, textColor: 'text-amber-700', bg: 'bg-amber-100', border: 'border-amber-200' },
-  2: { label: 'Em Validação', icon: AlertCircle, textColor: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-200' },
+  1: { label: 'Agendada', icon: Clock, textColor: 'text-amber-700', bg: 'bg-amber-100', border: 'border-amber-200' },
+  2: { label: 'Em Validação', icon: Clock, textColor: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-200' },
   3: { label: 'Confirmada', icon: CheckCircle2, textColor: 'text-emerald-700', bg: 'bg-emerald-100', border: 'border-emerald-200' },
   4: { label: 'Concluída', icon: CheckCircle2, textColor: 'text-[#006A68]', bg: 'bg-[#CCE8E6]', border: 'border-[#006A68]' },
   5: { label: 'Cancelada', icon: XCircle, textColor: 'text-red-700', bg: 'bg-red-100', border: 'border-red-200' },
@@ -22,8 +23,8 @@ const STATUS_CFG = {
 function getStatusCfg(id_estado, estado_nome) {
   if (STATUS_CFG[id_estado]) return STATUS_CFG[id_estado]
   const nome = (estado_nome ?? '').toLowerCase()
-  if (nome.includes('pend')) return STATUS_CFG[1]
-  if (nome.includes('valid')) return STATUS_CFG[2]
+  if (nome.includes('agend') || nome.includes('pend')) return STATUS_CFG[1]
+  if (nome.includes('valida')) return STATUS_CFG[2]
   if (nome.includes('confirm')) return STATUS_CFG[3]
   if (nome.includes('conclui') || nome.includes('finaliz')) return STATUS_CFG[4]
   if (nome.includes('cancel')) return STATUS_CFG[5]
@@ -32,7 +33,7 @@ function getStatusCfg(id_estado, estado_nome) {
 
 
 // ─── Modal Detalhe ─────────────────────────────────────────────
-function AulaModal({ aula, onClose }) {
+function AulaModal({ aula, onClose, role }) {
   if (!aula) return null
   const cfg = getStatusCfg(aula.id_estado, aula.estado_nome)
   const StatusIcon = cfg.icon
@@ -68,7 +69,7 @@ function AulaModal({ aula, onClose }) {
             <InfoItem icon={Clock} label="Hora" value={aula.hora} />
             <InfoItem icon={Clock} label="Duração" value={aula.duracao} />
             <InfoItem icon={MapPin} label="Sala / Estúdio" value={aula.sala} />
-            <InfoItem icon={User} label="Professor" value={aula.docente} />
+            <InfoItem icon={User} label={role === 2 ? "Aluno(s)" : "Professor"} value={aula.docente} />
             <InfoItem icon={Music} label="Modalidade" value={aula.modalidade} />
             <InfoItem label="Tipo de Aula" value={aula.tipo_aula ?? 'Individual'} icon={BookOpen} />
           </div>
@@ -140,6 +141,7 @@ function StatusBadge({ id_estado, estado_nome }) {
 // ─── Página Principal ─────────────────────────────────────────────
 export default function Aulas() {
   const role = authService.getUser()?.role ?? 3
+  const location = useLocation()
   const [marcacoes, setMarcacoes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -147,7 +149,7 @@ export default function Aulas() {
   const [toast, setToast] = useState(null)
   const [showAll, setShowAll] = useState(false)
   const [modalAula, setModalAula] = useState(null)
-  const [filtroEstado, setFiltroEstado] = useState('todos')
+  const [filtroEstado, setFiltroEstado] = useState(location.state?.filtroEstado || 'todos')
   const [filtroModalidade, setFiltroModalidade] = useState('todas')
   const [showNovaDisponibilidade, setShowNovaDisponibilidade] = useState(false)
   const [showNovaMarcacao, setShowNovaMarcacao] = useState(false)
@@ -166,21 +168,40 @@ export default function Aulas() {
     setLoading(true)
     setError('')
     try {
-      let data = []
-      if (role === 1) { // Admin
-        const pendentesResp = await coachingService.listarPedidosPendentes({ estados: '1,2' })
-        const pendentes = pendentesResp.data || pendentesResp
-        if (showAll) {
-          data = await coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' }).then(r => r.data || r)
-        } else {
-          data = pendentes
-        }
-      } else if (role === 2) { // Docente
-        data = await coachingService.listarMinhasAulas().then(r => r.data || r)
-      } else { // Aluno
-        data = await coachingService.listarMeusPedidos().then(r => r.data || r)
+      let data;
+      if (role === 1) {
+        data = await coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' });
+      } else if (role === 2) {
+        data = await coachingService.listarMinhasAulas();
+      } else {
+        data = await coachingService.listarMeusPedidos();
       }
-      setMarcacoes(data || [])
+
+      const rawData = Array.isArray(data) ? data : (data?.data || [])
+
+      // Normalizamos os dados para a tabela
+      const formatadas = rawData.map(m => {
+        const dt = m.data ? new Date(m.data) : null;
+        const hr = m.hora_inicio ? new Date(m.hora_inicio) : null;
+        return {
+          id: m.id_marcacao,
+          modalidade: m.modalidade || '—',
+          data: (dt && !isNaN(dt)) ? dt.toLocaleDateString('pt-PT') : '—',
+          hora: (hr && !isNaN(hr)) ? hr.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—',
+          duracao: `${m.duracao_minutos} min`,
+          tipo_aula: m.numero_alunos_pretendidos > 1 ? 'Grupo' : 'Individual',
+          sala: m.sala || m.sala_atual || 'Por atribuir',
+          docente: role === 2
+            ? (m.alunos?.length > 0 ? m.alunos.map(a => a.nome).join(', ') : 'A aguardar alunos')
+            : (m.docente || '—'),
+          id_estado: m.id_estado,
+          estado_nome: m.estado || '—',
+          alunos: m.alunos?.map(a => a.nome) || [],
+          numero_alunos_pretendidos: m.numero_alunos_pretendidos,
+          ja_validou: m.ja_validou
+        }
+      })
+      setMarcacoes(formatadas)
     } catch (err) {
       setError(err.message || 'Erro ao carregar as aulas.')
     } finally {
@@ -279,10 +300,10 @@ export default function Aulas() {
 
   // Filtros
   const modalidades = ['todas', ...new Set(marcacoes.map(a => a.modalidade).filter(Boolean))]
-  const estados = ['todos', ...new Set(marcacoes.map(a => a.estado_nome).filter(Boolean))]
 
   const marcacoesFiltradas = marcacoes.filter(a => {
-    if (filtroEstado !== 'todos' && a.estado_nome !== filtroEstado) return false
+    if (!showAll && [4, 5].includes(a.id_estado)) return false // Se o histórico estiver oculto (só pendentes/confirmadas)
+    if (filtroEstado !== 'todos' && String(a.id_estado) !== String(filtroEstado)) return false
     if (filtroModalidade !== 'todas' && a.modalidade !== filtroModalidade) return false
     if (!showAll && role === 1 && a.id_estado !== 1 && a.id_estado !== 2) return false
     // Oculta canceladas por defeito em todos os roles — só aparecem com "Ver todas" ou filtro explícito
@@ -375,9 +396,9 @@ export default function Aulas() {
                 className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-[#4a6362]/25 text-xs font-medium text-[#324B4A] bg-white focus:outline-none focus:border-[#006A68] cursor-pointer"
               >
                 <option value="todos">Todos os estados</option>
-                {estados.filter(e => e !== 'todos').map(e => (
-                  <option key={e} value={e}>{e}</option>
-                ))}
+                {Object.entries(STATUS_CFG).map(([id, cfg]) =>
+                  counts[Number(id)] ? <option key={id} value={id}>{cfg.label} ({counts[Number(id)]})</option> : null
+                )}
               </select>
             </div>
             {(filtroEstado !== 'todos' || filtroModalidade !== 'todas') && (

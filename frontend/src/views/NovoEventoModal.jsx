@@ -32,12 +32,12 @@ function Field({ label, value, onChange, type = 'text', placeholder, multiline =
     )
 }
 
-export default function NovoEventoModal({ onClose, onSuccess }) {
+export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
 
     const [nome, setNome] = useState('')
-    const [data, setData] = useState('')
+    const [data, setData] = useState(selectedDate ? (typeof selectedDate === 'string' ? selectedDate : selectedDate.toISOString().split('T')[0]) : '')
     const [hora, setHora] = useState('19:00')
     const [descricao, setDescricao] = useState('')
     const [whatsapp, setWhatsapp] = useState('')

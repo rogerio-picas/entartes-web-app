@@ -52,9 +52,10 @@ const relController = require('../controllers/relatorioController');
  */
 
 router.use(tokenValidation, authorize([1]));
-router.get('/sessoes', tokenValidation, authorize([1]), relController.getSessoesRelatorio);
-router.get('/horas-docente',tokenValidation, authorize([1]), relController.getHorasDocente);
-router.get('/alunos', tokenValidation, authorize([1]), relController.getAlunosRelatorio);
+router.get('/sessoes',   tokenValidation, authorize([1]), relController.getSessoesRelatorio);
+router.get('/horas-docente', tokenValidation, authorize([1]), relController.getHorasDocente);
+router.get('/alunos',   tokenValidation, authorize([1]), relController.getAlunosRelatorio);
+router.get('/docentes', tokenValidation, authorize([1]), relController.getDocentesRelatorio);
 router.get('/exportar', tokenValidation, authorize([1]), relController.exportCSV);
 
 module.exports = router;

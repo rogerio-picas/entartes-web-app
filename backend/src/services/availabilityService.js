@@ -28,22 +28,29 @@ const validarParametrosCreate = (dia_semana, data_especifica, hora_inicio, hora_
 };
 
 /**
+ * Função auxiliar para garantir que temos um objeto Date válido para o tipo TIME
+ */
+const parseHoraTime = (valor) => {
+  if (!valor) return null;
+  if (valor instanceof Date) return valor;
+
+  // Se vier uma string ISO completa (contém 'T'), extraímos apenas a parte do tempo
+  const valorStr = String(valor);
+  const extrairTempo = valorStr.includes('T')
+    ? valorStr.split('T')[1].split('.')[0]
+    : valorStr;
+
+  const d = new Date(`1970-01-01T${extrairTempo.replace('Z', '')}Z`);
+  if (isNaN(d.getTime())) throw new Error(`Hora inválida: ${valor}`);
+  return d;
+};
+
+/**
  * Verifica sobreposição de horários com outras disponibilidades
  */
 const verificarSobreposicao = async (id_docente, dia_semana, data_especifica, hora_inicio, hora_fim, id_disponibilidade_atual = null) => {
-  
-  // Função auxiliar para garantir que temos um objeto Date válido para o tipo TIME
-  const formatarHora = (hora) => {
-    // Se a hora já for uma string ISO completa (contém 'T'), extraímos apenas a parte do tempo
-    const timePart = hora.includes('T') ? hora.split('T')[1].split('.')[0] : hora;
-    const finalDate = new Date(`1970-01-01T${timePart.replace('Z', '')}Z`);
-    
-    if (isNaN(finalDate.getTime())) throw new Error(`Hora inválida: ${hora}`);
-    return finalDate;
-  };
-
-  const horaInicioDate = formatarHora(hora_inicio);
-  const horaFimDate = formatarHora(hora_fim);
+  const horaInicioDate = parseHoraTime(hora_inicio);
+  const horaFimDate = parseHoraTime(hora_fim);
 
   const whereCondition = {
     id_docente: parseInt(id_docente),
@@ -112,9 +119,7 @@ const verificarMarcacoesAtivas = async (id_disponibilidade) => {
  */
 const criarDisponibilidade = async (id_docente, dados) => {
   const { dia_semana, data_especifica, hora_inicio, hora_fim } = dados;
-  // const {id_tipo} = req.user.id_tipo;
-  // // Validações
-  // validarDocente(id_tipo);
+
   validarParametrosCreate(dia_semana, data_especifica, hora_inicio, hora_fim);
 
   // Verificar sobreposição
@@ -124,10 +129,10 @@ const criarDisponibilidade = async (id_docente, dados) => {
   const novaDisponibilidade = await prisma.disponibilidade.create({
     data: {
       id_docente,
-      dia_semana: dia_semana ? parseInt(dia_semana) : null,
+      dia_semana: dia_semana !== undefined && dia_semana !== null ? parseInt(dia_semana) : null,
       data_especifica: data_especifica ? new Date(data_especifica) : null,
-      hora_inicio: new Date(`1970-01-01T${hora_inicio}Z`),
-      hora_fim: new Date(`1970-01-01T${hora_fim}Z`),
+      hora_inicio: parseHoraTime(hora_inicio),
+      hora_fim: parseHoraTime(hora_fim),
     },
   });
 
@@ -166,25 +171,13 @@ const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) =
   // 1. Verificar se existe e pertence ao docente
   const existente = await verificarPropriedade(id_disponibilidade, id_docente);
 
-  // Função Auxiliar Interna para limpar o formato da hora
-  const parseHoraTime = (valor) => {
-    if (!valor) return null;
-    // Se vier uma string ISO completa, extraímos apenas a parte do tempo (HH:mm:ss)
-    const extrairTempo = valor.toString().includes('T') 
-      ? valor.toString().split('T')[1].split('.')[0] 
-      : valor;
-    
-    const d = new Date(`1970-01-01T${extrairTempo.replace('Z', '')}Z`);
-    return isNaN(d.getTime()) ? null : d;
-  };
-
   // 2. Preparar dados finais com lógica de limpeza
   const novaHoraInicio = hora_inicio ? parseHoraTime(hora_inicio) : existente.hora_inicio;
   const novaHoraFim = hora_fim ? parseHoraTime(hora_fim) : existente.hora_fim;
-  
+
   // Garantir que diaSemana é um número ou null (evitar NaN)
-  const diaSemana = dia_semana !== undefined 
-    ? (dia_semana === null ? null : parseInt(dia_semana)) 
+  const diaSemana = dia_semana !== undefined
+    ? (dia_semana === null ? null : parseInt(dia_semana))
     : existente.dia_semana;
 
   const dataEspecifica = data_especifica !== undefined
@@ -192,12 +185,11 @@ const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) =
     : existente.data_especifica;
 
   // 3. Verificar sobreposição
-  // Passamos as horas já formatadas para o verificador
   await verificarSobreposicao(
     id_docente,
     diaSemana,
     dataEspecifica,
-    novaHoraInicio, // Agora passamos o objeto Date válido
+    novaHoraInicio,
     novaHoraFim,
     parseInt(id_disponibilidade)
   );

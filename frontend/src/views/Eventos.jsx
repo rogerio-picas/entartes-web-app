@@ -16,11 +16,17 @@ export default function Events() {
 
   const user = authService.getUser()
   const isAdmin = user?.role === 1
+  const isDocente = user?.role === 2
+
+  // Separar eventos por estado
+  const ativos     = events.filter(e => ![4, 5].includes(e.id_evento_estado))
+  const concluidos = events.filter(e => e.id_evento_estado === 4)
+  const cancelados = events.filter(e => e.id_evento_estado === 5)
 
   function loadEvents() {
     setLoading(true)
-    eventService
-      .getAll()
+    const fetchPromise = (isAdmin || isDocente) ? eventService.getAll() : eventService.getMyEvents()
+    fetchPromise
       .then((data) => setEvents(Array.isArray(data) ? data : []))
       .catch((err) => setError(err.message || 'Erro ao carregar eventos.'))
       .finally(() => setLoading(false))
@@ -82,16 +88,52 @@ export default function Events() {
         </div>
       )}
 
-      {/* List */}
-      {!loading && events.length > 0 && (
+      {/* Eventos Ativos */}
+      {!loading && ativos.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {events.map((event) => (
+          {ativos.map((event) => (
             <EventCard
               key={event.id_evento}
               event={event}
               onOpen={() => navigate(`/eventos/${event.id_evento}`)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Eventos Concluídos */}
+      {!loading && concluidos.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-[#324B4A] text-2xl mb-4">
+            Eventos <span className="text-[#006A68] font-semibold">Concluídos</span>
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 opacity-70">
+            {concluidos.map((event) => (
+              <EventCard
+                key={event.id_evento}
+                event={event}
+                onOpen={() => navigate(`/eventos/${event.id_evento}`)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Eventos Cancelados */}
+      {!loading && cancelados.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-[#324B4A] text-2xl mb-4">
+            Eventos <span className="text-red-500 font-semibold">Cancelados</span>
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 opacity-60">
+            {cancelados.map((event) => (
+              <EventCard
+                key={event.id_evento}
+                event={event}
+                onOpen={() => navigate(`/eventos/${event.id_evento}`)}
+              />
+            ))}
+          </div>
         </div>
       )}
 

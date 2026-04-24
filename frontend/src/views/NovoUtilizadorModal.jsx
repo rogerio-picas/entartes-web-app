@@ -195,7 +195,15 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                     <Field label="Tipo de utilizador *" error={errors.id_tipo}>
                         <select
                             value={form.id_tipo}
-                            onChange={e => set('id_tipo', e.target.value)}
+                            onChange={e => {
+                                const newType = e.target.value
+                                set('id_tipo', newType)
+                                if (parseInt(newType) !== 2) {
+                                    setSelectedModalidades([])
+                                    setAddingModalidadeId('')
+                                    setErrors(prev => ({ ...prev, modalidades: '' }))
+                                }
+                            }}
                             className={inputCls(!!errors.id_tipo) + ' appearance-none'}
                         >
                             <option value="">Selecionar tipo...</option>
@@ -301,68 +309,70 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                         />
                     </Field>
 
-                    {/* Modalidades */}
-                    <div>
-                        <p className={`text-sm font-medium mb-3 ${errors.modalidades ? 'text-red-600' : 'text-[#000]'}`}>
-                            Modalidades {parseInt(form.id_tipo) === 2 ? '*' : ''}
-                        </p>
+                    {/* Modalidades — apenas para Docente */}
+                    {parseInt(form.id_tipo) === 2 && (
+                        <div>
+                            <p className={`text-sm font-medium mb-3 ${errors.modalidades ? 'text-red-600' : 'text-[#000]'}`}>
+                                Modalidades *
+                            </p>
 
-                        {selectedModalidades.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-3">
-                                {selectedModalidades.map(m => (
-                                    <span
-                                        key={m.id_modalidade}
-                                        className="inline-flex items-center gap-1.5 text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full font-medium"
-                                    >
-                                        {m.nome}
-                                        <button
-                                            onClick={() => removeModalidade(m.id_modalidade)}
-                                            className="hover:text-red-600 transition-colors"
+                            {selectedModalidades.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {selectedModalidades.map(m => (
+                                        <span
+                                            key={m.id_modalidade}
+                                            className="inline-flex items-center gap-1.5 text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full font-medium"
                                         >
-                                            <UserMinus size={12} />
-                                        </button>
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-
-                        {availableModalidades.length > 0 && (
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <label className="absolute -top-2.5 left-3 bg-[#F4FBF9] text-[11px] text-[#3F4948] font-medium px-1 z-10">
-                                        Adicionar modalidade
-                                    </label>
-                                    <select
-                                        value={addingModalidadeId}
-                                        onChange={e => setAddingModalidadeId(e.target.value)}
-                                        className="w-full bg-white border border-[#6F7978] rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] transition-colors appearance-none"
-                                    >
-                                        <option value="">Selecionar...</option>
-                                        {availableModalidades.map(m => (
-                                            <option key={m.id_modalidade} value={m.id_modalidade}>
-                                                {m.nome}
-                                            </option>
-                                        ))}
-                                    </select>
+                                            {m.nome}
+                                            <button
+                                                onClick={() => removeModalidade(m.id_modalidade)}
+                                                className="hover:text-red-600 transition-colors"
+                                            >
+                                                <UserMinus size={12} />
+                                            </button>
+                                        </span>
+                                    ))}
                                 </div>
-                                <button
-                                    onClick={addModalidade}
-                                    disabled={!addingModalidadeId}
-                                    className="self-end w-11 h-11 rounded-xl bg-[#006A68] text-white flex items-center justify-center hover:bg-[#00504E] transition-colors disabled:opacity-40"
-                                >
-                                    <Plus size={18} />
-                                </button>
-                            </div>
-                        )}
+                            )}
 
-                        {errors.modalidades && (
-                            <p className="mt-2 text-[11px] text-red-600">{errors.modalidades}</p>
-                        )}
+                            {availableModalidades.length > 0 && (
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <label className="absolute -top-2.5 left-3 bg-[#F4FBF9] text-[11px] text-[#3F4948] font-medium px-1 z-10">
+                                            Adicionar modalidade
+                                        </label>
+                                        <select
+                                            value={addingModalidadeId}
+                                            onChange={e => setAddingModalidadeId(e.target.value)}
+                                            className="w-full bg-white border border-[#6F7978] rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] transition-colors appearance-none"
+                                        >
+                                            <option value="">Selecionar...</option>
+                                            {availableModalidades.map(m => (
+                                                <option key={m.id_modalidade} value={m.id_modalidade}>
+                                                    {m.nome}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <button
+                                        onClick={addModalidade}
+                                        disabled={!addingModalidadeId}
+                                        className="self-end w-11 h-11 rounded-xl bg-[#006A68] text-white flex items-center justify-center hover:bg-[#00504E] transition-colors disabled:opacity-40"
+                                    >
+                                        <Plus size={18} />
+                                    </button>
+                                </div>
+                            )}
 
-                        {availableModalidades.length === 0 && selectedModalidades.length === 0 && (
-                            <p className="text-xs text-[#4A6362]">Nenhuma modalidade disponível.</p>
-                        )}
-                    </div>
+                            {errors.modalidades && (
+                                <p className="mt-2 text-[11px] text-red-600">{errors.modalidades}</p>
+                            )}
+
+                            {availableModalidades.length === 0 && selectedModalidades.length === 0 && (
+                                <p className="text-xs text-[#4A6362]">Nenhuma modalidade disponível.</p>
+                            )}
+                        </div>
+                    )}
 
                     {/* Descrição */}
                     <div className="relative">

@@ -201,10 +201,12 @@ const groupRoutes = require("../routes/groupRoutes");
 router.use('/', groupRoutes);
 
 // --- ROTAS DE EVENTOS ---
+router.get("/meus-eventos", tokenValidation, authorize([2,3]), eventController.listarMeusEventos);
 router.get("/", tokenValidation, authorize([1,2,3]), eventController.listarEventos);
 router.get("/:id", tokenValidation, authorize([1,2,3]), eventController.buscarEventoPorId);
 router.post("/", tokenValidation, authorize([1]), eventController.criarEvento);
 router.put("/:id", tokenValidation, authorize([1]), eventController.editarEvento);
+router.post("/:id/concluir", tokenValidation, authorize([1]), eventController.concluirEvento);
 router.delete("/:id", tokenValidation, authorize([1]), eventController.cancelarEvento);
 router.post("/:id/participantes", tokenValidation, authorize([1]), eventController.adicionarParticipante);
 router.get("/:id/participantes", tokenValidation, authorize([1,2,3]), eventController.listarParticipantes);

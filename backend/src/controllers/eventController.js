@@ -20,12 +20,31 @@ const criarEvento = async (req, res) => {
 
 const listarEventos = async (req, res) => {
   try {
-    const eventos = await eventService.listarEventos();
+    const { estado } = req.query; // lê o ?estado=X da URL
+    const eventos = await eventService.listarEventos(estado);
     return res.status(200).json(eventos);
   } catch (error) {
     return res.status(500).json({ error: "Erro ao listar eventos." });
   }
 };
+
+const listarMeusEventos = async (req, res) => {
+  try {
+    const id_utilizador = req.user.id;
+    const role = req.user.role; // Assuming token sets role, or id_tipo
+    // The role is probably req.user.id_tipo or req.user.role. Let's check tokenMiddleware.
+    const userRole = req.user.id_tipo || req.user.role;
+    if (userRole === 1 || userRole === 2) {
+      const eventos = await eventService.listarEventos();
+      return res.status(200).json(eventos);
+    }
+    const eventos = await eventService.listarMeusEventos(id_utilizador, userRole);
+    return res.status(200).json(eventos);
+  } catch (error) {
+    return res.status(500).json({ error: "Erro ao listar meus eventos." });
+  }
+};
+
 
 const buscarEventoPorId = async (req, res) => {
   try {
@@ -53,7 +72,8 @@ const adicionarParticipante = async (req, res) => {
 
     const resultado = await eventService.adicionarParticipante(
       id,
-      codigo_username
+      codigo_username,
+      //id_tipo
     );
 
     return res.status(201).json(resultado);
@@ -125,6 +145,26 @@ const cancelarEvento = async (req, res) => {
   }
 };
 
+const concluirEvento = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const id_coordenadora = req.user.id;
+
+    const resultado = await eventService.concluirEvento(id, id_coordenadora);
+    return res.status(200).json(resultado);
+  } catch (error) {
+    console.error("Erro no concluirEvento:", error.message);
+
+    if (error.message.includes("não encontrado")) {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error.message.includes("Sem permissão")) {
+      return res.status(403).json({ error: error.message });
+    }
+    return res.status(400).json({ error: error.message });
+  }
+};
+
 const listarParticipantes = async (req, res) => {
   try {
     const { id } = req.params;
@@ -156,8 +196,10 @@ const removerDocenteDoEvento = async (req, res) => {
 module.exports = {
   criarEvento,
   listarEventos,
+  listarMeusEventos,
   editarEvento,
   cancelarEvento,
+  concluirEvento,
   buscarEventoPorId,
   adicionarParticipante,
   listarParticipantes,
