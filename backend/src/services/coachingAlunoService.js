@@ -93,8 +93,7 @@ async function consultarDisponibilidades({ id_modalidade = null, data = null } =
           id_estado: {
             in: [ESTADO_MARCACAO.EM_VALIDACAO, ESTADO_MARCACAO.CONFIRMADA],
           },
-          // Verifica sobreposição: marcação existente começa antes do fim e acaba depois do início
-          data_a_realizar: data ? new Date(data) : undefined,
+          data_a_realizar: new Date(data),
           hora_inicio: {
             gte: disp.hora_inicio,
             lt: disp.hora_fim,
@@ -642,12 +641,12 @@ async function validarConclusaoSessao(id_aluno, id_marcacao) {
       data: {
         id_marcacoes: id_marcacao,
         id_aluno,
+        id_docente: null,       // ← explícito: este registo é do aluno, nunca do docente
         confirmou_conclusao: true,
         data_confirmacao: new Date(),
       },
     });
   } else {
-    // Já existe — atualiza
     participacao = await prisma.participacao_conclusao.update({
       where: { id_participacao_conclusao: participacao.id_participacao_conclusao },
       data: { confirmou_conclusao: true, data_confirmacao: new Date() },
@@ -659,6 +658,7 @@ async function validarConclusaoSessao(id_aluno, id_marcacao) {
     where: {
       id_marcacoes: id_marcacao,
       id_docente: { not: null },
+      id_aluno: null,          // ← garante que é um registo de docente, não de aluno
       confirmou_conclusao: true,
     },
   });

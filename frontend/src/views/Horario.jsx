@@ -10,10 +10,10 @@ import {
 } from 'lucide-react'
 import { horarioService } from '../services/horarioService'
 import { eventService } from '../services/eventService'
-import coachingService from '../services/coachingService'
 import { disponibilidadeService } from '../services/disponibilidadeService'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
+import coachingService from '../services/coachingService'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovoEventoModal from './NovoEventoModal'
 // ─── Localizer para português ───────────────────────────────────────────────
@@ -68,12 +68,12 @@ const STATUS_LABEL = { 1: 'Pendente', 2: 'Confirmado', 3: 'Cancelado', 4: 'Final
 function EventComponent({ event }) {
     const color = event._isEvent
         ? EVENT_COLOR
-        : getModalityColor(event.modalidade);
+        : getModalityColor(event.modalidade)
 
-    const timeStr = event.start instanceof Date 
+    const timeStr = event.start instanceof Date
         ? format(event.start, 'HH:mm')
-        : (typeof event.start === 'string' && event.start.includes('T') 
-            ? event.start.split('T')[1].substring(0, 5) 
+        : (typeof event.start === 'string' && event.start.includes('T')
+            ? event.start.split('T')[1].substring(0, 5)
             : (typeof event.start === 'string' ? event.start.substring(0, 5) : '—'));
 
     return (
@@ -83,13 +83,13 @@ function EventComponent({ event }) {
                 color: color.text,
                 border: `1px solid ${color.border}`,
             }}
-            className="rounded px-1.5 py-0.5 text-[11px] font-medium truncate overflow-hidden h-full"
+            className="rounded px-1.5 py-0.5 text-[11px] font-medium truncate overflow-hidden"
         >
             <span className="font-semibold">{timeStr}</span>
             {' '}
             <span className="truncate">{event.title}</span>
         </div>
-    );
+    )
 }
 
 // 2. Componente para renderizar o FUNDO do dia (a célula do calendário)
@@ -97,10 +97,10 @@ const DateCellWrapper = ({ children, value, onAdd, currentMonth }) => {
     const isOffRange = useMemo(() => value.getMonth() !== currentMonth, [value, currentMonth]);
 
     return (
-        <div 
+        <div
             className="relative h-full w-full rbc-day-slot-wrapper"
-            style={{ 
-                borderLeft: '1px solid #E3E9E8', 
+            style={{
+                borderLeft: '1px solid #E3E9E8',
                 borderBottom: '1px solid #E3E9E8',
                 backgroundColor: isOffRange ? '#F9FAFB' : 'transparent',
                 cursor: isOffRange ? 'default' : 'pointer'
@@ -145,7 +145,6 @@ function CustomToolbar({ label, onNavigate, onView, view }) {
     )
 }
 
-// ─── Detail Modal ─────────────────────────────────────────────────────────────
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
 function DetailModal({ item, onClose, role, navigate, onEdit, onDelete }) {
     if (!item) return null
@@ -247,7 +246,7 @@ function DetailModal({ item, onClose, role, navigate, onEdit, onDelete }) {
                                 </div>
                             </div>
                         )}
-                        {item.docente && role !== 2 && (
+                        {item.docente && (
                             <div className="flex items-start gap-2 col-span-2">
                                 <User size={14} className="text-[#006A68] mt-0.5 shrink-0" />
                                 <div>
@@ -270,7 +269,7 @@ function DetailModal({ item, onClose, role, navigate, onEdit, onDelete }) {
                             </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {item.alunos.map((a, i) => (
-                                    <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full">{a.nome || a}</span>
+                                    <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full">{a}</span>
                                 ))}
                             </div>
                         </div>
@@ -337,8 +336,8 @@ function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
     })
 
     useEffect(() => {
-        api.get('/modalidades').then(d => setModalidades(Array.isArray(d) ? d : [])).catch(() => {})
-        api.get('/salas').then(d => setSalas(Array.isArray(d) ? d : [])).catch(() => {})
+        api.get('/modalidades').then(d => setModalidades(Array.isArray(d) ? d : [])).catch(() => { })
+        api.get('/salas').then(d => setSalas(Array.isArray(d) ? d : [])).catch(() => { })
     }, [])
 
     function set(k, v) { setForm(prev => ({ ...prev, [k]: v })) }
@@ -488,7 +487,7 @@ export default function Horario() {
     const [currentDate, setCurrentDate] = useState(new Date(today))
     const [filterType, setFilterType] = useState('') // 'Pessoal' | 'Geral' | ''
     const [filterModalidade, setFilterModalidade] = useState('')
-    
+
     const navigate = useNavigate()
 
     // Data
@@ -516,9 +515,9 @@ export default function Horario() {
         setError('')
         try {
             const [aulasRes, evRes, meusEvRes, dispRes] = await Promise.allSettled([
-                role === 1 
-                  ? coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' })
-                  : (role === 2 ? coachingService.listarMinhasAulas() : coachingService.listarMeusPedidos()),
+                role === 1
+                    ? coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' })
+                    : (role === 2 ? coachingService.listarMinhasAulas() : coachingService.listarMeusPedidos()),
                 role === 1 || role === 2 ? eventService.getAll() : Promise.resolve([]),
                 role === 2 || role === 3 ? eventService.getMyEvents() : Promise.resolve([]),
                 role === 2 ? disponibilidadeService.listar() : (role === 3 ? coachingService.consultarDisponibilidades() : Promise.resolve([]))
@@ -526,7 +525,7 @@ export default function Horario() {
 
             const rawAulas = aulasRes.status === 'fulfilled' ? (Array.isArray(aulasRes.value) ? aulasRes.value : (aulasRes.value?.data || [])) : []
             setAulas(rawAulas.map(a => ({ ...a, id: a.id_marcacao, data_de_realizacao: a.data, _data_raw: a.data, _type: 'aula' })))
-            
+
             const rawDisp = dispRes.status === 'fulfilled' ? (Array.isArray(dispRes.value) ? dispRes.value : (dispRes.value?.data || [])) : []
             setDisponibilidades(rawDisp.map(d => ({ ...d, _type: 'disponibilidade' })))
 
@@ -602,21 +601,21 @@ export default function Horario() {
                 try {
                     const hIniRaw = d.hora_inicio ? String(d.hora_inicio) : '00:00';
                     const hFimRaw = d.hora_fim ? String(d.hora_fim) : '01:00';
-                    
-                    const hIni = (typeof hIniRaw === 'string' && hIniRaw.includes('T')) ? hIniRaw.split('T')[1].slice(0,5) : String(hIniRaw).slice(0,5);
-                    const hFim = (typeof hFimRaw === 'string' && hFimRaw.includes('T')) ? hFimRaw.split('T')[1].slice(0,5) : String(hFimRaw).slice(0,5);
-                    
+
+                    const hIni = (typeof hIniRaw === 'string' && hIniRaw.includes('T')) ? hIniRaw.split('T')[1].slice(0, 5) : String(hIniRaw).slice(0, 5);
+                    const hFim = (typeof hFimRaw === 'string' && hFimRaw.includes('T')) ? hFimRaw.split('T')[1].slice(0, 5) : String(hFimRaw).slice(0, 5);
+
                     const [h, m] = hIni.split(':').map(Number);
                     const [h2, m2] = hFim.split(':').map(Number);
 
                     if (d.data_especifica) {
                         const dateStr = String(d.data_especifica).split('T')[0];
                         const dateObj = new Date(dateStr + "T12:00:00");
-                        
+
                         if (dateObj.getMonth() === month && dateObj.getFullYear() === year) {
                             const start = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), h || 0, m || 0);
-                            const end = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), h2 || (h || 0)+1, m2 || 0);
-                            
+                            const end = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), h2 || (h || 0) + 1, m2 || 0);
+
                             combined.push({
                                 ...d,
                                 hora_inicio: hIni,
@@ -634,7 +633,7 @@ export default function Horario() {
                             const dateObj = new Date(year, month, day);
                             if (dateObj.getDay() === Number(d.dia_semana)) {
                                 const start = new Date(year, month, day, h || 0, m || 0);
-                                const end = new Date(year, month, day, h2 || (h || 0)+1, m2 || 0);
+                                const end = new Date(year, month, day, h2 || (h || 0) + 1, m2 || 0);
 
                                 combined.push({
                                     ...d,
@@ -650,7 +649,7 @@ export default function Horario() {
                             }
                         }
                     }
-                } catch(err) {
+                } catch (err) {
                     console.error("Erro ao carregar disponibilidade:", err);
                 }
             });
@@ -737,9 +736,9 @@ export default function Horario() {
         } else {
             color = getModalityColor(event.modalidade);
         }
-            
+
         const isNotInsertedDocente = event._isEvent && role === 2 && !event._inserido;
-            
+
         return {
             style: {
                 backgroundColor: color.bg,
@@ -973,8 +972,8 @@ export default function Horario() {
                                     <div className="rbc-date-cell relative flex items-center justify-end h-8 px-2 w-full group/header">
                                         {/* Só mostrar botão de adicionar se for hoje ou no futuro */}
                                         {new Date(date).getTime() >= today.getTime() && (
-                                            <button 
-                                                type="button" 
+                                            <button
+                                                type="button"
                                                 onClick={(e) => { e.stopPropagation(); handleAdd(date); }}
                                                 className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#006A68] text-white rounded-[5px] flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition-opacity hover:bg-[#00504E] shadow-sm cursor-pointer z-50"
                                                 title="Adicionar"
@@ -989,8 +988,8 @@ export default function Horario() {
                                 );
                             },
                             dateCellWrapper: (props) => (
-                                <DateCellWrapper 
-                                    {...props} 
+                                <DateCellWrapper
+                                    {...props}
                                     currentMonth={currentDate.getMonth()}
                                     onAdd={handleAdd}
                                 />
@@ -1039,11 +1038,11 @@ export default function Horario() {
 
             {/* Modals */}
             {selectedItem && (
-                <DetailModal 
-                    item={selectedItem} 
-                    onClose={() => setSelectedItem(null)} 
-                    role={role} 
-                    navigate={navigate} 
+                <DetailModal
+                    item={selectedItem}
+                    onClose={() => setSelectedItem(null)}
+                    role={role}
+                    navigate={navigate}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                 />
