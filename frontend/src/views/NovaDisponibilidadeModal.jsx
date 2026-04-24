@@ -26,14 +26,14 @@ function Field({ label, children }) {
 
 const inputCls = "w-full border border-[#6F7978] rounded-lg px-4 py-3.5 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] bg-white transition-colors font-['Sora']"
 
-export default function NovaDisponibilidadeModal({ onClose, onSuccess }) {
+export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedDate }) {
     const [horaInicio, setHoraInicio]     = useState('')
     const [horaFim, setHoraFim]           = useState('')
     const [modalidade, setModalidade]     = useState('')
     const [modalidades, setModalidades]   = useState([])
-    const [frequencia, setFrequencia]     = useState('unica')
+    const [frequencia, setFrequencia]     = useState(selectedDate ? 'unica' : 'semanal')
     const [diaSemana, setDiaSemana]       = useState(1)
-    const [data, setData]                 = useState('')
+    const [data, setData]                 = useState(selectedDate ? (typeof selectedDate === 'string' ? selectedDate : selectedDate.toISOString().split('T')[0]) : '')
     const [saving, setSaving]             = useState(false)
     const [erro, setErro]                 = useState('')
 
