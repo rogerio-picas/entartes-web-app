@@ -47,8 +47,11 @@ const criarEvento = async (dados, id_coordenadora) => {
   });
 };
 
-const listarEventos = async () => {
+const listarEventos = async (id_evento_estado = null) => {
   return await prisma.evento.findMany({
+    where: id_evento_estado
+      ? { id_evento_estado: parseInt(id_evento_estado) }
+      : undefined, // se não vier filtro, não aplica where nenhum
     include: {
       coordenadora_evento: {
         include: {
