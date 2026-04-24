@@ -8,7 +8,8 @@ function _handleError(res, error) {
   if (
     mensagem.includes('obrigatório') ||
     mensagem.includes('Só é possível') ||
-    mensagem.includes('Não é possível')
+    mensagem.includes('Não é possível') ||
+    mensagem.includes('expirou')
   ) {
     return res.status(400).json({ message: mensagem });
   }

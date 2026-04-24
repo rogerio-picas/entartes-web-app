@@ -76,7 +76,7 @@ async function validarConclusaoSessao(id_docente, id_marcacao) {
   }
 
   let participacao = await prisma.participacao_conclusao.findFirst({
-    where: { id_marcacoes: id_marcacao, id_docente },
+    where: { id_marcacoes: id_marcacao, id_docente, id_aluno: null },
   });
 
   if (!participacao) {
@@ -84,6 +84,7 @@ async function validarConclusaoSessao(id_docente, id_marcacao) {
       data: {
         id_marcacoes: id_marcacao,
         id_docente,
+        id_aluno: null,        // ← explícito: este registo é do docente, nunca do aluno
         confirmou_conclusao: true,
         data_confirmacao: new Date(),
       },
@@ -100,9 +101,15 @@ async function validarConclusaoSessao(id_docente, id_marcacao) {
     where: {
       id_marcacoes: id_marcacao,
       id_aluno: { not: null },
+      id_docente: null,        // ← garante que é um registo de aluno, não de docente
       confirmou_conclusao: true,
     },
   });
+
+  // Diagnóstico — remover após confirmar que o bug está resolvido
+  const todosRegistos = await prisma.participacao_conclusao.findMany({ where: { id_marcacoes: id_marcacao } });
+  console.log(`[DOCENTE validar] id_marcacao=${id_marcacao} | registos na BD:`, JSON.stringify(todosRegistos))
+  console.log(`[DOCENTE validar] validacaoAluno encontrada:`, JSON.stringify(validacaoAluno))
 
   if (validacaoAluno) {
     await prisma.$transaction(async (tx) => {

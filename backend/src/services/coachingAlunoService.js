@@ -607,56 +607,64 @@ async function confirmarPresencaGrupo(id_aluno, id_marcacao, aceitar) {
  * @returns {Promise<object>} Resultado com o estado atual da dupla validação
  */
 async function validarConclusaoSessao(id_aluno, id_marcacao) {
-  // Procura o registo de participação/conclusão do aluno para esta marcação
-  let participacao = await prisma.participacao_conclusao.findFirst({
-    where: { id_marcacoes: id_marcacao, id_aluno },
+  // ── Garante que o aluno está associado a esta marcação
+  const associacao = await prisma.aluno_marcacao.findFirst({
+    where: { id_aluno, id_marcacoes: id_marcacao },
+    include: { marcacao: true },
   });
- 
-  // Se ainda não existe o registo, cria-o
+  if (!associacao) throw new Error('Marcação não encontrada ou não pertence a este aluno.');
+
+  const marcacao = associacao.marcacao;
+  if (marcacao.id_estado !== ESTADO_MARCACAO.CONFIRMADA) {
+    throw new Error('Só é possível validar sessões no estado Confirmada.');
+  }
+
+  // Verifica prazo de 48 horas (RF-COA-04)
+  const agora = new Date();
+  const dataHoraAula = new Date(marcacao.data_a_realizar);
+  if (agora - dataHoraAula > PRAZO_DUPLA_VALIDACAO_MS) {
+    throw new Error('O prazo de 48 horas para validação da sessão já expirou.');
+  }
+
+  // Procura registo existente — filtra explicitamente por id_aluno E id_docente: null
+  // para nunca confundir com um registo de docente
+  let participacao = await prisma.participacao_conclusao.findFirst({
+    where: { id_marcacoes: id_marcacao, id_aluno, id_docente: null },
+  });
+
   if (!participacao) {
-    // Confirma que a marcação existe e está CONFIRMADA
-    const marcacao = await prisma.marcacao.findUnique({
-      where: { id_marcacoes: id_marcacao },
-    });
-    if (!marcacao) throw new Error('Marcação não encontrada.');
-    if (marcacao.id_estado !== ESTADO_MARCACAO.CONFIRMADA) {
-      throw new Error('Só é possível validar sessões no estado Confirmada.');
-    }
- 
-    // Verifica prazo de 48 horas (RF-COA-04)
-    const agora = new Date();
-    // Nota: usamos data_a_realizar + hora_inicio como referência temporal da aula
-    const dataHoraAula = new Date(marcacao.data_a_realizar);
-    if (agora - dataHoraAula > PRAZO_DUPLA_VALIDACAO_MS) {
-      throw new Error('O prazo de 48 horas para validação da sessão já expirou.');
-    }
- 
     participacao = await prisma.participacao_conclusao.create({
       data: {
         id_marcacoes: id_marcacao,
         id_aluno,
+        id_docente: null,       // ← explícito: este registo é do aluno, nunca do docente
         confirmou_conclusao: true,
         data_confirmacao: new Date(),
       },
     });
   } else {
-    // Já existe — atualiza
     participacao = await prisma.participacao_conclusao.update({
       where: { id_participacao_conclusao: participacao.id_participacao_conclusao },
       data: { confirmou_conclusao: true, data_confirmacao: new Date() },
     });
   }
- 
-  // Verifica se o docente também já validou
+
+  // Verifica se o docente também já validou (registo com id_docente preenchido)
   const validacaoDocente = await prisma.participacao_conclusao.findFirst({
     where: {
       id_marcacoes: id_marcacao,
       id_docente: { not: null },
+      id_aluno: null,          // ← garante que é um registo de docente, não de aluno
       confirmou_conclusao: true,
     },
   });
- 
-  // Se AMBOS validaram, passa o estado para CONCLUÍDA automaticamente (RF-COA-04 CA2)
+
+  // Diagnóstico — remover após confirmar que o bug está resolvido
+  const todosRegistos = await prisma.participacao_conclusao.findMany({ where: { id_marcacoes: id_marcacao } });
+  console.log(`[ALUNO validar] id_marcacao=${id_marcacao} | registos na BD:`, JSON.stringify(todosRegistos))
+  console.log(`[ALUNO validar] validacaoDocente encontrada:`, JSON.stringify(validacaoDocente))
+
+  // Se AMBOS validaram, passa o estado para CONCLUÍDA (RF-COA-04 CA2)
   if (validacaoDocente) {
     await prisma.$transaction(async (tx) => {
       await tx.marcacao.update({
@@ -670,14 +678,14 @@ async function validarConclusaoSessao(id_aluno, id_marcacao) {
         },
       });
     });
- 
+
     return {
       mensagem: 'Sessão concluída com sucesso! Ambas as validações foram registadas.',
       estado: 'Concluída',
       dupla_validacao_completa: true,
     };
   }
- 
+
   return {
     mensagem: 'A tua validação foi registada. Aguarda a confirmação do docente.',
     estado: 'Confirmada',
