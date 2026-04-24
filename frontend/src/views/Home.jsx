@@ -117,7 +117,7 @@ export default function Home() {
 
       // Always fetch events
       let evRes;
-      if (isAdmin) {
+      if (isAdmin || isDocente) {
           evRes = await eventService.getAll().catch(() => []);
       } else {
           evRes = await eventService.getMyEvents().catch(() => []);
@@ -459,8 +459,8 @@ export default function Home() {
         {/* ── SHARED: Próximos eventos ──────────────── */}
         <section>
             <SectionHeader
-                icon={isAdmin ? CalendarDays : Megaphone}
-                title={isAdmin ? "Próximos eventos" : "Os meus eventos"}
+                icon={isAdmin || isDocente ? CalendarDays : Megaphone}
+                title={isAdmin || isDocente ? "Próximos eventos" : "Os meus eventos"}
                 action="Ver todos"
                 onAction={() => navigate('/eventos')}
             />
@@ -484,7 +484,7 @@ export default function Home() {
           onSuccess={(nome) => {
             setShowNovoEvento(false)
             showToast(`Evento "${nome}" criado com sucesso!`)
-            if (isAdmin) {
+            if (isAdmin || isDocente) {
               eventService.getAll().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
             } else {
               eventService.getMyEvents().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))

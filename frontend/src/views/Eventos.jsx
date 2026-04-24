@@ -17,9 +17,11 @@ export default function Events() {
   const user = authService.getUser()
   const isAdmin = user?.role === 1
 
+  const isDocente = user?.role === 2
+
   function loadEvents() {
     setLoading(true)
-    const fetchPromise = isAdmin ? eventService.getAll() : eventService.getMyEvents()
+    const fetchPromise = (isAdmin || isDocente) ? eventService.getAll() : eventService.getMyEvents()
     fetchPromise
       .then((data) => setEvents(Array.isArray(data) ? data : []))
       .catch((err) => setError(err.message || 'Erro ao carregar eventos.'))

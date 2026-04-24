@@ -33,7 +33,7 @@ const listarMeusEventos = async (req, res) => {
     const role = req.user.role; // Assuming token sets role, or id_tipo
     // The role is probably req.user.id_tipo or req.user.role. Let's check tokenMiddleware.
     const userRole = req.user.id_tipo || req.user.role;
-    if (userRole === 1) {
+    if (userRole === 1 || userRole === 2) {
       const eventos = await eventService.listarEventos();
       return res.status(200).json(eventos);
     }
