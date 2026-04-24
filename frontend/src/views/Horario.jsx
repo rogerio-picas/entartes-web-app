@@ -10,7 +10,6 @@ import {
 } from 'lucide-react'
 import { horarioService } from '../services/horarioService'
 import { eventService } from '../services/eventService'
-import coachingService from '../services/coachingService'
 import { disponibilidadeService } from '../services/disponibilidadeService'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
@@ -70,12 +69,6 @@ function EventComponent({ event }) {
     const color = event._isEvent
         ? EVENT_COLOR
         : getModalityColor(event.modalidade)
-
-    const timeStr = event.start instanceof Date
-        ? format(event.start, 'HH:mm')
-        : (typeof event.start === 'string' && event.start.includes('T')
-            ? event.start.split('T')[1].substring(0, 5)
-            : (typeof event.start === 'string' ? event.start.substring(0, 5) : '—'));
 
     const timeStr = event.start instanceof Date
         ? format(event.start, 'HH:mm')
@@ -152,7 +145,6 @@ function CustomToolbar({ label, onNavigate, onView, view }) {
     )
 }
 
-// ─── Detail Modal ─────────────────────────────────────────────────────────────
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
 function DetailModal({ item, onClose, role, navigate, onEdit, onDelete }) {
     if (!item) return null
