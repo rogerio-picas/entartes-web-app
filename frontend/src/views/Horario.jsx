@@ -566,6 +566,7 @@ export default function Horario() {
                 end: end,
                 _type: 'aula',
                 ...a,
+                data: start ? format(start, 'dd/MM/yyyy') : (a.data?.includes('T') ? a.data.split('T')[0] : a.data)
             }
         }).filter(e => e.start)
 
