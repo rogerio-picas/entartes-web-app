@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, ChevronRight, ChevronLeft, Music, User, CalendarDays, Clock, Check, Loader2, AlertCircle } from 'lucide-react'
 import { api } from '../services/api'
+import { formatDate, formatTime } from '../utils/dateUtils'
 
 const DURACOES = [30, 60, 90, 120]
 
@@ -149,12 +150,6 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
     return horas
   })()
 
-  const formatHora = (iso) => {
-    if (!iso) return ''
-    const d = new Date(iso)
-    if (isNaN(d)) return iso.substring(11, 16)
-    return d.toISOString().substring(11, 16)
-  }
 
   // ── Submeter ──
   const handleSubmit = async () => {
@@ -318,10 +313,8 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                   slotsFuturos.map((slot, i) => {
                     const proximaData = proximaDataDoSlot(slot)
                     const dataOuDia = slot.data_especifica
-                      ? new Date(slot.data_especifica + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
-                      : (slot.dia_semana != null
-                        ? `${DIAS[slot.dia_semana]}${proximaData ? ' · ' + new Date(proximaData + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' }) : ''}`
-                        : '—')
+                      ? formatDate(slot.data_especifica)
+                      : (slot.dia_semana != null ? DIAS[slot.dia_semana] : '—')
 
                     return (
                       <button
@@ -344,7 +337,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                               <CalendarDays size={12} /> {dataOuDia}
                             </span>
                             <span className="flex items-center gap-1 text-xs text-gray-500">
-                              <Clock size={12} /> {formatHora(slot.hora_inicio)} – {formatHora(slot.hora_fim)}
+                              <Clock size={12} /> {formatTime(slot.hora_inicio)} – {formatTime(slot.hora_fim)}
                             </span>
                           </div>
                         </div>
@@ -368,8 +361,8 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                   <p className="font-bold text-[#006A68] text-sm">{docenteSel?.nome_docente}</p>
                   <p className="text-xs text-[#4A6362]">
                     Disponibilidade: {slotSel.data_especifica
-                      ? new Date(slotSel.data_especifica).toLocaleDateString('pt-PT')
-                      : (slotSel.dia_semana != null ? DIAS[slotSel.dia_semana] : '')} ({formatHora(slotSel.hora_inicio)} - {formatHora(slotSel.hora_fim)})
+                      ? formatDate(slotSel.data_especifica)
+                      : (slotSel.dia_semana != null ? DIAS[slotSel.dia_semana] : '')} ({formatTime(slotSel.hora_inicio)} - {formatTime(slotSel.hora_fim)})
                   </p>
                 </div>
               </div>
@@ -451,7 +444,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
               <div className="bg-[#EFF5F4] rounded-2xl p-5 space-y-3 border border-[#006A68]/10">
                 <Row icon={Music} label="Modalidade" value={modalidadeSel?.nome} />
                 <Row icon={User} label="Docente" value={docenteSel?.nome_docente} />
-                <Row icon={CalendarDays} label="Data" value={new Date(data + 'T00:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />
+                <Row icon={CalendarDays} label="Data" value={data} />
                 <Row icon={Clock} label="Hora" value={horaSel?.substring(0, 5)} />
                 <Row icon={Clock} label="Duração" value={`${duracao} minutos`} />
                 <Row icon={User} label="Tipo" value={numAlunos === 1 ? 'Individual' : `Grupo (${numAlunos} alunos)`} />

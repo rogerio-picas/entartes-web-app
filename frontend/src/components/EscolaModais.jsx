@@ -6,19 +6,10 @@ import {
     Search, Upload, Eye, ChevronDown
 } from 'lucide-react'
 import { api } from '../services/api'
+import { formatDate, formatTime } from '../utils/dateUtils'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-export function formatDate(raw) {
-    if (!raw) return '—'
-    return new Date(raw).toLocaleDateString('pt-PT', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
-    })
-}
-
-export function formatTime(raw) {
-    if (!raw) return '—'
-    return new Date(raw).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
-}
+export { formatDate, formatTime }
 
 export function formatDuration(min) {
     if (!min) return '—'
