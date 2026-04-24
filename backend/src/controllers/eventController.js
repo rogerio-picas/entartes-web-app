@@ -72,7 +72,7 @@ const adicionarParticipante = async (req, res) => {
     const resultado = await eventService.adicionarParticipante(
       id,
       codigo_username,
-      id_tipo
+      //id_tipo
     );
 
     return res.status(201).json(resultado);
@@ -144,6 +144,26 @@ const cancelarEvento = async (req, res) => {
   }
 };
 
+const concluirEvento = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const id_coordenadora = req.user.id;
+
+    const resultado = await eventService.concluirEvento(id, id_coordenadora);
+    return res.status(200).json(resultado);
+  } catch (error) {
+    console.error("Erro no concluirEvento:", error.message);
+
+    if (error.message.includes("não encontrado")) {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error.message.includes("Sem permissão")) {
+      return res.status(403).json({ error: error.message });
+    }
+    return res.status(400).json({ error: error.message });
+  }
+};
+
 const listarParticipantes = async (req, res) => {
   try {
     const { id } = req.params;
@@ -178,6 +198,7 @@ module.exports = {
   listarMeusEventos,
   editarEvento,
   cancelarEvento,
+  concluirEvento,
   buscarEventoPorId,
   adicionarParticipante,
   listarParticipantes,

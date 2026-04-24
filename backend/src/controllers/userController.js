@@ -138,11 +138,36 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { id_utilizador } = req.params;
+    const userId = parseInt(id_utilizador);
 
-    await prisma.utilizador.delete({
-      where: {
-        id_utilizador: parseInt(id_utilizador),
+    // Buscar o utilizador para verificar em quais tabelas está
+    const utilizador = await prisma.utilizador.findUnique({
+      where: { id_utilizador: userId },
+      include: {
+        aluno: true,
+        docente: true,
+        coordenadora: true,
       },
+    });
+
+    if (!utilizador) {
+      return res.status(404).json({ message: 'Utilizador não encontrado' });
+    }
+
+    // Remover das tabelas específicas primeiro (embora CASCADE deva fazer isso)
+    await prisma.$transaction(async (tx) => {
+      if (utilizador.aluno) {
+        await tx.aluno.delete({ where: { id_utilizador: userId } });
+      }
+      if (utilizador.docente) {
+        await tx.docente.delete({ where: { id_utilizador: userId } });
+      }
+      if (utilizador.coordenadora) {
+        await tx.coordenadora.delete({ where: { id_utilizador: userId } });
+      }
+
+      // Remover da tabela principal
+      await tx.utilizador.delete({ where: { id_utilizador: userId } });
     });
 
     res.status(200).json({ message: 'Utilizador removido com sucesso' });
@@ -151,7 +176,6 @@ const deleteUser = async (req, res) => {
   }
 };
 
-          
 const atualizarPassword = async (req, res) => {
   try {
     const { id_utilizador } = req.params;
