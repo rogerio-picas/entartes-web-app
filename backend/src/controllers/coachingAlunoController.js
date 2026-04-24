@@ -1,23 +1,28 @@
 const coachingAlunoService = require('../services/coachingAlunoService');
 
 function _handleError(res, error) {
-  const mensagem = error?.message || 'Erro interno no servidor.';
-  if (mensagem.includes('não encontrado') || mensagem.includes('não pertence')) {
-    return res.status(404).json({ message: mensagem });
+  const mensagemOriginal = error?.message || 'Erro interno no servidor.';
+  const mensagemMinuscula = mensagemOriginal.toLowerCase();
+
+  if (mensagemMinuscula.includes('não encontrado') || mensagemMinuscula.includes('não pertence')) {
+    return res.status(404).json({ message: mensagemOriginal });
   }
   if (
-    mensagem.includes('obrigatório') ||
-    mensagem.includes('inválido') ||
-    mensagem.includes('já existe') ||
-    mensagem.includes('não tem permissão') ||
-    mensagem.includes('coincide') ||
-    mensagem.includes('expirou') ||
-    mensagem.includes('já não está disponível')
+    mensagemMinuscula.includes('obrigatório') ||
+    mensagemMinuscula.includes('inválido') ||
+    mensagemMinuscula.includes('já existe') ||
+    mensagemMinuscula.includes('já tem') ||
+    mensagemMinuscula.includes('não tem permissão') ||
+    mensagemMinuscula.includes('coincide') ||
+    mensagemMinuscula.includes('expirou') ||
+    mensagemMinuscula.includes('não cabe') ||
+    mensagemMinuscula.includes('já não está disponível') ||
+    mensagemMinuscula.includes('conflito')
   ) {
-    return res.status(400).json({ message: mensagem });
+    return res.status(400).json({ message: mensagemOriginal });
   }
   console.error('[coachingAlunoController]', error);
-  return res.status(500).json({ message: 'Erro interno no servidor.', error: mensagem });
+  return res.status(500).json({ message: 'Erro interno no servidor.', error: mensagemOriginal });
 }
 
 const consultarDisponibilidades = async (req, res) => {

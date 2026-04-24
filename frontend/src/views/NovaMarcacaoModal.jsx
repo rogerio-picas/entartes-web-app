@@ -84,6 +84,14 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
 
   const DIAS = ['Domingo', 'Segunda-Feira', 'Terça-Feira', 'Quarta-Feira', 'Quinta-Feira', 'Sexta-Feira', 'Sábado']
 
+  // Função auxiliar para garantir que a data não salta de dia por causa do fuso horário
+  const formatLocalYYYYMMDD = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
   // Calcula a próxima data válida para um slot (hoje ou futura)
   const proximaDataDoSlot = (slot) => {
     const hoje = new Date()
@@ -92,7 +100,9 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
     if (slot.data_especifica) {
       const d = new Date(slot.data_especifica)
       d.setHours(0, 0, 0, 0)
-      return d >= hoje ? d.toISOString().split('T')[0] : null
+      const dataStr = d >= hoje ? formatLocalYYYYMMDD(d) : null
+      console.log('[DEBUG proximaDataDoSlot] data_especifica:', slot.data_especifica, '->', dataStr);
+      return dataStr;
     }
 
     if (slot.dia_semana != null) {
@@ -102,7 +112,9 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
       while (d.getDay() !== alvo) {
         d.setDate(d.getDate() + 1)
       }
-      return d.toISOString().split('T')[0]
+      const dataStr = formatLocalYYYYMMDD(d)
+      console.log('[DEBUG proximaDataDoSlot] dia_semana:', slot.dia_semana, '->', dataStr);
+      return dataStr;
     }
 
     return null
@@ -147,20 +159,33 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
   // ── Submeter ──
   const handleSubmit = async () => {
     setErro('')
+
+    console.log('[DEBUG handleSubmit] Validação:', {
+      modalidadeSel: !!modalidadeSel,
+      docenteSel: !!docenteSel,
+      slotSel: !!slotSel,
+      data,
+      horaSel
+    });
+
     if (!modalidadeSel || !docenteSel || !slotSel || !data || !horaSel) {
       setErro('Preenche todos os campos antes de confirmar.')
       return
     }
     setSubmitting(true)
+
+    const payload = {
+      id_docente: docenteSel.id_docente,
+      id_modalidade: modalidadeSel.id_modalidade,
+      data_a_realizar: data,
+      hora_inicio: horaSel,
+      duracao_minutos: duracao,
+      numero_alunos_pretendidos: numAlunos,
+    };
+    console.log('[DEBUG handleSubmit] Payload a enviar:', payload);
+
     try {
-      await api.post('/coaching/marcacao/solicitar', {
-        id_docente: docenteSel.id_docente,
-        id_modalidade: modalidadeSel.id_modalidade,
-        data_a_realizar: data,
-        hora_inicio: horaSel,
-        duracao_minutos: duracao,
-        numero_alunos_pretendidos: numAlunos,
-      })
+      await api.post('/coaching/marcacao/solicitar', payload)
       onSuccess?.()
       onClose()
     } catch (err) {
@@ -172,21 +197,32 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
 
   const verificarDataSelecionada = () => {
     if (!slotSel || !data) return true;
-    // Usar T12:00:00Z para evitar o desfasamento de timezone (UTC vs local)
-    const d = new Date(data.split('T')[0] + 'T12:00:00Z');
+    const d = new Date(data);
     if (isNaN(d)) return true;
 
-    // Se o slot tem data específica, comparar dia a dia em UTC
+    // Se o slot tem data específica, deve bater certo
     if (slotSel.data_especifica) {
       const dSpec = new Date(slotSel.data_especifica);
-      return d.getUTCFullYear() === dSpec.getUTCFullYear() &&
-             d.getUTCMonth() === dSpec.getUTCMonth() &&
-             d.getUTCDate() === dSpec.getUTCDate();
+      const isValido = d.toDateString() === dSpec.toDateString();
+      console.log('[DEBUG verificarDataSelecionada] Data específica:', {
+        data_input: data,
+        d_toDateString: d.toDateString(),
+        dSpec_toDateString: dSpec.toDateString(),
+        isValido
+      });
+      return isValido;
     }
 
-    // Se tem dia da semana, usar getUTCDay() para evitar offset de timezone
+    // Se tem dia da semana, a data tem de ser desse dia
     if (slotSel.dia_semana != null) {
-      return d.getUTCDay() === Number(slotSel.dia_semana);
+      const isValido = d.getDay() === slotSel.dia_semana;
+      console.log('[DEBUG verificarDataSelecionada] Dia da semana:', {
+        data_input: data,
+        d_getDay: d.getDay(),
+        slot_dia_semana: slotSel.dia_semana,
+        isValido
+      });
+      return isValido;
     }
 
     return true;

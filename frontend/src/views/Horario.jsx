@@ -16,6 +16,7 @@ import { api } from '../services/api'
 import coachingService from '../services/coachingService'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovoEventoModal from './NovoEventoModal'
+import NovaMarcacaoModal from './NovaMarcacaoModal'
 // ─── Localizer para português ───────────────────────────────────────────────
 const localizer = dateFnsLocalizer({
     format,
@@ -1049,9 +1050,8 @@ export default function Horario() {
             )}
 
             {showNovoCoaching && (
-                <NovoCoachingModal
+                <NovaMarcacaoModal
                     onClose={() => setShowNovoCoaching(false)}
-                    selectedDate={selectedDate}
                     onSuccess={() => {
                         setShowNovoCoaching(false)
                         showToast('Coaching criado com sucesso!')
