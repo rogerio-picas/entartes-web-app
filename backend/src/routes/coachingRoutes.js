@@ -360,6 +360,7 @@ router.get('/pedidos-pendentes', tokenValidation, authorize([1]), coachingCoorde
 router.post('/confirmar-marcacao', tokenValidation, authorize([1]), coachingCoordenacaoController.confirmarMarcacao);
 router.post('/rejeitar-marcacao', tokenValidation, authorize([1]), coachingCoordenacaoController.rejeitarMarcacao);
 router.post('/cancelar-marcacao', tokenValidation, authorize([1]), coachingCoordenacaoController.cancelarMarcacaoConfirmada);
+router.post('/concluir-marcacao', tokenValidation, authorize([1]), coachingCoordenacaoController.concluirMarcacao);
 router.post('/reatribuir-sala', tokenValidation, authorize([1]), coachingCoordenacaoController.reatribuirSala);
 router.get('/salas-disponiveis', tokenValidation, authorize([1]), coachingCoordenacaoController.consultarSalasDisponiveis);
 router.get('/historico-marcacao/:id_marcacao', tokenValidation, authorize([1]), coachingCoordenacaoController.consultarHistoricoMarcacao);

@@ -21,13 +21,28 @@ const getSessoesRelatorio = async (req, res) => {
 
 const getHorasDocente = async (req, res) => {
     try {
-        const data = await prisma.marcacao.groupBy({
-            by: ['id_docente'],
-            where: { id_estado: 4 },
-            _sum: { duracao_minutos: true },
-            _count: true
+        const { data_inicio, data_fim } = req.query
+        const dateFilter = {}
+        if (data_inicio) dateFilter.gte = new Date(data_inicio)
+        if (data_fim)    dateFilter.lte = new Date(data_fim)
+        const marcacaoWhere = { id_estado: 4, ...(Object.keys(dateFilter).length && { data_a_realizar: dateFilter }) }
+
+        const docentes = await prisma.docente.findMany({
+            include: {
+                utilizador: { select: { nome: true, apelido: true } },
+                marcacao: { where: marcacaoWhere, include: { modalidade: { select: { nome: true } } } }
+            }
         })
-        res.json(data)
+        const result = docentes
+            .filter(d => d.marcacao.length > 0)
+            .map(d => ({
+                id_docente: d.id_utilizador,
+                nome: `${d.utilizador?.nome ?? ''} ${d.utilizador?.apelido ?? ''}`.trim(),
+                modalidades: [...new Set(d.marcacao.map(m => m.modalidade?.nome).filter(Boolean))],
+                _count: d.marcacao.length,
+                _sum: { duracao_minutos: d.marcacao.reduce((s, m) => s + (m.duracao_minutos ?? 0), 0) }
+            }))
+        res.json(result)
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' })
     }
@@ -35,21 +50,60 @@ const getHorasDocente = async (req, res) => {
 
 const getAlunosRelatorio = async (req, res) => {
     try {
-        const marcacoesAlunos = await prisma.aluno_marcacao.findMany({
-            where: { marcacao: { id_estado: 4 } },
-            include: { aluno: true, marcacao: true }
-        })
-        const totaisPorAluno = marcacoesAlunos.reduce((acc, registo) => {
-            const id = registo.id_aluno
-            if (!acc[id]) {
-                acc[id] = { aluno: registo.aluno, totalMinutos: 0, totalSessoes: 0 }
+        const { data_inicio, data_fim } = req.query
+        const dateFilter = {}
+        if (data_inicio) dateFilter.gte = new Date(data_inicio)
+        if (data_fim)    dateFilter.lte = new Date(data_fim)
+        const marcacaoWhere = { id_estado: 4, ...(Object.keys(dateFilter).length && { data_a_realizar: dateFilter }) }
+
+        const alunos = await prisma.aluno.findMany({
+            include: {
+                utilizador: { select: { nome: true, apelido: true } },
+                aluno_marcacao: {
+                    where: { marcacao: marcacaoWhere },
+                    include: { marcacao: { include: { modalidade: { select: { nome: true } } } } }
+                }
             }
-            acc[id].totalMinutos += registo.marcacao.duracao_minutos || 0
-            acc[id].totalSessoes += 1
-            return acc
-        }, {})
-        res.json(Object.values(totaisPorAluno))
+        })
+        const result = alunos
+            .filter(a => a.aluno_marcacao.length > 0)
+            .map(a => ({
+                id: a.id_utilizador,
+                nome: `${a.utilizador?.nome ?? ''} ${a.utilizador?.apelido ?? ''}`.trim(),
+                modalidades: [...new Set(a.aluno_marcacao.map(am => am.marcacao?.modalidade?.nome).filter(Boolean))],
+                totalSessoes: a.aluno_marcacao.length,
+                totalMinutos: a.aluno_marcacao.reduce((s, am) => s + (am.marcacao?.duracao_minutos ?? 0), 0)
+            }))
+        res.json(result)
     } catch (error) {
+        console.error('getAlunosRelatorio:', error)
+        res.status(500).json({ error: 'Internal server error' })
+    }
+}
+
+const getDocentesRelatorio = async (req, res) => {
+    try {
+        const docentes = await prisma.docente.findMany({
+            include: {
+                utilizador: { select: { nome: true, apelido: true } },
+                marcacao: {
+                    where: { id_estado: 4 },
+                    include: { modalidade: { select: { nome: true } } }
+                }
+            }
+        })
+        const result = docentes
+            .filter(d => d.marcacao.length > 0)
+            .map(d => ({
+                id: d.id_utilizador,
+                nome: `${d.utilizador?.nome ?? ''} ${d.utilizador?.apelido ?? ''}`.trim(),
+                modalidades: [...new Set(d.marcacao.map(m => m.modalidade?.nome).filter(Boolean))],
+                totalSessoes: d.marcacao.length,
+                totalMinutos: d.marcacao.reduce((s, m) => s + (m.duracao_minutos ?? 0), 0)
+            }))
+        res.json(result)
+    } catch (error) {
+        console.error('getDocentesRelatorio:', error)
         res.status(500).json({ error: 'Internal server error' })
     }
 }
@@ -83,4 +137,4 @@ const exportCSV = async (req, res) => {
     }
 }
 
-module.exports = { getSessoesRelatorio, getHorasDocente, getAlunosRelatorio, exportCSV };
+module.exports = { getSessoesRelatorio, getHorasDocente, getAlunosRelatorio, getDocentesRelatorio, exportCSV };

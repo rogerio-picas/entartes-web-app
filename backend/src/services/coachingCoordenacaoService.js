@@ -116,29 +116,37 @@ async function listarPedidosPendentes({ estados = null, data_inicio = null, data
           },
         },
       },
+      participacao_conclusao: { select: { id_aluno: true, id_docente: true } },
     },
     orderBy: { data_criacao: 'asc' }, // FIFO — os mais antigos primeiro
   });
- 
-  return marcacoes.map((m) => ({
-    id_marcacao: m.id_marcacoes,
-    docente: `${m.docente.utilizador.nome} ${m.docente.utilizador.apelido}`,
-    id_docente: m.id_docente,
-    modalidade: m.modalidade?.nome ?? '—',
-    sala_atual: m.sala?.nome ?? 'Por atribuir',
-    data: m.data_a_realizar,
-    hora_inicio: m.hora_inicio,
-    duracao_minutos: m.duracao_minutos,
-    numero_alunos_pretendidos: m.numero_alunos_pretendidos,
-    estado: m.estado_marcacao?.nome ?? '—',
-    id_estado: m.id_estado,
-    data_criacao: m.data_criacao,
-    alunos: m.aluno_marcacao.map((am) => ({
-      id: am.id_aluno,
-      nome: `${am.aluno.utilizador.nome} ${am.aluno.utilizador.apelido}`,
-      confirmou: am.data_resposta !== null,
-    })),
-  }));
+
+  return marcacoes.map((m) => {
+    const conclusoes = m.participacao_conclusao ?? [];
+    return {
+      id_marcacao: m.id_marcacoes,
+      docente: `${m.docente.utilizador.nome} ${m.docente.utilizador.apelido}`,
+      id_docente: m.id_docente,
+      modalidade: m.modalidade?.nome ?? '—',
+      sala_atual: m.sala?.nome ?? 'Por atribuir',
+      data: m.data_a_realizar,
+      hora_inicio: m.hora_inicio,
+      duracao_minutos: m.duracao_minutos,
+      numero_alunos_pretendidos: m.numero_alunos_pretendidos,
+      estado: m.estado_marcacao?.nome ?? '—',
+      id_estado: m.id_estado,
+      data_criacao: m.data_criacao,
+      alunos: m.aluno_marcacao.map((am) => ({
+        id: am.id_aluno,
+        nome: `${am.aluno.utilizador.nome} ${am.aluno.utilizador.apelido}`,
+        confirmou: am.data_resposta !== null,
+      })),
+      val_docente: conclusoes.some((p) => p.id_docente === m.id_docente),
+      val_aluno:
+        m.aluno_marcacao.length > 0 &&
+        m.aluno_marcacao.every((am) => conclusoes.some((p) => p.id_aluno === am.id_aluno)),
+    };
+  });
 }
  
 // ─────────────────────────────────────────────────────────────
@@ -481,7 +489,62 @@ async function consultarSalasDisponiveis(data_a_realizar, hora_inicio, duracao_m
 }
  
 // ─────────────────────────────────────────────────────────────
-// 7. consultarHistoricoMarcacao
+// 7. concluirMarcacao
+// ─────────────────────────────────────────────────────────────
+/**
+ * A coordenação força a conclusão de uma sessão CONFIRMADA.
+ * Move o estado para CONCLUIDA e notifica docente e alunos.
+ *
+ * @param {number} id_coordenadora
+ * @param {number} id_marcacao
+ * @returns {Promise<object>}
+ */
+async function concluirMarcacao(id_coordenadora, id_marcacao) {
+  const marcacao = await prisma.marcacao.findUnique({
+    where: { id_marcacoes: id_marcacao },
+    include: {
+      aluno_marcacao: { select: { id_aluno: true } },
+      docente: { select: { id_utilizador: true } },
+    },
+  });
+
+  if (!marcacao) throw new Error('Marcação não encontrada.');
+  if (marcacao.id_estado !== ESTADO_MARCACAO.CONFIRMADA) {
+    throw new Error('Só é possível concluir sessões no estado Confirmada.');
+  }
+
+  const marcacaoConcluida = await prisma.$transaction(async (tx) => {
+    const atualizada = await tx.marcacao.update({
+      where: { id_marcacoes: id_marcacao },
+      data: { id_estado: ESTADO_MARCACAO.CONCLUIDA },
+    });
+
+    await _registarHistorico(id_marcacao, ESTADO_MARCACAO.CONCLUIDA, tx);
+
+    await _notificar(
+      marcacao.docente.id_utilizador,
+      'Sessão de Coaching Concluída',
+      'A tua sessão de coaching foi marcada como concluída pela coordenação.',
+      tx
+    );
+
+    for (const { id_aluno } of marcacao.aluno_marcacao) {
+      await _notificar(
+        id_aluno,
+        'Sessão de Coaching Concluída',
+        'A tua sessão de coaching foi marcada como concluída pela coordenação.',
+        tx
+      );
+    }
+
+    return atualizada;
+  });
+
+  return marcacaoConcluida;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 8. consultarHistoricoMarcacao
 // ─────────────────────────────────────────────────────────────
 /**
  * Devolve o histórico completo de transições de estado de uma marcação.
@@ -561,6 +624,7 @@ module.exports = {
   atribuirSalaEConfirmar,
   rejeitarMarcacao,
   cancelarMarcacaoConfirmada,
+  concluirMarcacao,
   reatribuirSala,
   consultarSalasDisponiveis,
   consultarHistoricoMarcacao,

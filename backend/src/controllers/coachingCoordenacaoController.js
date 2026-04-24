@@ -125,6 +125,26 @@ const reatribuirSala = async (req, res) => {
   }
 };
 
+const concluirMarcacao = async (req, res) => {
+  try {
+    const id_coordenadora = req.user?.id;
+    const { id_marcacao } = req.body;
+
+    if (!id_marcacao) {
+      return res.status(400).json({ message: 'id_marcacao é obrigatório.' });
+    }
+
+    const marcacao = await coordenacaoService.concluirMarcacao(
+      Number(id_coordenadora),
+      Number(id_marcacao)
+    );
+
+    return res.status(200).json({ message: 'Sessão concluída com sucesso.', details: marcacao });
+  } catch (error) {
+    return _handleError(res, error);
+  }
+};
+
 const consultarSalasDisponiveis = async (req, res) => {
   try {
     const { data_a_realizar, hora_inicio, duracao_minutos } = req.query;
@@ -165,6 +185,7 @@ module.exports = {
   confirmarMarcacao,
   rejeitarMarcacao,
   cancelarMarcacaoConfirmada,
+  concluirMarcacao,
   reatribuirSala,
   consultarSalasDisponiveis,
   consultarHistoricoMarcacao,
