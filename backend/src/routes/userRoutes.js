@@ -1,11 +1,18 @@
 const express = require('express');
 const router = express.Router();
+
 const userController = require('../controllers/userController');
 const authorize = require('../middlewares/roleCheckMiddleware');
 const tokenValidation = require('../middlewares/authMiddleware');
 
+/**
+ * @swagger
+ * tags:
+ *   name: Users
+ *   description: Gestão de utilizadores e perfis
+ */
 
-// --- ROTAS DE ACESSO APENAS A COORDENAÇÃO/DIREÇÃO ---
+// --- 1. ROTAS ADMINISTRATIVAS (Acesso: Apenas Coordenador - Role 1) ---
 
 /**
  * @swagger
@@ -15,6 +22,13 @@ const tokenValidation = require('../middlewares/authMiddleware');
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: id_tipo
+ *         schema:
+ *           type: integer
+ *           enum: [1, 2, 3]
+ *         description: "Filtra por tipo: 1 = Coordenador, 2 = Docente, 3 = Aluno"
  *     responses:
  *       200:
  *         description: Sucesso
@@ -34,45 +48,27 @@ const tokenValidation = require('../middlewares/authMiddleware');
  *                 type: string
  *               apelido:
  *                 type: string
+ *               email:
+ *                 type: string
  *               codigo_username:
  *                 type: string
  *               password:
  *                 type: string
- *               id_tipo_utilizador:
+ *               id_tipo:
  *                 type: integer
- *                 description: 1 - Coordenadora, 2 - Docente, 3 - Aluno
- *             example:
- *               nome: "João"
- *               apelido: "Silva"
- *               email: "joaosilva@joaosilva.pt"
- *               codigo_username: "jsilva"
- *               password: "password123"
- *               telemovel: "944995678"
- *               nif: "231333321"
- *               data_nascimento: "1997-02-02"
- *               id_tipo: 3
- *               
+ *                 description: "1-Coordenador, 2-Docente, 3-Aluno"
  *     responses:
  *       201:
  *         description: Criado com sucesso
- * 
+ */
+router.get('/', tokenValidation, authorize([1]), userController.getUsers);
+router.post('/', tokenValidation, authorize([1]), userController.createUser);
+
+/**
+ * @swagger
  * /api/users/{id_utilizador}:
- *   get:
- *     summary: Retorna os detalhes de um utilizador específico
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id_utilizador
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Sucesso
  *   put:
- *     summary: Atualiza um utilizador
+ *     summary: Atualização administrativa de um utilizador
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -84,7 +80,7 @@ const tokenValidation = require('../middlewares/authMiddleware');
  *           type: integer
  *     responses:
  *       200:
- *         description: Sucesso
+ *         description: Utilizador atualizado
  *   delete:
  *     summary: Apaga um utilizador
  *     tags: [Users]
@@ -98,18 +94,31 @@ const tokenValidation = require('../middlewares/authMiddleware');
  *           type: integer
  *     responses:
  *       200:
+ *         description: Utilizador apagado
+ */
+router.put('/:id_utilizador', tokenValidation, authorize([1]), userController.updateUser);
+router.delete('/:id_utilizador', tokenValidation, authorize([1]), userController.deleteUser);
+
+// --- 2. ROTAS DE PERFIL (Acesso: Todos os níveis - Role 1, 2, 3) ---
+
+/**
+ * @swagger
+ * /api/users/{id_utilizador}:
+ *   get:
+ *     summary: Retorna detalhes de um utilizador específico
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_utilizador
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
  *         description: Sucesso
  */
-
-
-router.get('/', tokenValidation, authorize([1]), userController.getUsers); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
-router.post('/',tokenValidation, authorize([1]), userController.createUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
-router.put('/:id_utilizador',tokenValidation, authorize([1]), userController.updateUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
-router.delete('/:id_utilizador', tokenValidation, authorize([1]), userController.deleteUser); // Apenas Utilizador do Tipo 1 (Coordenadora) possui acesso a este endpoint
-
-// --- FIM --- ROTAS DE ACESSO APENAS A COORDENAÇÃO/DIREÇÃO ---
-
-// ROTAS DE ACESSO GERAL [1,2,3] (1- Coordenadora, 2 - Docente, 3 - Aluno)
 router.get('/:id_utilizador', tokenValidation, authorize([1, 2, 3]), userController.getUser);
 
 /**
@@ -135,19 +144,28 @@ router.get('/:id_utilizador', tokenValidation, authorize([1, 2, 3]), userControl
  *             properties:
  *               oldPassword:
  *                 type: string
- *                 description: Password antiga
+ *                 description: "Password atual"
  *               newPassword:
  *                 type: string
- *                 description: Nova password (mínimo 6 caracteres)
+ *                 description: "Nova password (min 6 chars)"
  *     responses:
  *       200:
  *         description: Password atualizada com sucesso
  *       400:
  *         description: Erro na validação ou password incorreta
- *
+ */
+router.put(
+  '/perfil/password/:id_utilizador',
+  tokenValidation,
+  authorize([1, 2, 3]),
+  userController.atualizarPassword
+);
+
+/**
+ * @swagger
  * /api/users/perfil/dados-pessoais/{id_utilizador}:
  *   put:
- *     summary: Atualiza dados pessoais (email e/ou telemóvel) do utilizador
+ *     summary: Atualiza dados pessoais (email/telemóvel)
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -166,17 +184,20 @@ router.get('/:id_utilizador', tokenValidation, authorize([1, 2, 3]), userControl
  *             properties:
  *               email:
  *                 type: string
- *                 description: Novo email (opcional)
  *               telemovel:
  *                 type: string
- *                 description: Novo telemóvel (opcional, formato Portugal 9xxxxxxxx)
+ *                 description: "Formato PT: 9xxxxxxxx"
  *     responses:
  *       200:
- *         description: Dados pessoais atualizados com sucesso
+ *         description: Dados atualizados com sucesso
  *       400:
  *         description: Email ou telemóvel inválido
  */
-router.put('/perfil/password/:id_utilizador', tokenValidation, authorize([1, 2, 3]), userController.atualizarPassword);
-router.put('/perfil/dados-pessoais/:id_utilizador', tokenValidation, authorize([1, 2, 3]), userController.atualizarDadosPessoais);
+router.put(
+  '/perfil/dados-pessoais/:id_utilizador',
+  tokenValidation,
+  authorize([1, 2, 3]),
+  userController.atualizarDadosPessoais
+);
 
 module.exports = router;

@@ -2,17 +2,20 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns'
 import { pt } from 'date-fns/locale'
+import { useNavigate } from 'react-router-dom'
 import {
     ChevronLeft, ChevronRight, Plus, X, RefreshCw,
     Clock, MapPin, User, CalendarDays,
-    Check, AlertCircle, Music, ChevronDown
+    Check, AlertCircle, Music, ChevronDown, Trash2, Pencil
 } from 'lucide-react'
 import { horarioService } from '../services/horarioService'
 import { eventService } from '../services/eventService'
+import coachingService from '../services/coachingService'
+import { disponibilidadeService } from '../services/disponibilidadeService'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
-
+import NovoEventoModal from './NovoEventoModal'
 // ─── Localizer para português ───────────────────────────────────────────────
 const localizer = dateFnsLocalizer({
     format,
@@ -65,7 +68,13 @@ const STATUS_LABEL = { 1: 'Pendente', 2: 'Confirmado', 3: 'Cancelado', 4: 'Final
 function EventComponent({ event }) {
     const color = event._isEvent
         ? EVENT_COLOR
-        : getModalityColor(event.modalidade)
+        : getModalityColor(event.modalidade);
+
+    const timeStr = event.start instanceof Date 
+        ? format(event.start, 'HH:mm')
+        : (typeof event.start === 'string' && event.start.includes('T') 
+            ? event.start.split('T')[1].substring(0, 5) 
+            : (typeof event.start === 'string' ? event.start.substring(0, 5) : '—'));
 
     return (
         <div
@@ -74,14 +83,34 @@ function EventComponent({ event }) {
                 color: color.text,
                 border: `1px solid ${color.border}`,
             }}
-            className="rounded px-1.5 py-0.5 text-[11px] font-medium truncate overflow-hidden"
+            className="rounded px-1.5 py-0.5 text-[11px] font-medium truncate overflow-hidden h-full"
         >
-            <span className="font-semibold">{format(event.start, 'HH:mm')}</span>
+            <span className="font-semibold">{timeStr}</span>
             {' '}
             <span className="truncate">{event.title}</span>
         </div>
-    )
+    );
 }
+
+// 2. Componente para renderizar o FUNDO do dia (a célula do calendário)
+const DateCellWrapper = ({ children, value, onAdd, currentMonth }) => {
+    const isOffRange = useMemo(() => value.getMonth() !== currentMonth, [value, currentMonth]);
+
+    return (
+        <div 
+            className="relative h-full w-full rbc-day-slot-wrapper"
+            style={{ 
+                borderLeft: '1px solid #E3E9E8', 
+                borderBottom: '1px solid #E3E9E8',
+                backgroundColor: isOffRange ? '#F9FAFB' : 'transparent',
+                cursor: isOffRange ? 'default' : 'pointer'
+            }}
+            onClick={() => !isOffRange && onAdd(value)}
+        >
+            {children}
+        </div>
+    );
+};
 
 // ─── Custom Toolbar ──────────────────────────────────────────────────────────
 function CustomToolbar({ label, onNavigate, onView, view }) {
@@ -117,17 +146,41 @@ function CustomToolbar({ label, onNavigate, onView, view }) {
 }
 
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
-function DetailModal({ item, onClose, role }) {
+// ─── Detail Modal ─────────────────────────────────────────────────────────────
+function DetailModal({ item, onClose, role, navigate, onEdit, onDelete }) {
     if (!item) return null
-    const color = item._isEvent ? EVENT_COLOR : getModalityColor(item.modalidade)
+    const color = item._isEvent ? EVENT_COLOR : (item._isDisponibilidade ? { bg: '#F4FBF9', border: '#80D5D2', text: '#006A68' } : getModalityColor(item.modalidade))
     const statusClass = STATUS_COLOR[item.id_estado] ?? 'bg-gray-50 text-gray-600 border-gray-200'
     const statusLabel = STATUS_LABEL[item.id_estado] ?? item.estado_nome ?? '—'
+
+    // Permissões de Ação
+    let canEdit = false;
+    let canDelete = false;
+
+    // Verificar se o item está no passado
+    const isPast = item.start && new Date(item.start).getTime() < new Date().getTime();
+
+    if (!isPast) {
+        if (role === 1 && item._type === 'evento') {
+            canEdit = true;
+            canDelete = true;
+        } else if (role === 2) {
+            if (item._type === 'disponibilidade') {
+                canEdit = true;
+                canDelete = true;
+            } else if (item._type === 'aula') {
+                canDelete = true; // Cancelar
+            }
+        } else if (role === 3 && item._type === 'aula') {
+            canDelete = true;
+        }
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
             <div
-                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
                 onClick={e => e.stopPropagation()}
             >
                 <div
@@ -136,7 +189,7 @@ function DetailModal({ item, onClose, role }) {
                 >
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: color.text }}>
-                            {item._isEvent ? 'Evento' : 'Aula'}
+                            {item._isEvent ? 'Evento' : (item._isDisponibilidade ? 'Disponibilidade' : 'Aula')}
                         </p>
                         <h3 className="font-bold text-xl" style={{ color: color.text }}>
                             {item.modalidade || item.nome || 'Disponibilidade'}
@@ -147,9 +200,14 @@ function DetailModal({ item, onClose, role }) {
                     </button>
                 </div>
                 <div className="px-6 py-5 space-y-3">
-                    {!item._isEvent && (
+                    {!item._isEvent && !item._isDisponibilidade && (
                         <span className={`inline-flex items-center text-xs font-bold px-3 py-1 rounded-full border ${statusClass}`}>
                             {statusLabel}
+                        </span>
+                    )}
+                    {item._isEvent && role === 2 && (
+                        <span className={`inline-flex items-center text-xs font-bold px-3 py-1 rounded-full border ${item._inserido ? 'bg-[#EFF5F4] text-[#006A68] border-[#80D5D2]' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                            {item._inserido ? 'Inscrito' : 'Não Inscrito'}
                         </span>
                     )}
                     <div className="grid grid-cols-2 gap-3 text-sm">
@@ -162,12 +220,12 @@ function DetailModal({ item, onClose, role }) {
                                 </div>
                             </div>
                         )}
-                        {(item.hora || item.hora_inicio_str) && (
+                        {(item.hora || item.hora_inicio_str || (item.hora_inicio && item.hora_fim)) && (
                             <div className="flex items-start gap-2">
                                 <Clock size={14} className="text-[#006A68] mt-0.5 shrink-0" />
                                 <div>
                                     <p className="text-[10px] text-[#4A6362] uppercase font-semibold">Hora</p>
-                                    <p className="font-medium text-[#324B4A]">{item.hora || item.hora_inicio_str}</p>
+                                    <p className="font-medium text-[#324B4A]">{item.hora || item.hora_inicio_str || `${item.hora_inicio} - ${item.hora_fim}`}</p>
                                 </div>
                             </div>
                         )}
@@ -189,7 +247,7 @@ function DetailModal({ item, onClose, role }) {
                                 </div>
                             </div>
                         )}
-                        {item.docente && (
+                        {item.docente && role !== 2 && (
                             <div className="flex items-start gap-2 col-span-2">
                                 <User size={14} className="text-[#006A68] mt-0.5 shrink-0" />
                                 <div>
@@ -206,30 +264,65 @@ function DetailModal({ item, onClose, role }) {
                         )}
                     </div>
                     {item.alunos?.length > 0 && (
-                        <div>
+                        <div className="mt-2">
                             <p className="text-[10px] text-[#4A6362] uppercase font-semibold mb-2">
                                 Alunos ({item.alunos.length}{item.numero_alunos_pretendidos ? `/${item.numero_alunos_pretendidos}` : ''})
                             </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {item.alunos.map((a, i) => (
-                                    <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full">{a}</span>
+                                    <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full">{a.nome || a}</span>
                                 ))}
                             </div>
                         </div>
                     )}
                 </div>
-                <div className="px-6 pb-5">
-                    <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-[#006A68] text-white font-semibold text-sm hover:bg-[#00504E] transition-colors">
-                        Fechar
-                    </button>
+                <div className="px-6 py-4 flex gap-2 border-t border-gray-100 bg-gray-50/50 justify-between">
+                    <div className="flex gap-2">
+                        {canDelete && (
+                            <button
+                                onClick={() => { onDelete(item); onClose(); }}
+                                className="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center hover:bg-red-100 transition-colors border border-red-200"
+                                title={item._type === 'aula' ? 'Cancelar' : 'Eliminar'}
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        )}
+                        {canEdit && (
+                            <button
+                                onClick={() => { onEdit(item); onClose(); }}
+                                className="w-10 h-10 bg-[#E0F2F1] text-[#006A68] rounded-xl flex items-center justify-center hover:bg-[#CCE8E6] transition-colors"
+                                title="Editar"
+                            >
+                                <Pencil size={16} />
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex gap-2 flex-1 justify-end">
+                        <button onClick={onClose} className="px-4 py-2 rounded-xl text-gray-500 font-medium text-sm hover:bg-gray-100 transition-colors">
+                            Fechar
+                        </button>
+                        {!item._isDisponibilidade && (
+                            <button onClick={() => {
+                                onClose();
+                                if (item._isEvent) {
+                                    navigate(`/eventos/${item.id}`);
+                                } else {
+                                    navigate(role === 1 ? '/admin/aulas' : '/aulas');
+                                }
+                            }} className="px-5 py-2 rounded-xl bg-[#006A68] text-white font-medium text-sm hover:bg-[#00504E] transition-colors shadow-sm">
+                                Ver Detalhes
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     )
 }
 
+
 // ─── Novo Coaching Modal (Docente) ────────────────────────────────────────────
-function NovoCoachingModal({ onClose, onSuccess }) {
+function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
     const [modalidades, setModalidades] = useState([])
@@ -237,7 +330,7 @@ function NovoCoachingModal({ onClose, onSuccess }) {
     const [form, setForm] = useState({
         id_modalidade: '',
         id_sala: '',
-        data: '',
+        data: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '',
         hora: '10:00',
         duracao: 60,
         num_alunos: 1,
@@ -370,7 +463,11 @@ function FilterDropdown({ value, onChange, options, placeholder }) {
             <select value={value} onChange={e => onChange(e.target.value)}
                 className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-[#4a6362]/25 text-xs font-medium text-[#324B4A] bg-white focus:outline-none focus:border-[#006A68] cursor-pointer">
                 <option value="">{placeholder}</option>
-                {options.map(o => <option key={o} value={o}>{o}</option>)}
+                {options.map(o => (
+                    <option key={o.id || o} value={o.id !== undefined ? o.id : o}>
+                        {o.nome || o}
+                    </option>
+                ))}
             </select>
             <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#4A6362] pointer-events-none" />
         </div>
@@ -385,16 +482,19 @@ export default function Horario() {
 
     const user = authService.getUser()
     const role = user?.role ?? 3
-
+    const [showNovoEvento, setShowNovoEvento] = useState(false)
     // View state
     const [viewMode, setViewMode] = useState('month') // 'month' | 'week'
     const [currentDate, setCurrentDate] = useState(new Date(today))
     const [filterType, setFilterType] = useState('') // 'Pessoal' | 'Geral' | ''
     const [filterModalidade, setFilterModalidade] = useState('')
+    
+    const navigate = useNavigate()
 
     // Data
     const [aulas, setAulas] = useState([])
     const [eventos, setEventos] = useState([])
+    const [disponibilidades, setDisponibilidades] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
 
@@ -402,6 +502,8 @@ export default function Horario() {
     const [selectedItem, setSelectedItem] = useState(null)
     const [showNovoCoaching, setShowNovoCoaching] = useState(false)
     const [showNovaDisponibilidade, setShowNovaDisponibilidade] = useState(false)
+    const [selectedDate, setSelectedDate] = useState(null)
+    const [itemToEdit, setItemToEdit] = useState(null)
     const [toast, setToast] = useState(null)
 
     function showToast(msg, type = 'success') {
@@ -413,20 +515,40 @@ export default function Horario() {
         setLoading(true)
         setError('')
         try {
-            // Buscar todas as aulas e eventos para todos os perfis
-            const { aulasService: as } = await import('../services/aulasService')
-            const [aulasRes, evRes] = await Promise.allSettled([
-                as.getTodas(),
-                eventService.getAll(),
+            const [aulasRes, evRes, meusEvRes, dispRes] = await Promise.allSettled([
+                role === 1 
+                  ? coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' })
+                  : (role === 2 ? coachingService.listarMinhasAulas() : coachingService.listarMeusPedidos()),
+                role === 1 || role === 2 ? eventService.getAll() : Promise.resolve([]),
+                role === 2 || role === 3 ? eventService.getMyEvents() : Promise.resolve([]),
+                role === 2 ? disponibilidadeService.listar() : (role === 3 ? coachingService.consultarDisponibilidades() : Promise.resolve([]))
             ])
-            setAulas(aulasRes.status === 'fulfilled' ? aulasRes.value : [])
-            setEventos(evRes.status === 'fulfilled' && Array.isArray(evRes.value) ? evRes.value : [])
+
+            const rawAulas = aulasRes.status === 'fulfilled' ? (Array.isArray(aulasRes.value) ? aulasRes.value : (aulasRes.value?.data || [])) : []
+            setAulas(rawAulas.map(a => ({ ...a, id: a.id_marcacao, data_de_realizacao: a.data, _data_raw: a.data, _type: 'aula' })))
+            
+            const rawDisp = dispRes.status === 'fulfilled' ? (Array.isArray(dispRes.value) ? dispRes.value : (dispRes.value?.data || [])) : []
+            setDisponibilidades(rawDisp.map(d => ({ ...d, _type: 'disponibilidade' })))
+
+            let fetchedEvents = []
+            if (role === 1 && evRes.status === 'fulfilled') {
+                fetchedEvents = Array.isArray(evRes.value) ? evRes.value : []
+            } else if (role === 2 && evRes.status === 'fulfilled' && meusEvRes.status === 'fulfilled') {
+                const allEvents = Array.isArray(evRes.value) ? evRes.value : []
+                const myEvents = Array.isArray(meusEvRes.value) ? meusEvRes.value : []
+                const myEventIds = new Set(myEvents.map(e => e.id_evento))
+                fetchedEvents = allEvents.map(e => ({ ...e, _inserido: myEventIds.has(e.id_evento) }))
+            } else if (role === 3 && meusEvRes.status === 'fulfilled') {
+                fetchedEvents = Array.isArray(meusEvRes.value) ? meusEvRes.value : []
+                fetchedEvents = fetchedEvents.map(e => ({ ...e, _inserido: true }))
+            }
+            setEventos(fetchedEvents.map(e => ({ ...e, _type: 'evento' })))
         } catch (e) {
             setError(e.message || 'Erro ao carregar horário.')
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [role])
 
     useEffect(() => { fetchAll() }, [fetchAll])
 
@@ -464,18 +586,92 @@ export default function Horario() {
                 descricao: e.descricao,
                 data_de_realizacao: e.data_de_realizacao,
                 _data_raw: e.data_de_realizacao,
+                _inserido: e._inserido
             }
         }).filter(e => e.start)
 
         let combined = [...mappedAulas, ...mappedEventos]
 
+        // Disponibilidades -> Events (Visível no Calendário)
+        if (role === 2 || role === 3) {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            disponibilidades.forEach(d => {
+                try {
+                    const hIniRaw = d.hora_inicio ? String(d.hora_inicio) : '00:00';
+                    const hFimRaw = d.hora_fim ? String(d.hora_fim) : '01:00';
+                    
+                    const hIni = (typeof hIniRaw === 'string' && hIniRaw.includes('T')) ? hIniRaw.split('T')[1].slice(0,5) : String(hIniRaw).slice(0,5);
+                    const hFim = (typeof hFimRaw === 'string' && hFimRaw.includes('T')) ? hFimRaw.split('T')[1].slice(0,5) : String(hFimRaw).slice(0,5);
+                    
+                    const [h, m] = hIni.split(':').map(Number);
+                    const [h2, m2] = hFim.split(':').map(Number);
+
+                    if (d.data_especifica) {
+                        const dateStr = String(d.data_especifica).split('T')[0];
+                        const dateObj = new Date(dateStr + "T12:00:00");
+                        
+                        if (dateObj.getMonth() === month && dateObj.getFullYear() === year) {
+                            const start = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), h || 0, m || 0);
+                            const end = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), h2 || (h || 0)+1, m2 || 0);
+                            
+                            combined.push({
+                                ...d,
+                                hora_inicio: hIni,
+                                hora_fim: hFim,
+                                title: `Livre (${hIni} - ${hFim})`,
+                                start,
+                                end,
+                                _isEvent: false,
+                                _isDisponibilidade: true,
+                                modalidade: 'Disponível'
+                            });
+                        }
+                    } else if (d.dia_semana !== undefined && d.dia_semana !== null) {
+                        for (let day = 1; day <= daysInMonth; day++) {
+                            const dateObj = new Date(year, month, day);
+                            if (dateObj.getDay() === Number(d.dia_semana)) {
+                                const start = new Date(year, month, day, h || 0, m || 0);
+                                const end = new Date(year, month, day, h2 || (h || 0)+1, m2 || 0);
+
+                                combined.push({
+                                    ...d,
+                                    hora_inicio: hIni,
+                                    hora_fim: hFim,
+                                    title: `Livre (${hIni} - ${hFim})`,
+                                    start,
+                                    end,
+                                    _isEvent: false,
+                                    _isDisponibilidade: true,
+                                    modalidade: 'Disponível'
+                                });
+                            }
+                        }
+                    }
+                } catch(err) {
+                    console.error("Erro ao carregar disponibilidade:", err);
+                }
+            });
+        }
+
+        // Só filtrar por tipo se selecionado
+        if (filterType === 'aulas') {
+            combined = combined.filter(it => it._type === 'aula')
+        } else if (filterType === 'eventos') {
+            combined = combined.filter(it => it._type === 'evento')
+        } else if (filterType === 'disponibilidades') {
+            combined = combined.filter(it => it._type === 'disponibilidade')
+        }
+
         // Só filtrar por modalidade se selecionado
-        if (filterModalidade) {
-            combined = combined.filter(it => it.modalidade === filterModalidade || it._isEvent)
+        if (filterModalidade && filterModalidade !== 'Todas as modalidades') {
+            combined = combined.filter(it => it.modalidade === filterModalidade)
         }
 
         return combined
-    }, [aulas, eventos, filterModalidade])
+    }, [aulas, eventos, disponibilidades, currentDate, filterModalidade, filterType, role])
 
     const modalidades = useMemo(() => [...new Set(aulas.map(a => a.modalidade).filter(Boolean))], [aulas])
 
@@ -496,26 +692,169 @@ export default function Horario() {
         setSelectedItem(event)
     }, [])
 
-    // Custom event style getter
+    const handleAdd = (date) => {
+        setSelectedDate(date)
+        if (role === 1) setShowNovoEvento(true)
+        else if (role === 2) setShowNovaDisponibilidade(true)
+        else setShowNovoCoaching(true)
+    }
+
+    const handleEdit = (item) => {
+        setItemToEdit(item)
+        if (item._type === 'disponibilidade') {
+            setShowNovaDisponibilidade(true)
+        } else if (item._type === 'evento') {
+            // Se houver um modal de edição de evento, abre-se aqui.
+            // Por agora, o Docente foca-se nas disponibilidades.
+            showToast('Edição de eventos disponível para administradores', 'info')
+        }
+    }
+
+    const handleDelete = async (item) => {
+        if (!window.confirm('Tem a certeza que deseja eliminar este registo?')) return
+        try {
+            if (item._type === 'disponibilidade') {
+                await disponibilidadeService.eliminar(item.id_disponibilidade)
+            } else if (item._type === 'aula') {
+                if (role === 2) await coachingService.cancelarMarcacaoDocente(item.id, 'Cancelado pelo docente')
+                else await coachingService.cancelarPedidoPendente(item.id)
+            } else if (item._type === 'evento') {
+                await eventService.delete(item.id_evento)
+            }
+            showToast('Eliminado com sucesso!')
+            fetchAll()
+        } catch (e) {
+            showToast(e.message || 'Erro ao eliminar', 'error')
+        }
+    }
+
     const eventStyleGetter = useCallback((event) => {
-        const color = event._isEvent
-            ? EVENT_COLOR
-            : getModalityColor(event.modalidade)
+        let color;
+        if (event._isDisponibilidade) {
+            color = { bg: '#F4FBF9', border: '#80D5D2', text: '#006A68' }; // Verde claro/teal para Disponibilidade
+        } else if (event._isEvent) {
+            color = EVENT_COLOR;
+        } else {
+            color = getModalityColor(event.modalidade);
+        }
+            
+        const isNotInsertedDocente = event._isEvent && role === 2 && !event._inserido;
+            
         return {
             style: {
                 backgroundColor: color.bg,
                 borderColor: color.border,
                 color: color.text,
-                borderRadius: '4px',
-                border: `1px solid ${color.border}`,
+                borderRadius: '6px',
+                border: isNotInsertedDocente ? `1px dashed ${color.border}` : `1px solid ${color.border}`,
+                opacity: isNotInsertedDocente ? 0.7 : 1,
+                fontSize: '11px',
+                fontWeight: '600',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
             }
         }
-    }, [])
+    }, [role])
 
-    const filterOptions = ['Geral', 'Pessoal']
+    // Estilos personalizados para a grelha e hoje
+    const calendarStyles = `
+        .rbc-calendar { background: white; font-family: 'Sora', sans-serif; }
+        .rbc-month-view { 
+            border: 1px solid #D1D5D4 !important; 
+            border-radius: 16px; 
+            overflow: hidden; 
+            box-shadow: 0 4px 30px rgba(0,0,0,0.05);
+        }
+        
+        /* Grelha muito definida */
+        .rbc-day-bg { border-left: 1px solid #E3E9E8 !important; border-top: 1px solid #E3E9E8 !important; }
+        .rbc-month-row { border-top: none !important; }
+        .rbc-month-row + .rbc-month-row { border-top: 1px solid #E3E9E8 !important; }
+
+        .rbc-header { 
+            padding: 15px 0 !important; 
+            font-weight: 700 !important; 
+            text-transform: uppercase; 
+            font-size: 12px; 
+            color: #4A6362; 
+            background: #F8FAFA;
+            border-bottom: 1px solid #D1D5D4 !important;
+            border-left: 1px solid #D1D5D4 !important;
+        }
+        .rbc-header:first-child { border-left: none !important; }
+        
+        .rbc-off-range-bg { background-color: #F9FAFB !important; }
+        
+        /* Círculo do dia "Hoje" (Azul Google) */
+        .today-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #1A73E8;
+            color: white !important;
+            font-weight: 700;
+            margin-bottom: 4px;
+            box-shadow: 0 2px 4px rgba(26, 115, 232, 0.3);
+        }
+        
+        .rbc-date-cell { 
+            padding: 8px 12px !important; 
+            text-align: right !important; 
+            font-size: 14px; 
+            font-weight: 500;
+            color: #3C4043;
+        }
+
+        .rbc-now .rbc-button-link { color: #1A73E8; }
+        
+        /* Estilo dos eventos dentro da célula */
+        .rbc-event { 
+            margin: 1px 4px !important; 
+            padding: 0 !important; 
+            background: transparent !important; 
+            border: none !important; 
+        }
+
+        /* Popup de "Ver mais" */
+        .rbc-overlay {
+            background: white !important;
+            border-radius: 12px !important;
+            border: 1px solid #E3E9E8 !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+            padding: 12px !important;
+            z-index: 100 !important;
+        }
+        .rbc-overlay-header {
+            border-bottom: 1px solid #E3E9E8 !important;
+            padding-bottom: 8px !important;
+            margin-bottom: 8px !important;
+            font-weight: 700 !important;
+            color: #006A68 !important;
+        }
+
+        .rbc-show-more { 
+            color: #5F6368 !important; 
+            font-weight: 600; 
+            font-size: 12px; 
+            padding: 2px 8px !important;
+            border-radius: 4px;
+            margin-left: 4px;
+        }
+        .rbc-show-more:hover { background-color: #F1F3F4; }
+    `;
+
+    const filterOptions = [
+        { id: '', nome: 'Geral (Tudo)' },
+        { id: 'aulas', nome: 'Aulas' },
+        { id: 'eventos', nome: 'Eventos' },
+        { id: 'disponibilidades', nome: 'Disponibilidades' }
+    ]
 
     return (
         <>
+            <style>{calendarStyles}</style>
             <div className="font-['Sora'] max-w-[1400px] mx-auto">
 
                 {/* Header */}
@@ -538,10 +877,19 @@ export default function Horario() {
                             <RefreshCw size={15} className={`text-[#4A6362] ${loading ? 'animate-spin' : ''}`} />
                         </button>
 
+                        {/* Docente: Nova Disponibilidade */}
                         {role === 2 && (
                             <button onClick={() => setShowNovaDisponibilidade(true)}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors">
                                 <Plus size={15} /> Nova Disponibilidade
+                            </button>
+                        )}
+
+                        {/* Admin: Novo evento */}
+                        {role === 1 && (
+                            <button onClick={() => setShowNovoEvento(true)}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors">
+                                <Plus size={15} /> Novo evento
                             </button>
                         )}
                     </div>
@@ -554,7 +902,7 @@ export default function Horario() {
                         value={filterType}
                         onChange={setFilterType}
                         options={filterOptions}
-                        placeholder="Geral"
+                        placeholder="Tipo de Item"
                     />
 
                     {/* Filter: modalidade */}
@@ -589,7 +937,7 @@ export default function Horario() {
                         events={events}
                         startAccessor="start"
                         endAccessor="end"
-                        style={{ height: 600, fontFamily: 'Sora, sans-serif', fontSize: 15 }}
+                        style={{ height: 850, fontFamily: 'Sora, sans-serif', fontSize: 15 }}
                         view={viewMode}
                         onView={setViewMode}
                         date={currentDate}
@@ -609,16 +957,44 @@ export default function Horario() {
                         }}
                         dayPropGetter={date => {
                             const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
-                            return isToday ? {
+                            return {
+                                className: isToday ? 'rbc-now' : '',
                                 style: {
-                                    backgroundColor: '#E0F7FA',
-                                    borderRadius: '12px',
+                                    backgroundColor: isToday ? '#F0F9F9' : 'transparent',
                                 }
-                            } : {}
+                            }
                         }}
                         components={{
                             event: EventComponent,
                             toolbar: CustomToolbar,
+                            dateHeader: ({ label, date }) => {
+                                const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                                return (
+                                    <div className="rbc-date-cell relative flex items-center justify-end h-8 px-2 w-full group/header">
+                                        {/* Só mostrar botão de adicionar se for hoje ou no futuro */}
+                                        {new Date(date).getTime() >= today.getTime() && (
+                                            <button 
+                                                type="button" 
+                                                onClick={(e) => { e.stopPropagation(); handleAdd(date); }}
+                                                className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#006A68] text-white rounded-[5px] flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition-opacity hover:bg-[#00504E] shadow-sm cursor-pointer z-50"
+                                                title="Adicionar"
+                                            >
+                                                <Plus size={15} strokeWidth={3} />
+                                            </button>
+                                        )}
+                                        <button type="button" className={`rbc-button-link ${isToday ? 'today-circle' : ''}`}>
+                                            {label}
+                                        </button>
+                                    </div>
+                                );
+                            },
+                            dateCellWrapper: (props) => (
+                                <DateCellWrapper 
+                                    {...props} 
+                                    currentMonth={currentDate.getMonth()}
+                                    onAdd={handleAdd}
+                                />
+                            )
                         }}
                         messages={{
                             today: 'Hoje',
@@ -632,8 +1008,10 @@ export default function Horario() {
                             showMore: count => `+${count} mais`,
                         }}
                         culture="pt"
-                        popup
+                        popup={true}
                         selectable={false}
+                        length={30}
+                        longPressThreshold={100}
                     />
                 </div>
 
@@ -660,14 +1038,21 @@ export default function Horario() {
             </div>
 
             {/* Modals */}
-
             {selectedItem && (
-                <DetailModal item={selectedItem} onClose={() => setSelectedItem(null)} role={role} />
+                <DetailModal 
+                    item={selectedItem} 
+                    onClose={() => setSelectedItem(null)} 
+                    role={role} 
+                    navigate={navigate} 
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                />
             )}
 
             {showNovoCoaching && (
                 <NovoCoachingModal
                     onClose={() => setShowNovoCoaching(false)}
+                    selectedDate={selectedDate}
                     onSuccess={() => {
                         setShowNovoCoaching(false)
                         showToast('Coaching criado com sucesso!')
@@ -678,10 +1063,29 @@ export default function Horario() {
 
             {showNovaDisponibilidade && (
                 <NovaDisponibilidadeModal
-                    onClose={() => setShowNovaDisponibilidade(false)}
+                    onClose={() => {
+                        setShowNovaDisponibilidade(false)
+                        setItemToEdit(null)
+                    }}
+                    selectedDate={selectedDate}
+                    initialData={itemToEdit}
                     onSuccess={() => {
                         setShowNovaDisponibilidade(false)
-                        showToast('Disponibilidade criada com sucesso!')
+                        setItemToEdit(null)
+                        showToast(itemToEdit ? 'Disponibilidade atualizada!' : 'Disponibilidade criada!')
+                        fetchAll()
+                    }}
+                />
+            )}
+
+            {showNovoEvento && (
+                <NovoEventoModal
+                    onClose={() => setShowNovoEvento(false)}
+                    selectedDate={selectedDate}
+                    onSuccess={(nome) => {
+                        setShowNovoEvento(false)
+                        showToast(`Evento "${nome}" criado com sucesso!`)
+                        fetchAll()
                     }}
                 />
             )}

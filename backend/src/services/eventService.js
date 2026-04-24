@@ -57,6 +57,27 @@ const listarEventos = async () => {
   });
 };
 
+const listarMeusEventos = async (id_utilizador, role) => {
+  if (role === 2) { // Docente
+    return await prisma.evento.findMany({
+      where: { evento_docente: { some: { id_docente: id_utilizador } } },
+      include: {
+        coordenadora_evento: { include: { coordenadora: { include: { utilizador: { select: { nome: true, apelido: true, email: true } } } } } },
+      },
+      orderBy: { data_de_realizacao: "asc" },
+    });
+  } else if (role === 3) { // Aluno
+    return await prisma.evento.findMany({
+      where: { evento_aluno: { some: { id_utilizador: id_utilizador } } },
+      include: {
+        coordenadora_evento: { include: { coordenadora: { include: { utilizador: { select: { nome: true, apelido: true, email: true } } } } } },
+      },
+      orderBy: { data_de_realizacao: "asc" },
+    });
+  }
+  return [];
+};
+
 const buscarEventoPorId = async (id_evento) => {
   const evento = await prisma.evento.findUnique({
     where: { id_evento: parseInt(id_evento) },
@@ -128,11 +149,21 @@ const adicionarParticipante = async (id_evento, codigo_username) => {
 
       if (alunoNoEvento) throw new Error("Este aluno já está inscrito no evento.");
 
-      return await prisma.evento_aluno.create({
-        data: {
-          id_evento: parseInt(id_evento),
-          id_utilizador: id_utilizador,
-        },
+      return await prisma.$transaction(async (tx) => {
+        const ea = await tx.evento_aluno.create({
+          data: {
+            id_evento: parseInt(id_evento),
+            id_utilizador: id_utilizador,
+          },
+        });
+        await tx.notificacao.create({
+          data: {
+            id_user: id_utilizador,
+            titulo: "Novo Evento",
+            mensagem: `Foste adicionado ao evento "${evento.nome}".`
+          }
+        });
+        return ea;
       });
 
     case 2: // DOCENTE
@@ -149,11 +180,21 @@ const adicionarParticipante = async (id_evento, codigo_username) => {
 
       if (docenteNoEvento) throw new Error("Este docente já está inscrito no evento.");
 
-      return await prisma.evento_docente.create({
-        data: {
-          id_evento: parseInt(id_evento),
-          id_docente: id_utilizador,
-        },
+      return await prisma.$transaction(async (tx) => {
+        const ed = await tx.evento_docente.create({
+          data: {
+            id_evento: parseInt(id_evento),
+            id_docente: id_utilizador,
+          },
+        });
+        await tx.notificacao.create({
+          data: {
+            id_user: id_utilizador,
+            titulo: "Novo Evento",
+            mensagem: `Foste adicionado ao evento "${evento.nome}" como docente.`
+          }
+        });
+        return ed;
       });
 
     case 1: // COORDENADORA / ADMIN
@@ -418,6 +459,7 @@ const editarEvento = async (id_evento, dados) => {
 module.exports = {
   criarEvento,
   listarEventos,
+  listarMeusEventos,
   buscarEventoPorId,
   adicionarParticipante,
   listarParticipantes,

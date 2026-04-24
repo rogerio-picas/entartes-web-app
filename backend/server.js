@@ -51,6 +51,7 @@ const horarioRoutes = require('./src/routes/horarioRoutes');
 // const aulasRoutes = require('./src/routes/aulasRoutes');
 const notificacaoRoutes = require('./src/routes/notificacaoRoutes');
 const salaRoutes = require('./src/routes/salaRoutes');
+const modalidadeRoutes = require('./src/routes/modalidadeRoutes');
 
 app.use(cors());
 app.use(express.json());
@@ -69,6 +70,7 @@ app.use('/api/horario', horarioRoutes);
 // app.use('/api/aulas', aulasRoutes);
 app.use('/api/notificacoes', notificacaoRoutes);
 app.use('/api/salas', salaRoutes);
+app.use('/api/modalidades', modalidadeRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

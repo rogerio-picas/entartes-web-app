@@ -125,7 +125,7 @@ router.delete('/:id_anuncio', tokenValidation, authorize([1]), anuncioController
 
 /**
  * @swagger
- * /api/anuncios/evento/{id_evento}:
+ * /api/anuncios/anuncios/{id_evento}:
  *   get:
  *     summary: Listar anúncios de um evento
  *     tags: [Anúncios]

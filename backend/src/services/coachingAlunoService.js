@@ -1,14 +1,14 @@
 // src/services/marcacao.service.js
 // Módulo do Aluno — Marcações (Coaching)
 // Lógica de negócio seguindo as convenções do projeto Ent'artes
- 
+
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
- 
+
 // ─────────────────────────────────────────────────────────────
 // CONSTANTES DE DOMÍNIO
 // ─────────────────────────────────────────────────────────────
- 
+
 // IDs dos estados de marcação (tabela estado_marcacao)
 const ESTADO_MARCACAO = {
   AGENDADA: 1,
@@ -19,21 +19,21 @@ const ESTADO_MARCACAO = {
 };
 
 const ESTADO_ALUNO_MARCACAO = {
-  PENDENTE:   1,
+  PENDENTE: 1,
   CONFIRMADO: 2,
-  CONCLUIDO:  3,
-  RECUSADO:   4,
+  CONCLUIDO: 3,
+  RECUSADO: 4,
 };
- 
+
 // Durações permitidas (em minutos), conforme RF-COA-06
 const DURACOES_PERMITIDAS = [30, 45, 60, 75, 90, 120];
- 
+
 // Prazo de confirmação de presença em grupo (em milissegundos), conforme RF-COA-07
 const PRAZO_CONFIRMACAO_GRUPO_MS = 60 * 60 * 1000; // 1 hora
- 
+
 // Prazo de dupla validação pós-aula (em milissegundos), conforme RF-COA-04
 const PRAZO_DUPLA_VALIDACAO_MS = 48 * 60 * 60 * 1000; // 48 horas
- 
+
 // ─────────────────────────────────────────────────────────────
 // 1. consultarDisponibilidades
 // ─────────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ async function consultarDisponibilidades({ id_modalidade = null, data = null } =
     },
     orderBy: [{ dia_semana: 'asc' }, { hora_inicio: 'asc' }],
   });
- 
+
   // Para cada slot, verifica se já existe marcação confirmada ou em validação que bloqueia o horário
   const slotsLivres = await Promise.all(
     disponibilidades.map(async (disp) => {
@@ -101,7 +101,7 @@ async function consultarDisponibilidades({ id_modalidade = null, data = null } =
           },
         },
       });
- 
+
       return {
         id_disponibilidade: disp.id_disponibilidade,
         id_docente: disp.id_docente,
@@ -118,11 +118,11 @@ async function consultarDisponibilidades({ id_modalidade = null, data = null } =
       };
     })
   );
- 
+
   // Devolve apenas os slots sem conflito
   return slotsLivres.filter((s) => s.disponivel);
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // 2. solicitarMarcacao
 // ─────────────────────────────────────────────────────────────
@@ -158,21 +158,21 @@ async function solicitarMarcacao(id_aluno, dados) {
     numero_alunos_pretendidos = 1,
     outros_alunos = [],
   } = dados;
- 
+
   // ── Validação 1: o aluno existe e tem coaching ativo
   const aluno = await prisma.aluno.findUnique({
     where: { id_utilizador: id_aluno },
   });
   if (!aluno) throw new Error('Aluno não encontrado.');
   if (!aluno.coaching) throw new Error('O aluno não tem permissão de coaching ativa.');
- 
+
   // ── Validação 2: duração permitida (RF-COA-06)
   if (!DURACOES_PERMITIDAS.includes(duracao_minutos)) {
     throw new Error(
       `Duração inválida. Valores permitidos: ${DURACOES_PERMITIDAS.join(', ')} minutos.`
     );
   }
- 
+
   // ── Validação 3: o docente existe, está ativo e leciona a modalidade pedida
   const docenteAtivo = await prisma.docente.findFirst({
     where: {
@@ -192,7 +192,7 @@ async function solicitarMarcacao(id_aluno, dados) {
   const horaInicioDate = new Date(`1970-01-01T${hora_inicio}Z`);
   const horaFimDate = new Date(horaInicioDate.getTime() + duracao_minutos * 60 * 1000);
   const [ano, mes, dia] = data_a_realizar.split('-').map(Number);
-  const diaSemana = new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay();  
+  const diaSemana = new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay();
   //const diaSemana = new Date(data_a_realizar).getDay();
 
   const disponibilidadeValida = await prisma.disponibilidade.findFirst({
@@ -229,7 +229,7 @@ async function solicitarMarcacao(id_aluno, dados) {
     },
   });
   if (pedidoDuplicado) throw new Error('Já existe um pedido teu para este horário.');
- 
+
   // ── Validação 6: sem conflito de agenda do docente (RF-COA-05)
   // Busca todas as marcações existentes PENDENTE, EM_VALIDACAO ou CONFIRMADA neste dia
   const marcacoesExistentes = await prisma.marcacao.findMany({
@@ -253,7 +253,7 @@ async function solicitarMarcacao(id_aluno, dados) {
       );
     }
   }
- 
+
   // ── Validação 7: sem conflito com horário letivo fixo do docente (RF-COA-05 CA4)
   const horariosLetivos = await prisma.horario_letivo.findMany({
     where: {
@@ -274,7 +274,7 @@ async function solicitarMarcacao(id_aluno, dados) {
       );
     }
   }
- 
+
   const resultado = await prisma.$transaction(async (tx) => {
     // Cria a marcação com estado AGENDADA
     const marcacao = await tx.marcacao.create({
@@ -289,7 +289,7 @@ async function solicitarMarcacao(id_aluno, dados) {
         id_user_criador: id_aluno,
       },
     });
- 
+
     // Regista o histórico do estado inicial
     await tx.marcacao_estado_historico.create({
       data: {
@@ -297,7 +297,7 @@ async function solicitarMarcacao(id_aluno, dados) {
         id_estado: ESTADO_MARCACAO.AGENDADA,
       },
     });
- 
+
     // Associa o aluno à marcação como participante
     await tx.aluno_marcacao.create({
       data: {
@@ -306,7 +306,7 @@ async function solicitarMarcacao(id_aluno, dados) {
         id_aluno_estado: ESTADO_ALUNO_MARCACAO.CONFIRMADO, // ← id 2 para o criador da marcação, já confirmado
       },
     });
- 
+
     return marcacao;
   });
 
@@ -397,6 +397,13 @@ async function adicionarParticipantesGrupo(id_marcacao, id_aluno_requisitante, o
           id_aluno_estado: ESTADO_ALUNO_MARCACAO.PENDENTE, // ← os convidados começam como PENDENTE
         },
       });
+      await tx.notificacao.create({
+        data: {
+          id_user: id_aluno,
+          titulo: "Convite para Sessão de Coaching",
+          mensagem: `Foste convidado para participar numa sessão de coaching de grupo agendada para ${marcacao.data_a_realizar.toLocaleDateString('pt-PT')}.`
+        }
+      });
     }
   });
 
@@ -434,6 +441,10 @@ async function listarMeusPedidos(id_aluno, { id_estado = null } = {}) {
           modalidade: { select: { nome: true } },
           sala: { select: { nome: true } },
           estado_marcacao: { select: { nome: true } },
+          participacao_conclusao: {
+            where: { id_aluno },
+            select: { confirmou_conclusao: true }
+          },
         },
       },
     },
@@ -441,7 +452,7 @@ async function listarMeusPedidos(id_aluno, { id_estado = null } = {}) {
       marcacao: { data_a_realizar: 'desc' },
     },
   });
- 
+
   // Formata a resposta para o frontend
   return associacoes.map((a) => ({
     id_marcacao: a.marcacao.id_marcacoes,
@@ -452,10 +463,12 @@ async function listarMeusPedidos(id_aluno, { id_estado = null } = {}) {
     hora_inicio: a.marcacao.hora_inicio,
     duracao_minutos: a.marcacao.duracao_minutos,
     estado: a.marcacao.estado_marcacao?.nome ?? '—',
+    id_estado: a.marcacao.id_estado ?? null,
     data_criacao: a.marcacao.data_criacao,
+    ja_validou: a.marcacao.participacao_conclusao?.some(p => p.confirmou_conclusao) ?? false,
   }));
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // 4. cancelarPedidoPendente
 // ─────────────────────────────────────────────────────────────
@@ -473,9 +486,9 @@ async function cancelarPedidoPendente(id_aluno, id_marcacao) {
     where: { id_aluno, id_marcacoes: id_marcacao },
     include: { marcacao: true },
   });
- 
+
   if (!associacao) throw new Error('Marcação não encontrada ou não pertence ao aluno.');
- 
+
   // Só permite cancelar se ainda estiver AGENDADA ou EM_VALIDACAO
   if (
     associacao.marcacao.id_estado !== ESTADO_MARCACAO.AGENDADA &&
@@ -485,27 +498,27 @@ async function cancelarPedidoPendente(id_aluno, id_marcacao) {
       'Só é possível cancelar pedidos Agendados ou em Validação. Contacta a coordenação para outros casos.'
     );
   }
- 
+
   // Atualiza o estado e regista no histórico (dentro de transação)
   const marcacaoAtualizada = await prisma.$transaction(async (tx) => {
     const atualizada = await tx.marcacao.update({
       where: { id_marcacoes: id_marcacao },
       data: { id_estado: ESTADO_MARCACAO.CANCELADA },
     });
- 
+
     await tx.marcacao_estado_historico.create({
       data: {
         id_marcacoes: id_marcacao,
         id_estado: ESTADO_MARCACAO.CANCELADA,
       },
     });
- 
+
     return atualizada;
   });
- 
+
   return marcacaoAtualizada;
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // 5. confirmarPresencaGrupo
 // ─────────────────────────────────────────────────────────────
@@ -526,25 +539,25 @@ async function confirmarPresencaGrupo(id_aluno, id_marcacao, aceitar) {
       marcacao: true,
     },
   });
- 
+
   if (!associacao) throw new Error('Convite não encontrado para este aluno.');
- 
+
   // Verifica que a marcação ainda está AGENDADA (aceitações só fazem sentido neste estado)
   if (associacao.marcacao.id_estado !== ESTADO_MARCACAO.AGENDADA) {
     throw new Error('Esta marcação já não está disponível para confirmação.');
   }
- 
+
   // Verifica se o prazo de 1 hora ainda não expirou (RF-COA-07 CA2)
   const agora = new Date();
   const dataCriacao = new Date(associacao.marcacao.data_criacao);
   const tempoDecorrido = agora - dataCriacao;
- 
+
   if (tempoDecorrido > PRAZO_CONFIRMACAO_GRUPO_MS) {
     // Prazo expirado — cancela automaticamente
     await _cancelarMarcacaoPorExpiracao(id_marcacao);
     throw new Error('O prazo de confirmação de 1 hora expirou. A inscrição foi anulada automaticamente.');
   }
- 
+
   if (!aceitar) {
     await prisma.aluno_marcacao.updateMany({
       where: { id_aluno, id_marcacoes: id_marcacao },
@@ -585,8 +598,8 @@ async function confirmarPresencaGrupo(id_aluno, id_marcacao, aceitar) {
       (p) => p.id_aluno_estado === ESTADO_ALUNO_MARCACAO.PENDENTE
     ).length,
   };
-}  
- 
+}
+
 // ─────────────────────────────────────────────────────────────
 // 6. validarConclusaoSessao
 // ─────────────────────────────────────────────────────────────
@@ -605,7 +618,7 @@ async function validarConclusaoSessao(id_aluno, id_marcacao) {
   let participacao = await prisma.participacao_conclusao.findFirst({
     where: { id_marcacoes: id_marcacao, id_aluno },
   });
- 
+
   // Se ainda não existe o registo, cria-o
   if (!participacao) {
     // Confirma que a marcação existe e está CONFIRMADA
@@ -616,7 +629,7 @@ async function validarConclusaoSessao(id_aluno, id_marcacao) {
     if (marcacao.id_estado !== ESTADO_MARCACAO.CONFIRMADA) {
       throw new Error('Só é possível validar sessões no estado Confirmada.');
     }
- 
+
     // Verifica prazo de 48 horas (RF-COA-04)
     const agora = new Date();
     // Nota: usamos data_a_realizar + hora_inicio como referência temporal da aula
@@ -624,7 +637,7 @@ async function validarConclusaoSessao(id_aluno, id_marcacao) {
     if (agora - dataHoraAula > PRAZO_DUPLA_VALIDACAO_MS) {
       throw new Error('O prazo de 48 horas para validação da sessão já expirou.');
     }
- 
+
     participacao = await prisma.participacao_conclusao.create({
       data: {
         id_marcacoes: id_marcacao,
@@ -640,7 +653,7 @@ async function validarConclusaoSessao(id_aluno, id_marcacao) {
       data: { confirmou_conclusao: true, data_confirmacao: new Date() },
     });
   }
- 
+
   // Verifica se o docente também já validou
   const validacaoDocente = await prisma.participacao_conclusao.findFirst({
     where: {
@@ -649,7 +662,7 @@ async function validarConclusaoSessao(id_aluno, id_marcacao) {
       confirmou_conclusao: true,
     },
   });
- 
+
   // Se AMBOS validaram, passa o estado para CONCLUÍDA automaticamente (RF-COA-04 CA2)
   if (validacaoDocente) {
     await prisma.$transaction(async (tx) => {
@@ -664,21 +677,21 @@ async function validarConclusaoSessao(id_aluno, id_marcacao) {
         },
       });
     });
- 
+
     return {
       mensagem: 'Sessão concluída com sucesso! Ambas as validações foram registadas.',
       estado: 'Concluída',
       dupla_validacao_completa: true,
     };
   }
- 
+
   return {
     mensagem: 'A tua validação foi registada. Aguarda a confirmação do docente.',
     estado: 'Confirmada',
     dupla_validacao_completa: false,
   };
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // FUNÇÃO AUXILIAR (interna) — Cancelamento por expiração
 // ─────────────────────────────────────────────────────────────
@@ -702,7 +715,7 @@ async function _cancelarMarcacaoPorExpiracao(id_marcacao) {
     });
   });
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // EXPORTAÇÕES
 // ─────────────────────────────────────────────────────────────
