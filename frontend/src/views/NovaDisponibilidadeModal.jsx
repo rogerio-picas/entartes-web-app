@@ -26,31 +26,39 @@ function Field({ label, children }) {
 
 const inputCls = "w-full border border-[#6F7978] rounded-lg px-4 py-3.5 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] bg-white transition-colors font-['Sora']"
 
-export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedDate }) {
-    const [horaInicio, setHoraInicio]     = useState('')
-    const [horaFim, setHoraFim]           = useState('')
-    const [modalidade, setModalidade]     = useState('')
+export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedDate, initialData }) {
+    const [horaInicio, setHoraInicio]     = useState(initialData?.hora_inicio || '')
+    const [horaFim, setHoraFim]           = useState(initialData?.hora_fim || '')
+    const [modalidade, setModalidade]     = useState(initialData?.id_modalidade || '')
     const [modalidades, setModalidades]   = useState([])
-    const [frequencia, setFrequencia]     = useState(selectedDate ? 'unica' : 'semanal')
-    const [diaSemana, setDiaSemana]       = useState(1)
-    const [data, setData]                 = useState(selectedDate ? (typeof selectedDate === 'string' ? selectedDate : selectedDate.toISOString().split('T')[0]) : '')
+    const [frequencia, setFrequencia]     = useState(
+        initialData 
+            ? (initialData.data_especifica ? 'unica' : 'semanal') 
+            : (selectedDate ? 'unica' : 'semanal')
+    )
+    const [diaSemana, setDiaSemana]       = useState(initialData?.dia_semana ?? 1)
+    const [data, setData]                 = useState(
+        initialData?.data_especifica 
+            ? initialData.data_especifica.split('T')[0] 
+            : (selectedDate ? (typeof selectedDate === 'string' ? selectedDate : selectedDate.toISOString().split('T')[0]) : '')
+    )
     const [saving, setSaving]             = useState(false)
     const [erro, setErro]                 = useState('')
 
+    const isEdit = !!initialData
+
     useEffect(() => {
-        // This modal is only accessible to docentes. id_utilizador equals id_docente,
-        // so we decode it from the JWT to filter only this docente's modalidades.
         const token = localStorage.getItem('token')
         const id_docente = token ? JSON.parse(atob(token.split('.')[1])).id : null
         modalidadeService.listar(id_docente)
             .then(list => {
                 setModalidades(list)
-                if (list.length > 0) setModalidade(list[0].id_modalidade)
+                if (!isEdit && list.length > 0) setModalidade(list[0].id_modalidade)
             })
             .catch(() => {})
-    }, [])
+    }, [isEdit])
 
-    async function handleCriar() {
+    async function handleSave() {
         if (!horaInicio || !horaFim) {
             setErro('Hora de início e hora de fim são obrigatórios.')
             return
@@ -62,16 +70,28 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
         setSaving(true)
         setErro('')
         try {
-            const payload = { hora_inicio: horaInicio, hora_fim: horaFim }
+            const payload = { 
+                hora_inicio: horaInicio, 
+                hora_fim: horaFim,
+                id_modalidade: modalidade
+            }
             if (frequencia === 'semanal') {
                 payload.dia_semana = diaSemana
+                payload.data_especifica = null
             } else {
                 payload.data_especifica = data
+                payload.dia_semana = null
             }
-            await disponibilidadeService.criar(payload)
+
+            if (isEdit) {
+                await disponibilidadeService.editar(initialData.id_disponibilidade, payload)
+            } else {
+                await disponibilidadeService.criar(payload)
+            }
+            
             onSuccess?.()
         } catch (e) {
-            setErro(e.message || 'Erro ao criar disponibilidade.')
+            setErro(e.message || `Erro ao ${isEdit ? 'editar' : 'criar'} disponibilidade.`)
         } finally {
             setSaving(false)
         }
@@ -94,7 +114,7 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
 
                 {/* Title */}
                 <h2 className="text-center text-[#2D4948] font-normal text-3xl mb-3 tracking-tight">
-                    Nova disponibilidade
+                    {isEdit ? 'Editar disponibilidade' : 'Nova disponibilidade'}
                 </h2>
                 <div className="h-px bg-[#006A68] mb-8" />
 
@@ -138,7 +158,6 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                                 onChange={e => setModalidade(Number(e.target.value))}
                                 className={`${inputCls} appearance-none cursor-pointer pr-10`}
                             >
-                                
                                 {modalidades.map(m => (
                                     <option key={m.id_modalidade} value={m.id_modalidade}>{m.nome}</option>
                                 ))}
@@ -215,11 +234,11 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                         Cancelar
                     </button>
                     <button
-                        onClick={handleCriar}
+                        onClick={handleSave}
                         disabled={saving}
                         className="py-3.5 rounded-2xl bg-[#006A68] text-white font-bold text-sm hover:bg-[#00504E] transition-colors disabled:opacity-50 flex items-center justify-center"
                     >
-                        {saving ? <RefreshCw size={16} className="animate-spin" /> : 'Criar'}
+                        {saving ? <RefreshCw size={16} className="animate-spin" /> : (isEdit ? 'Guardar' : 'Criar')}
                     </button>
                 </div>
             </div>
