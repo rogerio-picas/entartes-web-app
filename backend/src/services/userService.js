@@ -84,6 +84,22 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
         estado
     } = dados;
 
+    const userId = parseInt(id_utilizador);
+
+    // Buscar o utilizador atual para verificar mudanças
+    const utilizadorAtual = await prisma.utilizador.findUnique({
+        where: { id_utilizador: userId },
+        include: {
+            aluno: true,
+            docente: true,
+            coordenadora: true,
+        },
+    });
+
+    if (!utilizadorAtual) {
+        throw new Error('Utilizador não encontrado.');
+    }
+
     const dataToUpdate = {};
 
     if (codigo_username !== undefined) dataToUpdate.codigo_username = codigo_username;
@@ -100,9 +116,54 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
     if (nif !== undefined) dataToUpdate.nif = nif;
     if (estado !== undefined) dataToUpdate.estado = estado;
 
-    return await prisma.utilizador.update({
-        where: { id_utilizador: parseInt(id_utilizador) },
-        data: dataToUpdate,
+    // Se id_tipo foi alterado, precisamos mover o registro entre tabelas
+    const novoTipo = id_tipo !== undefined ? parseInt(id_tipo) : utilizadorAtual.id_tipo;
+    const tipoAtual = utilizadorAtual.id_tipo;
+
+    return await prisma.$transaction(async (tx) => {
+        // Atualizar a tabela principal
+        const utilizadorAtualizado = await tx.utilizador.update({
+            where: { id_utilizador: userId },
+            data: dataToUpdate,
+        });
+
+        // Se o tipo mudou, gerenciar as tabelas específicas
+        if (novoTipo !== tipoAtual) {
+            // Remover da tabela antiga
+            if (tipoAtual === 3 && utilizadorAtual.aluno) { // Era aluno
+                await tx.aluno.delete({
+                    where: { id_utilizador: userId },
+                });
+            } else if (tipoAtual === 2 && utilizadorAtual.docente) { // Era docente
+                await tx.docente.delete({
+                    where: { id_utilizador: userId },
+                });
+            } else if (tipoAtual === 1 && utilizadorAtual.coordenadora) { // Era coordenadora
+                await tx.coordenadora.delete({
+                    where: { id_utilizador: userId },
+                });
+            }
+
+            // Adicionar na nova tabela
+            if (novoTipo === 3) { // Novo aluno
+                await tx.aluno.create({
+                    data: { id_utilizador: userId },
+                });
+            } else if (novoTipo === 2) { // Novo docente
+                await tx.docente.create({
+                    data: {
+                        id_utilizador: userId,
+                        estado_atividade: true,
+                    },
+                });
+            } else if (novoTipo === 1) { // Nova coordenadora
+                await tx.coordenadora.create({
+                    data: { id_utilizador: userId },
+                });
+            }
+        }
+
+        return utilizadorAtualizado;
     });
 };
 
