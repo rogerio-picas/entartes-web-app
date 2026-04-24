@@ -10,25 +10,27 @@ import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 
 // ─── Mapeamento de estados e Funções Auxiliares ───────────
 const STATUS_CFG = {
-  1: { label: 'Pendente',   icon: Clock,        textColor: 'text-amber-700',   bg: 'bg-amber-100',   border: 'border-amber-200' },
-  2: { label: 'Confirmada', icon: CheckCircle2, textColor: 'text-emerald-700', bg: 'bg-emerald-100', border: 'border-emerald-200' },
-  3: { label: 'Cancelada',  icon: XCircle,      textColor: 'text-red-700',     bg: 'bg-red-100',     border: 'border-red-200' },
-  4: { label: 'Concluída',  icon: CheckCircle2, textColor: 'text-[#006A68]',   bg: 'bg-[#CCE8E6]',   border: 'border-[#006A68]' },
+  1: { label: 'Agendada',     icon: Clock,        textColor: 'text-amber-700',   bg: 'bg-amber-100',   border: 'border-amber-200' },
+  2: { label: 'Em Validação', icon: Clock,        textColor: 'text-blue-700',    bg: 'bg-blue-100',    border: 'border-blue-200' },
+  3: { label: 'Confirmada',   icon: CheckCircle2, textColor: 'text-emerald-700', bg: 'bg-emerald-100', border: 'border-emerald-200' },
+  4: { label: 'Concluída',    icon: CheckCircle2, textColor: 'text-[#006A68]',   bg: 'bg-[#CCE8E6]',   border: 'border-[#006A68]' },
+  5: { label: 'Cancelada',    icon: XCircle,      textColor: 'text-red-700',     bg: 'bg-red-100',     border: 'border-red-200' },
 }
 
 function getStatusCfg(id_estado, estado_nome) {
   if (STATUS_CFG[id_estado]) return STATUS_CFG[id_estado]
   const nome = (estado_nome ?? '').toLowerCase()
-  if (nome.includes('pend'))    return STATUS_CFG[1]
-  if (nome.includes('confirm')) return STATUS_CFG[2]
-  if (nome.includes('cancel'))  return STATUS_CFG[3]
+  if (nome.includes('agend') || nome.includes('pend')) return STATUS_CFG[1]
+  if (nome.includes('valida'))  return STATUS_CFG[2]
+  if (nome.includes('confirm')) return STATUS_CFG[3]
   if (nome.includes('conclui') || nome.includes('finaliz')) return STATUS_CFG[4]
+  if (nome.includes('cancel'))  return STATUS_CFG[5]
   return { label: estado_nome ?? '—', textColor: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200', icon: Clock }
 }
 
 
 // ─── Modal Detalhe ─────────────────────────────────────────────
-function AulaModal({ aula, onClose }) {
+function AulaModal({ aula, onClose, role }) {
   if (!aula) return null
   const cfg = getStatusCfg(aula.id_estado, aula.estado_nome)
   const StatusIcon = cfg.icon
@@ -64,7 +66,7 @@ function AulaModal({ aula, onClose }) {
             <InfoItem icon={Clock} label="Hora" value={aula.hora} />
             <InfoItem icon={Clock} label="Duração" value={aula.duracao} />
             <InfoItem icon={MapPin} label="Sala / Estúdio" value={aula.sala} />
-            <InfoItem icon={User} label={User.role === 2 ? "Aluno(s)" : "Professor"} value={aula.docente} />
+            <InfoItem icon={User} label={role === 2 ? "Aluno(s)" : "Professor"} value={aula.docente} />
             <InfoItem icon={Music} label="Modalidade" value={aula.modalidade} />
             <InfoItem label="Tipo de Aula" value={aula.tipo_aula} icon={BookOpen} />
           </div>
@@ -168,9 +170,14 @@ export default function Aulas() {
     setLoading(true)
     setError('')
     try {
-      const data = role === 2 
-        ? await coachingService.listarMinhasAulas() 
-        : await coachingService.listarMeusPedidos()
+      let data;
+      if (role === 1) {
+          data = await coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' });
+      } else if (role === 2) {
+          data = await coachingService.listarMinhasAulas();
+      } else {
+          data = await coachingService.listarMeusPedidos();
+      }
       
       const rawData = Array.isArray(data) ? data : (data?.data || [])
       
@@ -247,11 +254,10 @@ export default function Aulas() {
 
   // Filtros
   const modalidades = ['todas', ...new Set(marcacoes.map(a => a.modalidade).filter(Boolean))]
-  const estados = ['todos', ...new Set(marcacoes.map(a => a.estado_nome).filter(Boolean))]
 
   const marcacoesFiltradas = marcacoes.filter(a => {
     if (!showAll && [4, 5].includes(a.id_estado)) return false // Se o histórico estiver oculto (só pendentes/confirmadas)
-    if (filtroEstado !== 'todos' && a.estado_nome !== filtroEstado) return false
+    if (filtroEstado !== 'todos' && String(a.id_estado) !== String(filtroEstado)) return false
     if (filtroModalidade !== 'todas' && a.modalidade !== filtroModalidade) return false
     return true
   })
@@ -329,9 +335,9 @@ export default function Aulas() {
                 className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-[#4a6362]/25 text-xs font-medium text-[#324B4A] bg-white focus:outline-none focus:border-[#006A68] cursor-pointer"
               >
                 <option value="todos">Todos os estados</option>
-                {estados.filter(e => e !== 'todos').map(e => (
-                  <option key={e} value={e}>{e}</option>
-                ))}
+                {Object.entries(STATUS_CFG).map(([id, cfg]) => 
+                  counts[Number(id)] ? <option key={id} value={id}>{cfg.label} ({counts[Number(id)]})</option> : null
+                )}
               </select>
             </div>
             {(filtroEstado !== 'todos' || filtroModalidade !== 'todas') && (

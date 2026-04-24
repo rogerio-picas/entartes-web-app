@@ -106,8 +106,8 @@ export default function Home() {
   const [inscricoesAluno, setInscricoesAluno] = useState([])
 
   function showToast(msg, type = 'success') {
-      setToast({ msg, type })
-      setTimeout(() => setToast(null), 3500)
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3500)
   }
 
   const loadData = useCallback(async () => {
@@ -116,7 +116,12 @@ export default function Home() {
       const now = new Date()
 
       // Always fetch events
-      const evRes = await eventService.getAll().catch(() => [])
+      let evRes;
+      if (isAdmin || isDocente) {
+          evRes = await eventService.getAll().catch(() => []);
+      } else {
+          evRes = await eventService.getMyEvents().catch(() => []);
+      }
       const evs = Array.isArray(evRes) ? evRes : []
       setEventos(evs)
 
@@ -166,16 +171,21 @@ export default function Home() {
         const todas = rawTodas.map(normalizeAula)
         const horas = horasRes.status === 'fulfilled' && Array.isArray(horasRes.value) ? horasRes.value : []
         const alunos = alunosRes.status === 'fulfilled' && Array.isArray(alunosRes.value) ? alunosRes.value : []
-        
+
         setHorasData(horas)
         setAlunosData(alunos)
-        setCoachings48h(pedPendentes)
+        const limite48h = new Date(now.getTime() + 47 * 60 * 60 * 1000)
+        const pendentes48h = pedPendentes.filter(a => {
+          const dataAula = new Date(a._data_raw)
+          return dataAula <= limite48h
+        })
+        setCoachings48h(pendentes48h)
 
         const hoje = todas.filter(a => new Date(a._data_raw).toDateString() === now.toDateString())
         setStats({
-            hoje: hoje.length,
-            porValidar: pedPendentes.length,
-            concluidas: todas.filter(a => a.id_estado === 4).length
+          hoje: hoje.length,
+          porValidar: pedPendentes.length,
+          concluidas: todas.filter(a => a.id_estado === 4).length
         })
         setLiveAulas(hoje.filter(a => a.id_estado === 3)) // CONFIRMADA
         setAulasConfirmadas(todas.filter(a => a.id_estado === 3 && new Date(a._data_raw) >= now))
@@ -195,8 +205,8 @@ export default function Home() {
         // Aulas que o docente tem de "concluir" (validar presença pós-aula)
         // Só marcacoes CONFIRMADA mas no passado (aulas dadas recentement). Ou seja, < now
         setPresencasDocente(minhasAulas.filter(a => {
-            const d = new Date(a._data_raw)
-            return a.id_estado === 3 && d < now
+          const d = new Date(a._data_raw)
+          return a.id_estado === 3 && d < now
         }))
 
       } else if (isAluno) {
@@ -206,7 +216,7 @@ export default function Home() {
         
         // Pendentes e Confirmação
         setInscricoesAluno(meusPedidos.filter(a => a.id_estado === 1 || a.id_estado === 2))
-        
+
         // Aulas Agendadas Efetivas (CONFIRMADAS no futuro)
         setAulasConfirmadas(meusPedidos.filter(a => {
             const d = new Date(a._data_raw)
@@ -215,8 +225,8 @@ export default function Home() {
 
         // Aulas dadas, à espera da validação dupla (CONFIRMADAS no passado)
         setPresencasAluno(meusPedidos.filter(a => {
-            const d = new Date(a._data_raw)
-            return a.id_estado === 3 && d < now
+          const d = new Date(a._data_raw)
+          return a.id_estado === 3 && d < now
         }))
       }
 
@@ -233,8 +243,8 @@ export default function Home() {
   async function handleConfirmAdminDocente(id_marcacao, id_sala = null) {
     if (!isAdmin) return; // Coachings são confirmados apenas pelo admin
     if (!id_sala) {
-        showToast('Tens de escolher uma sala primeiro!', 'error')
-        return;
+      showToast('Tens de escolher uma sala primeiro!', 'error')
+      return;
     }
     setLoadingAction(id_marcacao)
     try {
@@ -267,7 +277,7 @@ export default function Home() {
       setPresencasDocente(prev => prev.filter(a => a.id !== id_marcacao))
       showToast('Sessão validada com sucesso!', 'success')
       loadData()
-    } catch(err) { showToast(err.response?.data?.message || 'Erro ao validar a sessão.', 'error') }
+    } catch (err) { showToast(err.response?.data?.message || 'Erro ao validar a sessão.', 'error') }
     finally { setLoadingAction(null) }
   }
 
@@ -302,7 +312,7 @@ export default function Home() {
 
   if (loading) return (
     <div className="flex items-center justify-center py-24 text-[#006A68]">
-        <RefreshCw size={32} className="animate-spin" />
+      <RefreshCw size={32} className="animate-spin" />
     </div>
   )
 
@@ -324,34 +334,34 @@ export default function Home() {
         {isAdmin && (
           <div className="flex flex-wrap gap-4 items-start">
             <div className="flex flex-wrap gap-3">
-                <StatCard count={stats.hoje} label="aulas hoje" color="text-[#324B4A]" bg="bg-[#CCE8E6]" border="border-[#006A68]" />
-                <StatCard count={stats.porValidar} label="por validar" color="text-[#324863]" bg="bg-[#D2E4FF]" border="border-[#324863]" />
-                <StatCard count={stats.concluidas} label="concluída" color="text-[#93000A]" bg="bg-[#FFDAD6]" border="border-[#93000A]" />
+              <StatCard count={stats.hoje} label="aulas hoje" color="text-[#324B4A]" bg="bg-[#CCE8E6]" border="border-[#006A68]" />
+              <StatCard count={stats.porValidar} label="por validar" color="text-[#324863]" bg="bg-[#D2E4FF]" border="border-[#324863]" />
+              <StatCard count={stats.concluidas} label="concluída" color="text-[#93000A]" bg="bg-[#FFDAD6]" border="border-[#93000A]" />
             </div>
 
             <div className="flex gap-4 flex-wrap flex-1">
-                <div className="border border-[#006A68] rounded-xl p-4 bg-white flex-1 min-w-[200px] max-w-[250px]">
-                    <ModalityChart data={horasData} />
-                </div>
-                <div className="border border-[#006A68] rounded-xl p-3 bg-white flex-1 min-w-[200px] max-w-[260px]">
-                    <p className="text-xs font-bold text-[#006A68] mb-1">Média de horas</p>
-                    <CoachingHoursChart data={horasData} />
-                </div>
-                <div className="border border-[#006A68] rounded-xl p-3 bg-white flex-1 min-w-[200px] max-w-[260px]">
-                    <p className="text-xs font-bold text-[#006A68] mb-1">Inscrições</p>
-                    <EnrollmentChart data={alunosData} />
-                </div>
+              <div className="border border-[#006A68] rounded-xl p-4 bg-white flex-1 min-w-[200px] max-w-[250px]">
+                <ModalityChart data={horasData} />
+              </div>
+              <div className="border border-[#006A68] rounded-xl p-3 bg-white flex-1 min-w-[200px] max-w-[260px]">
+                <p className="text-xs font-bold text-[#006A68] mb-1">Média de horas</p>
+                <CoachingHoursChart data={horasData} />
+              </div>
+              <div className="border border-[#006A68] rounded-xl p-3 bg-white flex-1 min-w-[200px] max-w-[260px]">
+                <p className="text-xs font-bold text-[#006A68] mb-1">Inscrições</p>
+                <EnrollmentChart data={alunosData} />
+              </div>
             </div>
 
             <div className="flex flex-col gap-2 shrink-0">
-                <button onClick={() => navigate('/aulas')}
-                    className="px-4 py-2.5 border border-[#006A68] text-[#006A68] text-sm font-semibold rounded-xl hover:bg-[#EFF5F4] transition-colors whitespace-nowrap">
-                    Consultar Coachings
-                </button>
-                <button onClick={() => setShowNovoEvento(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white text-sm font-semibold rounded-xl hover:bg-[#00504E] transition-colors">
-                    <Plus size={16} /> Novo evento
-                </button>
+              <button onClick={() => navigate('/aulas')}
+                className="px-4 py-2.5 border border-[#006A68] text-[#006A68] text-sm font-semibold rounded-xl hover:bg-[#EFF5F4] transition-colors whitespace-nowrap">
+                Consultar Coachings
+              </button>
+              <button onClick={() => setShowNovoEvento(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white text-sm font-semibold rounded-xl hover:bg-[#00504E] transition-colors">
+                <Plus size={16} /> Novo evento
+              </button>
             </div>
           </div>
         )}
@@ -367,30 +377,31 @@ export default function Home() {
           </section>
         )}
 
-        {/* ── ADMIN/DOCENTE: pending requests 48h ────────────────
+        {/* ── ADMIN/DOCENTE: pending requests 48h ──────────────── */}
         {(isAdmin || isDocente) && (
           <section>
             <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Requisições a expirar em 48h"} action="Ver todas" onAction={() => navigate('/aulas')} />
             {coachings48h.length === 0 ? (
-                <p className="text-sm text-[#4A6362] italic">Sem pendentes nas próximas 48h.</p>
+              <p className="text-sm text-[#4A6362] italic">Sem pendentes nas próximas 48h.</p>
             ) : (
-                <ScrollRow>
-                    {coachings48h.map(a => (
-                        isAdmin 
-                        ? <CoachingCard key={a.id} aula={a} onConfirm={handleConfirmAdminDocente} onReject={handleRejectAdminDocente} loading={loadingAction} />
-                        : <RequisicaoCard key={a.id} item={a} onAccept={handleConfirmAdminDocente} onReject={handleRejectAdminDocente} loading={loadingAction} onVerPerfil={handleVerPerfil} />
-                    ))}
-                </ScrollRow>
+              <ScrollRow>
+                {coachings48h.slice(0, 3).map(a => (
+                  isAdmin
+                    ? <CoachingCard key={a.id} aula={a} onConfirm={handleConfirmAdminDocente} onReject={handleRejectAdminDocente} loading={loadingAction} />
+                    : <RequisicaoCard key={a.id} item={a} onAccept={handleConfirmAdminDocente} onReject={handleRejectAdminDocente} loading={loadingAction} onVerPerfil={handleVerPerfil} />
+                ))}
+                {coachings48h.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais pendentes" />}
+              </ScrollRow>
             )}
           </section>
-        )} */}
+        )}
 
         {/* ── DOCENTE: Presenças a confirmar ──────────────── */}
         {isDocente && (
           <section>
             <SectionHeader icon={CalendarCheck} title="Presenças a confirmar (48h)" action="Ver todas" onAction={() => navigate('/aulas')} />
             {presencasDocente.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">Sem presenças a confirmar.</p>
+              <p className="text-sm text-gray-400 italic">Sem presenças a confirmar.</p>
             ) : (
                 <ScrollRow>
                     {presencasDocente.slice(0, 3).map(item => (
@@ -448,10 +459,10 @@ export default function Home() {
         {/* ── SHARED: Próximos eventos ──────────────── */}
         <section>
             <SectionHeader
-                icon={isAdmin ? CalendarDays : Megaphone}
-                title={isAluno ? "Descobrir eventos" : "Próximos eventos"}
-                action={isAdmin ? "Ver todos" : null}
-                onAction={isAdmin ? () => navigate('/eventos') : null}
+                icon={isAdmin || isDocente ? CalendarDays : Megaphone}
+                title={isAdmin || isDocente ? "Próximos eventos" : "Os meus eventos"}
+                action="Ver todos"
+                onAction={() => navigate('/eventos')}
             />
             {eventos.length === 0 ? (
                 <p className="text-sm text-[#4A6362] italic">Sem eventos agendados.</p>
@@ -468,14 +479,18 @@ export default function Home() {
       </div>
 
       {showNovoEvento && (
-          <NovoEventoModal
-              onClose={() => setShowNovoEvento(false)}
-              onSuccess={(nome) => {
-                  setShowNovoEvento(false)
-                  showToast(`Evento "${nome}" criado com sucesso!`)
-                  eventService.getAll().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
-              }}
-          />
+        <NovoEventoModal
+          onClose={() => setShowNovoEvento(false)}
+          onSuccess={(nome) => {
+            setShowNovoEvento(false)
+            showToast(`Evento "${nome}" criado com sucesso!`)
+            if (isAdmin || isDocente) {
+              eventService.getAll().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
+            } else {
+              eventService.getMyEvents().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
+            }
+          }}
+        />
       )}
 
       {selectedEventId && (
