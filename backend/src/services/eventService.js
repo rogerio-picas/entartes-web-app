@@ -2,8 +2,16 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const groupService = require('./groupService');
 
+const EVENT_STATE = {
+  PLANEADO: 1,
+  ABERTO: 2,
+  EM_REALIZACAO: 3,
+  CONCLUIDO: 4,
+  CANCELADO: 5,
+};
+
 const criarEvento = async (dados, id_coordenadora) => {
-const { nome, descricao, data_de_realizacao } = dados;
+  const { nome, descricao, data_de_realizacao } = dados;
 
   if (!nome || nome.trim() === "") {
     throw new Error("O nome do evento é obrigatório.");
@@ -24,6 +32,7 @@ const { nome, descricao, data_de_realizacao } = dados;
         nome: nome.trim(),
         descricao: descricao ?? null,
         data_de_realizacao: data_de_realizacao ? new Date(data_de_realizacao) : null,
+        id_evento_estado: EVENT_STATE.PLANEADO,
       },
     });
 
@@ -119,19 +128,28 @@ const adicionarParticipante = async (id_evento, codigo_username) => {
 
   if (!evento) throw new Error("Evento não encontrado.");
 
+  if ([EVENT_STATE.CONCLUIDO, EVENT_STATE.CANCELADO].includes(evento.id_evento_estado)) {
+    throw new Error("Não é possível adicionar participantes a um evento concluído ou cancelado.");
+  }
+
+  if (evento.id_evento_estado === EVENT_STATE.EM_REALIZACAO) {
+    throw new Error("Não é possível adicionar participantes a um evento em realização.");
+  }
+
   // 2. Procurar o utilizador pelo codigo_username
   // Incluímos o 'aluno' e 'docente' para garantir que eles existem nas tabelas específicas
   const user = await prisma.utilizador.findUnique({
     where: { codigo_username: codigo_username },
     include: {
       aluno: true,
-      docente: true
-    }
+      docente: true,
+    },
   });
 
   if (!user) throw new Error(`Utilizador com o código ${codigo_username} não encontrado.`);
 
   const id_utilizador = user.id_utilizador;
+  const deveAbrirEvento = !evento.id_evento_estado || evento.id_evento_estado === EVENT_STATE.PLANEADO;
 
   // 3. Decidir o destino com base no id_tipo (1: Admin, 2: Docente, 3: Aluno)
   switch (user.id_tipo) {
@@ -156,12 +174,20 @@ const adicionarParticipante = async (id_evento, codigo_username) => {
             id_utilizador: id_utilizador,
           },
         });
+
+        if (deveAbrirEvento) {
+          await tx.evento.update({
+            where: { id_evento: evento.id_evento },
+            data: { id_evento_estado: EVENT_STATE.ABERTO },
+          });
+        }
+
         await tx.notificacao.create({
           data: {
             id_user: id_utilizador,
             titulo: "Novo Evento",
-            mensagem: `Foste adicionado ao evento "${evento.nome}".`
-          }
+            mensagem: `Foste adicionado ao evento "${evento.nome}".`,
+          },
         });
         return ea;
       });
@@ -187,12 +213,20 @@ const adicionarParticipante = async (id_evento, codigo_username) => {
             id_docente: id_utilizador,
           },
         });
+
+        if (deveAbrirEvento) {
+          await tx.evento.update({
+            where: { id_evento: evento.id_evento },
+            data: { id_evento_estado: EVENT_STATE.ABERTO },
+          });
+        }
+
         await tx.notificacao.create({
           data: {
             id_user: id_utilizador,
             titulo: "Novo Evento",
-            mensagem: `Foste adicionado ao evento "${evento.nome}" como docente.`
-          }
+            mensagem: `Foste adicionado ao evento "${evento.nome}" como docente.`,
+          },
         });
         return ed;
       });
@@ -411,6 +445,69 @@ const cancelarEvento = async (id_evento, id_coordenadora) => {
   };
 };
 
+const concluirEvento = async (id_evento, id_coordenadora) => {
+  const eventoId = parseInt(id_evento);
+
+  const evento = await prisma.evento.findUnique({
+    where: { id_evento: eventoId },
+    include: {
+      coordenadora_evento: true,
+      evento_aluno: true,
+      evento_docente: true,
+    },
+  });
+
+  if (!evento) throw new Error("Evento não encontrado.");
+
+  const temPermissao = evento.coordenadora_evento.some(
+    (ce) => ce.id_utilizador === id_coordenadora
+  );
+
+  if (!temPermissao) {
+    throw new Error("Sem permissão para concluir este evento. Apenas coordenadoras do evento podem fazê-lo.");
+  }
+
+  if (evento.id_evento_estado === EVENT_STATE.CANCELADO) {
+    throw new Error("Não é possível concluir um evento cancelado.");
+  }
+
+  if (evento.id_evento_estado === EVENT_STATE.CONCLUIDO) {
+    throw new Error("O evento já está concluído.");
+  }
+
+  if (![EVENT_STATE.ABERTO, EVENT_STATE.EM_REALIZACAO].includes(evento.id_evento_estado)) {
+    throw new Error("O evento não está em estado válido para conclusão.");
+  }
+
+  const idsAlunos = evento.evento_aluno.map((ea) => ea.id_utilizador);
+  const idsDocentes = evento.evento_docente.map((ed) => ed.id_docente);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.evento.update({
+      where: { id_evento: eventoId },
+      data: { id_evento_estado: EVENT_STATE.CONCLUIDO },
+    });
+
+    const mensagem = `O evento "${evento.nome}" foi concluído.`;
+    const notificacoes = [...idsAlunos, ...idsDocentes].map((id_user) => ({
+      id_user,
+      titulo: "Evento Concluído",
+      mensagem,
+    }));
+
+    if (notificacoes.length > 0) {
+      await tx.notificacao.createMany({ data: notificacoes });
+    }
+  });
+
+  return {
+    mensagem: "Evento concluído com sucesso.",
+    evento_id: eventoId,
+    evento_nome: evento.nome,
+    participantes_notificados: idsAlunos.length + idsDocentes.length,
+  };
+};
+
 /**
  * EDITAR - Atualiza informações de um evento
  */
@@ -436,6 +533,14 @@ const editarEvento = async (id_evento, dados) => {
   }
   if (data_de_realizacao !== undefined) {
     dataAtualizar.data_de_realizacao = data_de_realizacao ? new Date(data_de_realizacao) : null;
+  }
+
+  if (
+    dataAtualizar.data_de_realizacao !== undefined &&
+    dataAtualizar.data_de_realizacao !== null &&
+    evento.id_evento_estado === EVENT_STATE.ABERTO
+  ) {
+    dataAtualizar.id_evento_estado = EVENT_STATE.EM_REALIZACAO;
   }
 
   // 3. Se nenhum campo foi fornecido, não fazer nada
@@ -467,4 +572,5 @@ module.exports = {
   removerDocenteDoEvento,
   editarEvento,
   cancelarEvento,
+  concluirEvento,
 };
