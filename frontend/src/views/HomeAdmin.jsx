@@ -161,61 +161,61 @@ function LiveClassCard({ aula, idx }) {
 
 // ─── Coaching Validation Card ─────────────────────────────────────────────────
 function CoachingCard({ aula, onConfirm, onReject, loading }) {
-  const [salas, setSalas] = useState([])
-  const [selectedSala, setSelectedSala] = useState('')
-  const remaining = timeRemaining(aula._data_raw)
+    const [salas, setSalas] = useState([])
+    const [selectedSala, setSelectedSala] = useState('')
+    const remaining = timeRemaining(aula._data_raw)
 
-  useEffect(() => {
-    api.get('/salas').then(d => setSalas(Array.isArray(d) ? d : [])).catch(() => {})
-  }, [])
+    useEffect(() => {
+        api.get('/salas').then(d => setSalas(Array.isArray(d) ? d : [])).catch(() => { })
+    }, [])
 
-  function handleConfirm() {
-    onConfirm(aula.id, selectedSala ? parseInt(selectedSala) : null)
-  }
+    function handleConfirm() {
+        onConfirm(aula.id, selectedSala ? parseInt(selectedSala) : null)
+    }
 
-  return (
-    <div className="flex-1 min-w-[300px] max-w-[380px] bg-[#F4FBF9] border border-[#006A68] rounded-xl p-4 flex flex-col gap-2.5">
-      <div className="flex flex-col gap-1 text-sm">
-        {[['Modalidade', aula.modalidade], ['Data', aula.data],
-          ['Docente', aula.docente], ['Duração', aula.duracao],
-          ['Hora início', aula.hora], ['Tipo', 'Individual']
-        ].map(([k, v]) => (
-          <div key={k}>
-            <span className="text-[#006A68]">{k}: </span>
-            <span className="text-[#000] font-medium">{v}</span>
-          </div>
-        ))}
-      </div>
+    return (
+        <div className="flex-1 min-w-[300px] max-w-[380px] bg-[#F4FBF9] border border-[#006A68] rounded-xl p-4 flex flex-col gap-2.5">
+            <div className="flex flex-col gap-1 text-sm">
+                {[['Modalidade', aula.modalidade], ['Data', aula.data],
+                ['Docente', aula.docente], ['Duração', aula.duracao],
+                ['Hora início', aula.hora], ['Tipo', 'Individual']
+                ].map(([k, v]) => (
+                    <div key={k}>
+                        <span className="text-[#006A68]">{k}: </span>
+                        <span className="text-[#000] font-medium">{v}</span>
+                    </div>
+                ))}
+            </div>
 
-      {/* Aferir sala */}
-      <div>
-        <label className="text-[10px] text-[#4A6362] font-bold uppercase tracking-wider mb-1 block">
-          Aferir sala
-        </label>
-        <select value={selectedSala} onChange={e => setSelectedSala(e.target.value)}
-          className="w-full bg-white border border-[#6F7978] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#006A68]">
-          <option value="">Selecionar sala...</option>
-          {salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
-        </select>
-      </div>
+            {/* Aferir sala */}
+            <div>
+                <label className="text-[10px] text-[#4A6362] font-bold uppercase tracking-wider mb-1 block">
+                    Aferir sala
+                </label>
+                <select value={selectedSala} onChange={e => setSelectedSala(e.target.value)}
+                    className="w-full bg-white border border-[#6F7978] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#006A68]">
+                    <option value="">Selecionar sala...</option>
+                    {salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
+                </select>
+            </div>
 
-      {remaining && (
-        <div className="flex items-center gap-1.5 text-xs text-[#000]">
-          <Clock size={13} /><span>{remaining}</span>
+            {remaining && (
+                <div className="flex items-center gap-1.5 text-xs text-[#000]">
+                    <Clock size={13} /><span>{remaining}</span>
+                </div>
+            )}
+            <div className="flex items-center gap-2 pt-1">
+                <button onClick={() => onReject(aula.id)} disabled={loading === aula.id}
+                    className="w-12 h-12 bg-[#BA1A1A] border border-[#93000A] rounded-xl flex items-center justify-center hover:opacity-90 disabled:opacity-50">
+                    <X size={18} strokeWidth={3} className="text-white" />
+                </button>
+                <button onClick={handleConfirm} disabled={loading === aula.id}
+                    className="flex-1 h-12 bg-[#049A59] border border-[#006A68] rounded-xl flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 text-white text-sm font-bold">
+                    <Check size={16} /> Confirmar
+                </button>
+            </div>
         </div>
-      )}
-      <div className="flex items-center gap-2 pt-1">
-        <button onClick={() => onReject(aula.id)} disabled={loading === aula.id}
-          className="w-12 h-12 bg-[#BA1A1A] border border-[#93000A] rounded-xl flex items-center justify-center hover:opacity-90 disabled:opacity-50">
-          <X size={18} strokeWidth={3} className="text-white" />
-        </button>
-        <button onClick={handleConfirm} disabled={loading === aula.id}
-          className="flex-1 h-12 bg-[#049A59] border border-[#006A68] rounded-xl flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 text-white text-sm font-bold">
-          <Check size={16} /> Confirmar
-        </button>
-      </div>
-    </div>
-  )
+    )
 }
 
 // ─── Confirmed Class Card ──────────────────────────────────────────────────────
@@ -359,7 +359,7 @@ export default function HomeAdmin() {
                 duracao: formatDuration(a.duracao_minutos),
                 sala: a.sala_atual
             }))
-            
+
             const evs = eventosRes.status === 'fulfilled' && Array.isArray(eventosRes.value) ? eventosRes.value : []
             const horas = horasRes.status === 'fulfilled' && Array.isArray(horasRes.value) ? horasRes.value : []
             const alunos = alunosRes.status === 'fulfilled' && Array.isArray(alunosRes.value) ? alunosRes.value : []
@@ -384,12 +384,16 @@ export default function HomeAdmin() {
             // Coachings to validate in 48h
             setCoachings48h(todas.filter(a => {
                 const d = new Date(a._data_raw)
+                const h = new Date(a.hora_inicio)
+                d.setHours(h.getHours(), h.getMinutes(), 0, 0)
                 return (a.id_estado === 1 || a.id_estado === 2) && d >= now && d <= in48h
             }).slice(0, 3))
 
             // Confirmed upcoming
             setConfirmedAulas(todas.filter(a => {
                 const d = new Date(a._data_raw)
+                const h = new Date(a.hora_inicio)
+                d.setHours(h.getHours(), h.getMinutes(), 0, 0)
                 return a.id_estado === 3 && d >= now
             }).slice(0, 3))
 
@@ -414,7 +418,7 @@ export default function HomeAdmin() {
             setCoachings48h(prev => prev.filter(a => a.id !== id))
             setStats(s => ({ ...s, porValidar: Math.max(0, s.porValidar - 1) }))
             showToast('Coaching confirmado!')
-        } catch(e) { showToast(e.response?.data?.message || 'Erro ao confirmar.', 'error') }
+        } catch (e) { showToast(e.response?.data?.message || 'Erro ao confirmar.', 'error') }
         finally { setLoadingAction(null) }
     }
 
@@ -427,7 +431,7 @@ export default function HomeAdmin() {
             setCoachings48h(prev => prev.filter(a => a.id !== id))
             setStats(s => ({ ...s, porValidar: Math.max(0, s.porValidar - 1) }))
             showToast('Coaching rejeitado.', 'error')
-        } catch(e) { showToast(e.response?.data?.message || 'Erro ao rejeitar.', 'error') }
+        } catch (e) { showToast(e.response?.data?.message || 'Erro ao rejeitar.', 'error') }
         finally { setLoadingAction(null) }
     }
 

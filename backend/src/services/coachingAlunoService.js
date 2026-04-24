@@ -84,6 +84,25 @@ async function consultarDisponibilidades({ id_modalidade = null, data = null } =
     orderBy: [{ dia_semana: 'asc' }, { hora_inicio: 'asc' }],
   });
  
+  // Se não foi fornecida uma data, devolve todos os slots sem verificar conflitos
+  // (a verificação só faz sentido para uma data específica)
+  if (!data) {
+    return disponibilidades.map((disp) => ({
+      id_disponibilidade: disp.id_disponibilidade,
+      id_docente: disp.id_docente,
+      nome_docente: `${disp.docente.utilizador.nome} ${disp.docente.utilizador.apelido}`,
+      modalidades: disp.docente.docente_modalidade.map((dm) => ({
+        id: dm.modalidade.id_modalidade,
+        nome: dm.modalidade.nome,
+      })),
+      dia_semana: disp.dia_semana,
+      data_especifica: disp.data_especifica,
+      hora_inicio: disp.hora_inicio,
+      hora_fim: disp.hora_fim,
+      disponivel: true,
+    }));
+  }
+
   // Para cada slot, verifica se já existe marcação confirmada ou em validação que bloqueia o horário
   const slotsLivres = await Promise.all(
     disponibilidades.map(async (disp) => {
@@ -93,8 +112,7 @@ async function consultarDisponibilidades({ id_modalidade = null, data = null } =
           id_estado: {
             in: [ESTADO_MARCACAO.EM_VALIDACAO, ESTADO_MARCACAO.CONFIRMADA],
           },
-          // Verifica sobreposição: marcação existente começa antes do fim e acaba depois do início
-          data_a_realizar: data ? new Date(data) : undefined,
+          data_a_realizar: new Date(data),
           hora_inicio: {
             gte: disp.hora_inicio,
             lt: disp.hora_fim,

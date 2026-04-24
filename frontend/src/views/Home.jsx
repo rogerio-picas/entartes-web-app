@@ -367,7 +367,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* ── ADMIN/DOCENTE: pending requests 48h ────────────────
+        {/* ── ADMIN/DOCENTE: pending requests 48h ──────────────── */}
         {(isAdmin || isDocente) && (
           <section>
             <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Requisições a expirar em 48h"} action="Ver todas" onAction={() => navigate('/aulas')} />
@@ -383,7 +383,7 @@ export default function Home() {
                 </ScrollRow>
             )}
           </section>
-        )} */}
+        )}
 
         {/* ── DOCENTE: Presenças a confirmar ──────────────── */}
         {isDocente && (
