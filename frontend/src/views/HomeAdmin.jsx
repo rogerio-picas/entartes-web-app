@@ -543,7 +543,7 @@ export default function HomeAdmin() {
                     onSuccess={(nome) => {
                         setShowNovoEvento(false)
                         showToast(`Evento "${nome}" criado com sucesso!`)
-                        eventService.getAll().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
+                       eventService.getAll().then(d => setEventos(Array.isArray(d) ? d.filter(e => ![4, 5].includes(e.id_evento_estado)).slice(0, 3) : []))
                     }}
                 />
             )}

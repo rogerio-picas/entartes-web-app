@@ -20,7 +20,8 @@ const criarEvento = async (req, res) => {
 
 const listarEventos = async (req, res) => {
   try {
-    const eventos = await eventService.listarEventos();
+    const { estado } = req.query; // lê o ?estado=X da URL
+    const eventos = await eventService.listarEventos(estado);
     return res.status(200).json(eventos);
   } catch (error) {
     return res.status(500).json({ error: "Erro ao listar eventos." });
