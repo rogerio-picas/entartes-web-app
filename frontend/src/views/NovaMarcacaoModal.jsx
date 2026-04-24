@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, ChevronRight, ChevronLeft, Music, User, CalendarDays, Clock, Check, Loader2, AlertCircle } from 'lucide-react'
 import { api } from '../services/api'
 
-const DURACOES = [30, 45, 60, 75, 90, 120]
+const DURACOES = [30, 60, 90, 120]
 
 function StepIndicator({ step }) {
   const steps = ['Modalidade', 'Disponibilidades', 'Horário', 'Confirmar']
@@ -84,6 +84,39 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
 
   const DIAS = ['Domingo', 'Segunda-Feira', 'Terça-Feira', 'Quarta-Feira', 'Quinta-Feira', 'Sexta-Feira', 'Sábado']
 
+  // Calcula a próxima data válida para um slot (hoje ou futura)
+  const proximaDataDoSlot = (slot) => {
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+
+    if (slot.data_especifica) {
+      const d = new Date(slot.data_especifica)
+      d.setHours(0, 0, 0, 0)
+      return d >= hoje ? d.toISOString().split('T')[0] : null
+    }
+
+    if (slot.dia_semana != null) {
+      const alvo = Number(slot.dia_semana)
+      const d = new Date(hoje)
+      // Avançar até ao próximo dia da semana (pode ser hoje mesmo)
+      while (d.getDay() !== alvo) {
+        d.setDate(d.getDate() + 1)
+      }
+      return d.toISOString().split('T')[0]
+    }
+
+    return null
+  }
+
+  // Filtrar slots: remover data_especifica já passadas
+  const slotsFuturos = slots.filter(slot => {
+    if (slot.data_especifica) {
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
+      return new Date(slot.data_especifica) >= hoje
+    }
+    return true // dia_semana é sempre futuro
+  })
+
   // Calcular horas possíveis dentro do slot do docente selecionado
   const horasPossiveis = (() => {
     if (!slotSel || !duracao) return []
@@ -139,18 +172,21 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
 
   const verificarDataSelecionada = () => {
     if (!slotSel || !data) return true;
-    const d = new Date(data);
+    // Usar T12:00:00Z para evitar o desfasamento de timezone (UTC vs local)
+    const d = new Date(data.split('T')[0] + 'T12:00:00Z');
     if (isNaN(d)) return true;
 
-    // Se o slot tem data específica, deve bater certo
+    // Se o slot tem data específica, comparar dia a dia em UTC
     if (slotSel.data_especifica) {
       const dSpec = new Date(slotSel.data_especifica);
-      return d.toDateString() === dSpec.toDateString();
+      return d.getUTCFullYear() === dSpec.getUTCFullYear() &&
+             d.getUTCMonth() === dSpec.getUTCMonth() &&
+             d.getUTCDate() === dSpec.getUTCDate();
     }
 
-    // Se tem dia da semana, a data tem de ser desse dia
+    // Se tem dia da semana, usar getUTCDay() para evitar offset de timezone
     if (slotSel.dia_semana != null) {
-      return d.getDay() === slotSel.dia_semana;
+      return d.getUTCDay() === Number(slotSel.dia_semana);
     }
 
     return true;
@@ -238,15 +274,18 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                   <div className="flex justify-center py-8">
                     <Loader2 size={28} className="text-[#006A68] animate-spin" />
                   </div>
-                ) : slots.length === 0 ? (
+                ) : slotsFuturos.length === 0 ? (
                   <div className="text-center py-6 text-sm text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                     Nenhum horário disponível para esta modalidade.
                   </div>
                 ) : (
-                  slots.map((slot, i) => {
+                  slotsFuturos.map((slot, i) => {
+                    const proximaData = proximaDataDoSlot(slot)
                     const dataOuDia = slot.data_especifica
-                      ? new Date(slot.data_especifica).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
-                      : (slot.dia_semana != null ? DIAS[slot.dia_semana] : '—')
+                      ? new Date(slot.data_especifica + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
+                      : (slot.dia_semana != null
+                        ? `${DIAS[slot.dia_semana]}${proximaData ? ' · ' + new Date(proximaData + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' }) : ''}`
+                        : '—')
 
                     return (
                       <button
@@ -254,7 +293,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                         onClick={() => {
                           setSlotSel(slot);
                           setDocenteSel({ id_docente: slot.id_docente, nome_docente: slot.nome_docente });
-                          setData(''); setHoraSel(''); setErro('');
+                          setData(proximaData || ''); setHoraSel(''); setErro('');
                           setStep(3);
                         }}
                         className="w-full px-4 py-3 flex flex-wrap sm:flex-nowrap items-center gap-4 hover:bg-[#F4FBF9] bg-white border border-gray-200 rounded-xl transition-colors text-left group"
@@ -299,19 +338,14 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                 </div>
               </div>
 
-              {/* Data */}
+              {/* Data (preenchida automaticamente) */}
               <div>
                 <label className="block text-xs font-semibold text-[#4A6362] uppercase tracking-wide mb-1.5">Data da sessão</label>
-                <input
-                  type="date"
-                  min={new Date().toISOString().split('T')[0]}
-                  value={data}
-                  onChange={e => { setData(e.target.value); setErro(''); setHoraSel('') }}
-                  className={`w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:border-[#006A68] text-[#324B4A] ${!verificarDataSelecionada() ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
-                />
-                {!verificarDataSelecionada() && (
-                  <p className="text-xs text-red-500 mt-1">A data selecionada não corresponde ao dia de disponibilidade do docente.</p>
-                )}
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[#006A68]/30 bg-[#EFF5F4] text-sm text-[#324B4A] font-semibold">
+                  <CalendarDays size={15} className="text-[#006A68] shrink-0" />
+                  {data ? new Date(data + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+                </div>
+                <p className="text-[10px] text-[#4A6362] mt-1">Data preenchida automaticamente com base na disponibilidade selecionada.</p>
               </div>
 
               {/* Duração */}
@@ -346,6 +380,29 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Hora de início */}
+              <div>
+                <label className="block text-xs font-semibold text-[#4A6362] uppercase tracking-wide mb-1.5">Hora de Início</label>
+                {horasPossiveis.length === 0 ? (
+                  <div className="text-center py-3 text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    Não é possível encaixar {duracao} min neste slot. Escolhe uma duração menor.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2">
+                    {horasPossiveis.map(h => (
+                      <button
+                        key={h}
+                        onClick={() => { setHoraSel(h); setErro('') }}
+                        className={`py-2 text-sm font-semibold rounded-lg border transition-all
+                          ${horaSel === h ? 'bg-[#006A68] text-white border-[#006A68]' : 'border-gray-200 text-[#324B4A] hover:border-[#006A68]'}`}
+                      >
+                        {h.substring(0, 5)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
             </div>

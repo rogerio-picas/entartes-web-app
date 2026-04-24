@@ -3,6 +3,22 @@ import { X, Clock, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react'
 import { disponibilidadeService } from '../services/disponibilidadeService'
 import { modalidadeService } from '../services/modalidadeService'
 
+// Normaliza uma hora para o formato HH:mm que o <input type="time"> espera
+function parseHoraParaInput(raw) {
+    if (!raw) return ''
+    // ISO timestamp: "1970-01-01T14:00:00.000Z" → pega os 5 chars da hora em UTC
+    if (String(raw).includes('T')) {
+        const d = new Date(raw)
+        if (!isNaN(d)) {
+            const h = String(d.getUTCHours()).padStart(2, '0')
+            const m = String(d.getUTCMinutes()).padStart(2, '0')
+            return `${h}:${m}`
+        }
+    }
+    // Já está em formato HH:mm ou HH:mm:ss
+    return String(raw).substring(0, 5)
+}
+
 const DIAS_SEMANA = [
     { value: 0, label: 'Domingo' },
     { value: 1, label: 'Segunda-Feira' },
@@ -27,8 +43,8 @@ function Field({ label, children }) {
 const inputCls = "w-full border border-[#6F7978] rounded-lg px-4 py-3.5 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] bg-white transition-colors font-['Sora']"
 
 export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedDate, initialData }) {
-    const [horaInicio, setHoraInicio]     = useState(initialData?.hora_inicio || '')
-    const [horaFim, setHoraFim]           = useState(initialData?.hora_fim || '')
+    const [horaInicio, setHoraInicio]     = useState(parseHoraParaInput(initialData?.hora_inicio))
+    const [horaFim, setHoraFim]           = useState(parseHoraParaInput(initialData?.hora_fim))
     const [modalidade, setModalidade]     = useState(initialData?.id_modalidade || '')
     const [modalidades, setModalidades]   = useState([])
     const [frequencia, setFrequencia]     = useState(
