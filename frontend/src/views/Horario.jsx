@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns'
 import { pt } from 'date-fns/locale'
+import { useNavigate } from 'react-router-dom'
 import {
     ChevronLeft, ChevronRight, Plus, X, RefreshCw,
     Clock, MapPin, User, CalendarDays,
@@ -161,7 +162,7 @@ function CustomToolbar({ label, onNavigate, onView, view }) {
 }
 
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
-function DetailModal({ item, onClose, role }) {
+function DetailModal({ item, onClose, role, navigate }) {
     if (!item) return null
     const color = item._isEvent ? EVENT_COLOR : getModalityColor(item.modalidade)
     const statusClass = STATUS_COLOR[item.id_estado] ?? 'bg-gray-50 text-gray-600 border-gray-200'
@@ -194,6 +195,11 @@ function DetailModal({ item, onClose, role }) {
                     {!item._isEvent && (
                         <span className={`inline-flex items-center text-xs font-bold px-3 py-1 rounded-full border ${statusClass}`}>
                             {statusLabel}
+                        </span>
+                    )}
+                    {item._isEvent && role === 2 && (
+                        <span className={`inline-flex items-center text-xs font-bold px-3 py-1 rounded-full border ${item._inserido ? 'bg-[#EFF5F4] text-[#006A68] border-[#80D5D2]' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                            {item._inserido ? 'Inscrito' : 'Não Inscrito'}
                         </span>
                     )}
                     <div className="grid grid-cols-2 gap-3 text-sm">
@@ -262,8 +268,18 @@ function DetailModal({ item, onClose, role }) {
                         </div>
                     )}
                 </div>
-                <div className="px-6 pb-5">
-                    <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-[#006A68] text-white font-semibold text-sm hover:bg-[#00504E] transition-colors">
+                <div className="px-6 pb-5 flex gap-3">
+                    <button onClick={() => {
+                        onClose();
+                        if (item._isEvent) {
+                            navigate(`/eventos/${item.id}`);
+                        } else {
+                            navigate(role === 1 ? '/admin/aulas' : '/aulas');
+                        }
+                    }} className="flex-1 py-2.5 rounded-xl bg-white border-2 border-[#006A68] text-[#006A68] font-semibold text-sm hover:bg-[#EFF5F4] transition-colors">
+                        Ver mais
+                    </button>
+                    <button onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-[#006A68] text-white font-semibold text-sm hover:bg-[#00504E] transition-colors">
                         Fechar
                     </button>
                 </div>
@@ -435,6 +451,8 @@ export default function Horario() {
     const [currentDate, setCurrentDate] = useState(new Date(today))
     const [filterType, setFilterType] = useState('') // 'Pessoal' | 'Geral' | ''
     const [filterModalidade, setFilterModalidade] = useState('')
+    
+    const navigate = useNavigate()
 
     // Data
     const [aulas, setAulas] = useState([])
@@ -457,21 +475,35 @@ export default function Horario() {
         setLoading(true)
         setError('')
         try {
-            const [aulasRes, evRes] = await Promise.allSettled([
+            const [aulasRes, evRes, meusEvRes] = await Promise.allSettled([
                 role === 1 
                   ? coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' })
                   : (role === 2 ? coachingService.listarMinhasAulas() : coachingService.listarMeusPedidos()),
-                eventService.getAll(),
+                role === 1 || role === 2 ? eventService.getAll() : Promise.resolve([]),
+                role === 2 || role === 3 ? eventService.getMyEvents() : Promise.resolve([])
             ])
             const rawAulas = aulasRes.status === 'fulfilled' ? (Array.isArray(aulasRes.value) ? aulasRes.value : (aulasRes.value?.data || [])) : []
             setAulas(rawAulas.map(a => ({ ...a, id: a.id_marcacao, data_de_realizacao: a.data, _data_raw: a.data })))
-            setEventos(evRes.status === 'fulfilled' && Array.isArray(evRes.value) ? evRes.value : [])
+            
+            let fetchedEvents = []
+            if (role === 1 && evRes.status === 'fulfilled') {
+                fetchedEvents = Array.isArray(evRes.value) ? evRes.value : []
+            } else if (role === 2 && evRes.status === 'fulfilled' && meusEvRes.status === 'fulfilled') {
+                const allEvents = Array.isArray(evRes.value) ? evRes.value : []
+                const myEvents = Array.isArray(meusEvRes.value) ? meusEvRes.value : []
+                const myEventIds = new Set(myEvents.map(e => e.id_evento))
+                fetchedEvents = allEvents.map(e => ({ ...e, _inserido: myEventIds.has(e.id_evento) }))
+            } else if (role === 3 && meusEvRes.status === 'fulfilled') {
+                fetchedEvents = Array.isArray(meusEvRes.value) ? meusEvRes.value : []
+                fetchedEvents = fetchedEvents.map(e => ({ ...e, _inserido: true }))
+            }
+            setEventos(fetchedEvents)
         } catch (e) {
             setError(e.message || 'Erro ao carregar horário.')
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [role])
 
     useEffect(() => { fetchAll() }, [fetchAll])
 
@@ -509,6 +541,7 @@ export default function Horario() {
                 descricao: e.descricao,
                 data_de_realizacao: e.data_de_realizacao,
                 _data_raw: e.data_de_realizacao,
+                _inserido: e._inserido
             }
         }).filter(e => e.start)
 
@@ -546,16 +579,21 @@ export default function Horario() {
         const color = event._isEvent
             ? EVENT_COLOR
             : getModalityColor(event.modalidade)
+            
+        // Visual distinction for Docentes: less opacity/dashed border if not inserted
+        const isNotInsertedDocente = event._isEvent && role === 2 && !event._inserido;
+            
         return {
             style: {
                 backgroundColor: color.bg,
                 borderColor: color.border,
                 color: color.text,
                 borderRadius: '4px',
-                border: `1px solid ${color.border}`,
+                border: isNotInsertedDocente ? `1px dashed ${color.border}` : `1px solid ${color.border}`,
+                opacity: isNotInsertedDocente ? 0.6 : 1,
             }
         }
-    }, [])
+    }, [role])
 
     const filterOptions = ['Geral', 'Pessoal']
 
@@ -716,7 +754,7 @@ export default function Horario() {
             {/* Modals */}
 
             {selectedItem && (
-                <DetailModal item={selectedItem} onClose={() => setSelectedItem(null)} role={role} />
+                <DetailModal item={selectedItem} onClose={() => setSelectedItem(null)} role={role} navigate={navigate} />
             )}
 
             {showNovoCoaching && (

@@ -149,11 +149,21 @@ const adicionarParticipante = async (id_evento, codigo_username) => {
 
       if (alunoNoEvento) throw new Error("Este aluno já está inscrito no evento.");
 
-      return await prisma.evento_aluno.create({
-        data: {
-          id_evento: parseInt(id_evento),
-          id_utilizador: id_utilizador,
-        },
+      return await prisma.$transaction(async (tx) => {
+        const ea = await tx.evento_aluno.create({
+          data: {
+            id_evento: parseInt(id_evento),
+            id_utilizador: id_utilizador,
+          },
+        });
+        await tx.notificacao.create({
+          data: {
+            id_user: id_utilizador,
+            titulo: "Novo Evento",
+            mensagem: `Foste adicionado ao evento "${evento.nome}".`
+          }
+        });
+        return ea;
       });
 
     case 2: // DOCENTE
@@ -170,11 +180,21 @@ const adicionarParticipante = async (id_evento, codigo_username) => {
 
       if (docenteNoEvento) throw new Error("Este docente já está inscrito no evento.");
 
-      return await prisma.evento_docente.create({
-        data: {
-          id_evento: parseInt(id_evento),
-          id_docente: id_utilizador,
-        },
+      return await prisma.$transaction(async (tx) => {
+        const ed = await tx.evento_docente.create({
+          data: {
+            id_evento: parseInt(id_evento),
+            id_docente: id_utilizador,
+          },
+        });
+        await tx.notificacao.create({
+          data: {
+            id_user: id_utilizador,
+            titulo: "Novo Evento",
+            mensagem: `Foste adicionado ao evento "${evento.nome}" como docente.`
+          }
+        });
+        return ed;
       });
 
     case 1: // COORDENADORA / ADMIN

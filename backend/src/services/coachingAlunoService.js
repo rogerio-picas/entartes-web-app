@@ -397,6 +397,13 @@ async function adicionarParticipantesGrupo(id_marcacao, id_aluno_requisitante, o
           id_aluno_estado: ESTADO_ALUNO_MARCACAO.PENDENTE, // ← os convidados começam como PENDENTE
         },
       });
+      await tx.notificacao.create({
+        data: {
+          id_user: id_aluno,
+          titulo: "Convite para Sessão de Coaching",
+          mensagem: `Foste convidado para participar numa sessão de coaching de grupo agendada para ${marcacao.data_a_realizar.toLocaleDateString('pt-PT')}.`
+        }
+      });
     }
   });
 

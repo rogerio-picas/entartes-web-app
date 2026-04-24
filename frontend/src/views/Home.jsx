@@ -187,8 +187,10 @@ export default function Home() {
           porValidar: pedPendentes.length,
           concluidas: todas.filter(a => a.id_estado === 4).length
         })
-        setLiveAulas(hoje.filter(a => a.id_estado === 3)) // CONFIRMADA
-        setAulasConfirmadas(todas.filter(a => a.id_estado === 3 && new Date(a._data_raw) >= now))
+        const sortAsc = (a, b) => new Date(a._data_raw) - new Date(b._data_raw);
+
+        setLiveAulas(hoje.filter(a => a.id_estado === 3).sort(sortAsc)) // CONFIRMADA
+        setAulasConfirmadas(todas.filter(a => a.id_estado === 3 && new Date(a._data_raw) >= now).sort(sortAsc))
 
       } else if (isDocente) {
         const res = await coachingService.listarMinhasAulas().catch(() => [])
@@ -197,10 +199,11 @@ export default function Home() {
         
         // Docente não vê Pedidos Pendentes de Coaching (a Coordenação trata da confirmação).
         // Vê apenas Confirmadas e Concluídas.
+        const sortAsc = (a, b) => new Date(a._data_raw) - new Date(b._data_raw);
         setAulasConfirmadas(minhasAulas.filter(a => {
             const d = new Date(a._data_raw)
             return a.id_estado === 3 && d >= now
-        }))
+        }).sort(sortAsc))
 
         // Aulas que o docente tem de "concluir" (validar presença pós-aula)
         // Só marcacoes CONFIRMADA mas no passado (aulas dadas recentement). Ou seja, < now
@@ -218,10 +221,11 @@ export default function Home() {
         setInscricoesAluno(meusPedidos.filter(a => a.id_estado === 1 || a.id_estado === 2))
 
         // Aulas Agendadas Efetivas (CONFIRMADAS no futuro)
+        const sortAsc = (a, b) => new Date(a._data_raw) - new Date(b._data_raw);
         setAulasConfirmadas(meusPedidos.filter(a => {
             const d = new Date(a._data_raw)
             return a.id_estado === 3 && d >= now
-        }))
+        }).sort(sortAsc))
 
         // Aulas dadas, à espera da validação dupla (CONFIRMADAS no passado)
         setPresencasAluno(meusPedidos.filter(a => {
@@ -428,7 +432,7 @@ export default function Home() {
 
         {/* ── ALUNO/DOCENTE: Aulas confirmadas using ClassCard, ADMIN: ConfirmedCard ──────────────── */}
         <section>
-            <SectionHeader icon={CalendarCheck} title={isAluno ? "As minhas aulas" : "Próximas aulas confirmadas"} action="Ver todas" onAction={() => navigate('/aulas')} />
+            <SectionHeader icon={CalendarCheck} title={isAluno ? "As minhas aulas" : "Próximas aulas confirmadas"} action="Ver todas" onAction={() => navigate('/aulas', { state: { filtroEstado: '3' } })} />
             {aulasConfirmadas.length === 0 ? (
                 <p className="text-sm text-[#4A6362] italic">Sem aulas confirmadas agendadas.</p>
             ) : (
@@ -438,7 +442,7 @@ export default function Home() {
                         ? <ConfirmedCard key={a.id} aula={a} />
                         : <ClassCard key={a.id} item={a} statusType="confirmada" />
                     ))}
-                    {aulasConfirmadas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais aulas" />}
+                    {aulasConfirmadas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas', { state: { filtroEstado: '3' } })} label="Ver mais aulas" />}
                 </ScrollRow>
             )}
         </section>

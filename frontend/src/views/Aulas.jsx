@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   CalendarDays, Clock, User, MapPin, Music, CheckCircle2,
   XCircle, AlertCircle, RefreshCw, Plus, X, BookOpen, ArrowUpDown, Check
@@ -150,6 +151,7 @@ function Toast({ message, type, onClose }) {
 // ─── Página Principal (Limpada) ─────────────────────────────────────────────
 export default function Aulas() {
   const role = authService.getUser()?.role ?? 3
+  const location = useLocation()
   const [marcacoes, setMarcacoes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -157,7 +159,7 @@ export default function Aulas() {
   const [toast, setToast] = useState(null)
   const [showAll, setShowAll] = useState(false)
   const [modalAula, setModalAula] = useState(null)
-  const [filtroEstado, setFiltroEstado] = useState('todos')
+  const [filtroEstado, setFiltroEstado] = useState(location.state?.filtroEstado || 'todos')
   const [filtroModalidade, setFiltroModalidade] = useState('todas')
   const [showNovaDisponibilidade, setShowNovaDisponibilidade] = useState(false)
 
