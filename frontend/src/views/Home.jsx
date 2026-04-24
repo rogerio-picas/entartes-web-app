@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
+import { formatDate, formatTime } from '../utils/dateUtils'
 import coachingService from '../services/coachingService'
 import { eventService } from '../services/eventService'
 
@@ -146,8 +147,8 @@ export default function Home() {
           ...m,
           id: m.id_marcacao || m.id,
           _data_raw: dt || m.data,
-          data: dt ? dt.toLocaleDateString('pt-PT') : '—',
-          hora: m.hora_inicio ? new Date(m.hora_inicio).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—',
+          data: formatDate(m.data),
+          hora: formatTime(m.hora_inicio),
           duracao: m.duracao_minutos ? `${m.duracao_minutos} min` : '—',
           docente: role === 2
             ? (m.alunos?.length > 0 ? m.alunos.map(a => a.nome).join(', ') : 'A aguardar aluno(s)')

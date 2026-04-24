@@ -1,20 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Calendar, Clock, Users, User, Loader2, AlertCircle } from 'lucide-react'
 import { eventService } from '../services/eventService'
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('pt-PT', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  })
-}
-
-function formatTime(timeStr) {
-  if (!timeStr) return null
-  return new Date(timeStr).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
-}
+import { formatDate, formatTime } from '../utils/dateUtils'
 
 function SectionLabel({ icon: Icon, children }) {
   return (

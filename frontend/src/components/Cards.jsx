@@ -1,13 +1,5 @@
 import { Clock, CalendarCheck, CalendarDays, X, Check, Megaphone, User, Calendar as CalendarIcon, MapPin } from 'lucide-react'
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('pt-PT', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  })
-}
+import { formatDate } from '../utils/dateUtils'
 
 export function EventCard({ event, onOpen }) {
   return (
@@ -150,21 +142,6 @@ export function ClassCard({ item, statusType }) {
   )
 }
 
-function formatEventDate(dateStr) {
-  if (!dateStr) return 'Data por definir'
-  const dateObj = new Date(dateStr)
-  const dateFormatted = dateObj.toLocaleDateString('pt-PT', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long'
-  })
-  const capitalizedDate = dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1)
-  const timeFormatted = dateObj.toLocaleTimeString('pt-PT', {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-  return `${capitalizedDate} às ${timeFormatted}`
-}
 
 // Cartão: Eventos Rápidos
 export function EventDashCard({ item }) {
@@ -178,7 +155,7 @@ export function EventDashCard({ item }) {
 
         <div className="flex flex-col gap-2 mb-4">
           <p className="text-brand-dark font-semibold text-sm">
-            {item.dataLonga || formatEventDate(item.data_de_realizacao)}
+            {item.dataLonga || formatDate(item.data_de_realizacao)}
           </p>
           <p className="text-sm">
             <span className="text-brand-darkest font-medium">Duração: </span>

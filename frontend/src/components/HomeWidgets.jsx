@@ -3,14 +3,7 @@ import { Clock, User, Check, X, RefreshCw, ChevronRight } from 'lucide-react'
 import { api } from '../services/api'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-export function formatDate(raw) {
-    if (!raw) return '—'
-    return new Date(raw).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
-export function formatTime(raw) {
-    if (!raw) return '—'
-    return new Date(raw).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
-}
+export { formatDate, formatTime } from '../utils/dateUtils'
 export function formatDuration(min) {
     if (!min) return '—'
     const h = Math.floor(min / 60), m = min % 60

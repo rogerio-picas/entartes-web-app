@@ -1,14 +1,12 @@
 import { api } from './api'
+import { formatDate } from '../utils/dateUtils'
 
 function mapNotificacao(n) {
     return {
         id: n.id_notificacao,
         titulo: n.titulo ?? 'Sem título',
         mensagem: n.mensagem ?? '',
-        data: n.data_envio ? new Date(n.data_envio).toLocaleDateString('pt-PT', {
-            day: '2-digit', month: '2-digit', year: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-        }) : '—',
+        data: formatDate(n.data_envio),
         lida: n.lida ?? false,
     }
 }

@@ -7,10 +7,7 @@ import EditEventPanel from '../components/EditEventPanel'
 import AddEventMemberPanel from '../components/AddEventMemberPanel'
 import { authService } from '../services/authService'
 
-function formatDate(dateStr) {
-    if (!dateStr) return 'Data por definir'
-    return new Date(dateStr).toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })
-}
+import { formatDate } from '../utils/dateUtils'
 
 export default function EventDetailsView() {
     const { id } = useParams()

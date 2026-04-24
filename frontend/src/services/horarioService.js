@@ -1,22 +1,7 @@
 import { api } from './api'
+import { formatDate, formatTime } from '../utils/dateUtils'
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-export function formatDate(raw) {
-    if (!raw) return '—'
-    const d = new Date(raw)
-    return d.toLocaleDateString('pt-PT', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    })
-}
-
-export function formatTime(raw) {
-    if (!raw) return '—'
-    const d = new Date(raw)
-    return d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
-}
+export { formatDate, formatTime }
 
 export function formatDuration(minutos) {
     if (!minutos) return '—'
