@@ -72,7 +72,9 @@ function EventComponent({ event }) {
 
     const timeStr = event.start instanceof Date 
         ? format(event.start, 'HH:mm')
-        : (event.start.includes('T') ? event.start.split('T')[1].substring(0, 5) : event.start);
+        : (typeof event.start === 'string' && event.start.includes('T') 
+            ? event.start.split('T')[1].substring(0, 5) 
+            : (typeof event.start === 'string' ? event.start.substring(0, 5) : '—'));
 
     return (
         <div
@@ -501,6 +503,7 @@ export default function Horario() {
     const [showNovoCoaching, setShowNovoCoaching] = useState(false)
     const [showNovaDisponibilidade, setShowNovaDisponibilidade] = useState(false)
     const [selectedDate, setSelectedDate] = useState(null)
+    const [itemToEdit, setItemToEdit] = useState(null)
     const [toast, setToast] = useState(null)
 
     function showToast(msg, type = 'success') {
@@ -600,8 +603,8 @@ export default function Horario() {
                     const hIniRaw = d.hora_inicio ? String(d.hora_inicio) : '00:00';
                     const hFimRaw = d.hora_fim ? String(d.hora_fim) : '01:00';
                     
-                    const hIni = hIniRaw.includes('T') ? hIniRaw.split('T')[1].slice(0,5) : hIniRaw.slice(0,5);
-                    const hFim = hFimRaw.includes('T') ? hFimRaw.split('T')[1].slice(0,5) : hFimRaw.slice(0,5);
+                    const hIni = (typeof hIniRaw === 'string' && hIniRaw.includes('T')) ? hIniRaw.split('T')[1].slice(0,5) : String(hIniRaw).slice(0,5);
+                    const hFim = (typeof hFimRaw === 'string' && hFimRaw.includes('T')) ? hFimRaw.split('T')[1].slice(0,5) : String(hFimRaw).slice(0,5);
                     
                     const [h, m] = hIni.split(':').map(Number);
                     const [h2, m2] = hFim.split(':').map(Number);
@@ -697,9 +700,14 @@ export default function Horario() {
     }
 
     const handleEdit = (item) => {
-        setSelectedItem(item)
-        // Aqui abririas o modal de edição correspondente
-        showToast('Funcionalidade de edição em desenvolvimento', 'info')
+        setItemToEdit(item)
+        if (item._type === 'disponibilidade') {
+            setShowNovaDisponibilidade(true)
+        } else if (item._type === 'evento') {
+            // Se houver um modal de edição de evento, abre-se aqui.
+            // Por agora, o Docente foca-se nas disponibilidades.
+            showToast('Edição de eventos disponível para administradores', 'info')
+        }
     }
 
     const handleDelete = async (item) => {
@@ -1055,11 +1063,16 @@ export default function Horario() {
 
             {showNovaDisponibilidade && (
                 <NovaDisponibilidadeModal
-                    onClose={() => setShowNovaDisponibilidade(false)}
+                    onClose={() => {
+                        setShowNovaDisponibilidade(false)
+                        setItemToEdit(null)
+                    }}
                     selectedDate={selectedDate}
+                    initialData={itemToEdit}
                     onSuccess={() => {
                         setShowNovaDisponibilidade(false)
-                        showToast('Disponibilidade criada com sucesso!')
+                        setItemToEdit(null)
+                        showToast(itemToEdit ? 'Disponibilidade atualizada!' : 'Disponibilidade criada!')
                         fetchAll()
                     }}
                 />
