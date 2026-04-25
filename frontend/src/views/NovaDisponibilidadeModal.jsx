@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { X, Clock, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react'
+import { X, Clock, ChevronDown, AlertCircle, RefreshCw, Check } from 'lucide-react'
 import { disponibilidadeService } from '../services/disponibilidadeService'
 import { modalidadeService } from '../services/modalidadeService'
+import { formatDateForInput } from '../utils/dateUtils'
 
 // Normaliza uma hora para o formato HH:mm que o <input type="time"> espera
 function parseHoraParaInput(raw) {
@@ -45,7 +46,9 @@ const inputCls = "w-full border border-[#6F7978] rounded-lg px-4 py-3.5 text-sm 
 export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedDate, initialData }) {
     const [horaInicio, setHoraInicio]     = useState(parseHoraParaInput(initialData?.hora_inicio))
     const [horaFim, setHoraFim]           = useState(parseHoraParaInput(initialData?.hora_fim))
-    const [modalidade, setModalidade]     = useState(initialData?.id_modalidade || '')
+    const [selectedModalidades, setSelectedModalidades] = useState(
+        initialData?.id_modalidade ? [initialData.id_modalidade] : []
+    )
     const [modalidades, setModalidades]   = useState([])
     const [frequencia, setFrequencia]     = useState(
         initialData 
@@ -53,11 +56,11 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
             : (selectedDate ? 'unica' : 'semanal')
     )
     const [diaSemana, setDiaSemana]       = useState(initialData?.dia_semana ?? 1)
-    const [data, setData]                 = useState(
-        initialData?.data_especifica 
-            ? initialData.data_especifica.split('T')[0] 
-            : (selectedDate ? (typeof selectedDate === 'string' ? selectedDate : selectedDate.toISOString().split('T')[0]) : '')
-    )
+    const [data, setData]                 = useState(() => {
+        if (initialData?.data_especifica) return formatDateForInput(initialData.data_especifica)
+        if (selectedDate) return formatDateForInput(selectedDate)
+        return ''
+    })
     const [saving, setSaving]             = useState(false)
     const [erro, setErro]                 = useState('')
 
@@ -69,10 +72,16 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
         modalidadeService.listar(id_docente)
             .then(list => {
                 setModalidades(list)
-                if (!isEdit && list.length > 0) setModalidade(list[0].id_modalidade)
+                if (!isEdit && list.length > 0) setSelectedModalidades([list[0].id_modalidade])
             })
             .catch(() => {})
     }, [isEdit])
+
+    const toggleModalidade = (id) => {
+        setSelectedModalidades(prev => 
+            prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
+        )
+    }
 
     async function handleSave() {
         if (!horaInicio || !horaFim) {
@@ -89,7 +98,7 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
             const payload = { 
                 hora_inicio: horaInicio, 
                 hora_fim: horaFim,
-                id_modalidade: modalidade
+                ids_modalidades: selectedModalidades
             }
             if (frequencia === 'semanal') {
                 payload.dia_semana = diaSemana
@@ -151,6 +160,7 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                             onChange={e => setData(e.target.value)}
                             placeholder="DD/MM/YYYY"
                             disabled={frequencia === 'semanal'}
+                            min={formatDateForInput(new Date())}
                             className={`${inputCls} ${frequencia === 'semanal' ? 'opacity-40 cursor-not-allowed' : ''}`}
                         />
                     </Field>
@@ -166,19 +176,33 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                         />
                     </Field>
 
-                    {/* Modalidade */}
-                    <Field label="Modalidade">
-                        <div className="relative">
-                            <select
-                                value={modalidade}
-                                onChange={e => setModalidade(Number(e.target.value))}
-                                className={`${inputCls} appearance-none cursor-pointer pr-10`}
-                            >
-                                {modalidades.map(m => (
-                                    <option key={m.id_modalidade} value={m.id_modalidade}>{m.nome}</option>
-                                ))}
-                            </select>
-                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6362] pointer-events-none" />
+                    {/* Modalidades */}
+                    <Field label="Leciona nestas modalidades">
+                        <div className="bg-white border border-[#6F7978] rounded-lg p-3">
+                            {modalidades.length === 0 ? (
+                                <p className="text-xs text-gray-500 italic text-center py-2">
+                                    Nenhuma modalidade associada ao teu perfil.
+                                </p>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-y-2 gap-x-4 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {modalidades.map(m => (
+                                        <label key={m.id_modalidade} className="flex items-center gap-2 cursor-pointer group">
+                                            <div className="relative flex items-center justify-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedModalidades.includes(m.id_modalidade)}
+                                                    onChange={() => toggleModalidade(m.id_modalidade)}
+                                                    className="peer appearance-none w-4 h-4 border-2 border-[#6F7978] rounded checked:bg-[#006A68] checked:border-[#006A68] transition-all cursor-pointer"
+                                                />
+                                                <Check size={10} className="absolute text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                                            </div>
+                                            <span className="text-sm text-[#3F4948] group-hover:text-[#161D1C] transition-colors select-none">
+                                                {m.nome}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </Field>
 
