@@ -133,7 +133,7 @@ export default function Home() {
         hora: formatTime(e.data_de_realizacao),
         duracao: e.duracao_minutos ? `${e.duracao_minutos} min` : '—',
         // Outros campos já existem no objeto
-      }))
+      })).filter(e => e.id_evento_estado !== 5)
       setEventos(evs)
 
       const normalizeAula = (m) => {
