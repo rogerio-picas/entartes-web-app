@@ -14,8 +14,10 @@ import { disponibilidadeService } from '../services/disponibilidadeService'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
 import coachingService from '../services/coachingService'
+import { formatDate, formatTime } from '../utils/dateUtils'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovoEventoModal from './NovoEventoModal'
+import NovaMarcacaoModal from './NovaMarcacaoModal'
 // ─── Localizer para português ───────────────────────────────────────────────
 const localizer = dateFnsLocalizer({
     format,
@@ -28,7 +30,8 @@ const localizer = dateFnsLocalizer({
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function parseDate(raw) {
     if (!raw) return null
-    const d = new Date(raw)
+    const s = String(raw).replace(/Z$/, '').replace(/[+-]\d{2}:\d{2}$/, '')
+    const d = new Date(s)
     return isNaN(d.getTime()) ? null : d
 }
 
@@ -70,11 +73,7 @@ function EventComponent({ event }) {
         ? EVENT_COLOR
         : getModalityColor(event.modalidade)
 
-    const timeStr = event.start instanceof Date
-        ? format(event.start, 'HH:mm')
-        : (typeof event.start === 'string' && event.start.includes('T')
-            ? event.start.split('T')[1].substring(0, 5)
-            : (typeof event.start === 'string' ? event.start.substring(0, 5) : '—'));
+    const timeStr = event.hora || event.hora_inicio_str || event.hora_inicio || '—'
 
     return (
         <div
@@ -566,7 +565,8 @@ export default function Horario() {
                 end: end,
                 _type: 'aula',
                 ...a,
-                data: start ? format(start, 'dd/MM/yyyy') : (a.data?.includes('T') ? a.data.split('T')[0] : a.data)
+                data: formatDate(a.data || a.data_de_realizacao),
+                hora: formatTime(a.hora_inicio),
             }
         }).filter(e => e.start)
 
@@ -580,9 +580,9 @@ export default function Horario() {
                 end: end,
                 _isEvent: true,
                 _type: 'evento',
-                data: start ? format(start, 'dd/MM/yyyy') : '—',
-                hora_inicio_str: start ? format(start, 'HH:mm') : '—',
-                hora: start ? format(start, 'HH:mm') : '',
+                data: formatDate(e.data_de_realizacao),
+                hora_inicio_str: formatTime(e.data_de_realizacao),
+                hora: formatTime(e.data_de_realizacao),
                 descricao: e.descricao,
                 data_de_realizacao: e.data_de_realizacao,
                 _data_raw: e.data_de_realizacao,
@@ -1050,9 +1050,8 @@ export default function Horario() {
             )}
 
             {showNovoCoaching && (
-                <NovoCoachingModal
+                <NovaMarcacaoModal
                     onClose={() => setShowNovoCoaching(false)}
-                    selectedDate={selectedDate}
                     onSuccess={() => {
                         setShowNovoCoaching(false)
                         showToast('Coaching criado com sucesso!')

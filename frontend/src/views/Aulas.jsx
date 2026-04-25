@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { formatDate, formatTime } from '../utils/dateUtils'
 import { useLocation } from 'react-router-dom'
 import {
   CalendarDays, Clock, User, MapPin, Music, CheckCircle2,
@@ -181,13 +182,11 @@ export default function Aulas() {
 
       // Normalizamos os dados para a tabela
       const formatadas = rawData.map(m => {
-        const dt = m.data ? new Date(m.data) : null;
-        const hr = m.hora_inicio ? new Date(m.hora_inicio) : null;
         return {
           id: m.id_marcacao,
           modalidade: m.modalidade || '—',
-          data: (dt && !isNaN(dt)) ? dt.toLocaleDateString('pt-PT') : '—',
-          hora: (hr && !isNaN(hr)) ? hr.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—',
+          data: formatDate(m.data),
+          hora: formatTime(m.hora_inicio),
           duracao: `${m.duracao_minutos} min`,
           tipo_aula: m.numero_alunos_pretendidos > 1 ? 'Grupo' : 'Individual',
           sala: m.sala || m.sala_atual || 'Por atribuir',

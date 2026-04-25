@@ -3,6 +3,7 @@ import {
   X, RefreshCw, User, Calendar, Clock, Plus, Search, ChevronRight, Music
 } from 'lucide-react'
 import { api } from '../services/api'
+import { formatDate, formatTime } from '../utils/dateUtils'
 
 export default function DisponibilidadesModal({ onClose, onMarcar }) {
   const [slots, setSlots] = useState([])
@@ -27,11 +28,6 @@ export default function DisponibilidadesModal({ onClose, onMarcar }) {
 
   const DIAS = ['Domingo', 'Segunda-Feira', 'Terça-Feira', 'Quarta-Feira', 'Quinta-Feira', 'Sexta-Feira', 'Sábado']
 
-  const fmtTime = (iso) => {
-    if (!iso) return '—'
-    const dt = new Date(iso)
-    return isNaN(dt) ? String(iso).substring(11, 16) : dt.toISOString().substring(11, 16)
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -115,7 +111,7 @@ export default function DisponibilidadesModal({ onClose, onMarcar }) {
           ) : (
             slots.map((slot, i) => {
               const dataOuDia = slot.data_especifica
-                ? new Date(slot.data_especifica).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
+                ? slot.data_especifica
                 : (slot.dia_semana != null ? DIAS[slot.dia_semana] : '—')
 
               return (
