@@ -15,7 +15,7 @@ jest.mock('@prisma/client', () => {
 
 const prisma = new PrismaClient();
 
-describe('Modalidade Service - Integration-like Tests', () => {
+describe('Modalidade Service - Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -23,21 +23,21 @@ describe('Modalidade Service - Integration-like Tests', () => {
   describe('criarModalidade', () => {
     it('should create a new modality if it does not exist', async () => {
       prisma.modalidade.findFirst.mockResolvedValue(null);
-      prisma.modalidade.create.mockResolvedValue({ id_modalidade: 1, nome: 'Piano' });
+      prisma.modalidade.create.mockResolvedValue({ id_modalidade: 1, nome: 'Ballet' });
 
-      const result = await criarModalidade('Piano');
+      const result = await criarModalidade('Ballet');
 
       expect(prisma.modalidade.findFirst).toHaveBeenCalled();
       expect(prisma.modalidade.create).toHaveBeenCalledWith({
-        data: { nome: 'Piano' },
+        data: { nome: 'Ballet' },
       });
-      expect(result.nome).toBe('Piano');
+      expect(result.nome).toBe('Ballet');
     });
 
     it('should throw an error if the modality already exists', async () => {
-      prisma.modalidade.findFirst.mockResolvedValue({ id_modalidade: 1, nome: 'Piano' });
+      prisma.modalidade.findFirst.mockResolvedValue({ id_modalidade: 1, nome: 'Ballet' });
 
-      await expect(criarModalidade('Piano')).rejects.toThrow('Já existe uma modalidade com o nome "Piano".');
+      await expect(criarModalidade('Ballet')).rejects.toThrow('Já existe uma modalidade com o nome "Ballet".');
       expect(prisma.modalidade.create).not.toHaveBeenCalled();
     });
   });
@@ -45,15 +45,15 @@ describe('Modalidade Service - Integration-like Tests', () => {
   describe('listarModalidades', () => {
     it('should return a list of modalities', async () => {
       const mockList = [
-        { id_modalidade: 1, nome: 'Piano' },
-        { id_modalidade: 2, nome: 'Violino' },
+        { id_modalidade: 1, nome: 'Ballet' },
+        { id_modalidade: 2, nome: 'Salsa' },
       ];
       prisma.modalidade.findMany.mockResolvedValue(mockList);
 
       const result = await listarModalidades();
 
       expect(result).toHaveLength(2);
-      expect(result[0].nome).toBe('Piano');
+      expect(result[0].nome).toBe('Ballet');
       expect(prisma.modalidade.findMany).toHaveBeenCalled();
     });
   });

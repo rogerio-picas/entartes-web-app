@@ -3,16 +3,17 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const criarUtilizador = async (dados) => {
-    const { 
-        codigo_username, 
-        password, 
-        id_tipo, 
-        nome, 
-        apelido, 
-        data_nascimento, 
-        email, 
-        telemovel, 
-        nif 
+    const {
+        codigo_username,
+        password,
+        id_tipo,
+        nome,
+        apelido,
+        data_nascimento,
+        email,
+        telemovel,
+        nif,
+        coaching,
     } = dados;
 
     const salt = await bcrypt.genSalt(10);
@@ -46,6 +47,7 @@ const criarUtilizador = async (dados) => {
             await tx.aluno.create({
                 data: {
                     id_utilizador: novoUtilizador.id_utilizador,
+                    coaching: coaching ?? false,
                 }
             });
         } 
@@ -81,7 +83,8 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
         email,
         telemovel,
         nif,
-        estado
+        estado,
+        coaching,
     } = dados;
 
     const userId = parseInt(id_utilizador);
@@ -126,6 +129,14 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
             where: { id_utilizador: userId },
             data: dataToUpdate,
         });
+
+        // Atualizar coaching no aluno se o tipo é/continua a ser aluno
+        if (novoTipo === 3 && coaching !== undefined && novoTipo === tipoAtual) {
+            await tx.aluno.update({
+                where: { id_utilizador: userId },
+                data: { coaching },
+            });
+        }
 
         // Se o tipo mudou, gerenciar as tabelas específicas
         if (novoTipo !== tipoAtual) {
