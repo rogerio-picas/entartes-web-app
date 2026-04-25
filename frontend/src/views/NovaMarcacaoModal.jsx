@@ -175,8 +175,8 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
   const toggleColega = (id) => {
     setColegasSel(prev => {
       if (prev.includes(id)) return prev.filter(x => x !== id);
-      if (prev.length >= numAlunos - 1) {
-        setErro(`Apenas podes adicionar ${numAlunos - 1} colega(s).`);
+      if (prev.length >= 9) {
+        setErro(`Uma sessão de grupo pode ter no máximo 10 alunos.`);
         return prev;
       }
       setErro('');
@@ -612,7 +612,10 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
               disabled={
                 (step === 1 && !modalidadeSel) ||
                 (step === 2 && !slotSel) ||
-                (step === 3 && (!data || !horaSel || !verificarDataSelecionada() || (numAlunos > 1 && colegasSel.length !== numAlunos - 1)))
+                (step === 3 && (!data ||
+                  !horaSel ||
+                  !verificarDataSelecionada() ||
+                  (numAlunos > 1 && colegasSel.length === 0)))
               }
               onClick={() => { setStep(s => s + 1); setErro('') }}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#006A68] text-white text-sm font-bold hover:bg-[#00504E] transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
