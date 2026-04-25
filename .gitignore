@@ -14,6 +14,7 @@ frontend/.vite/
 backend/generated/
 backend/prisma/generated/
 deletedfiles/
+.idea/
 
 # Sistema
 .DS_Store

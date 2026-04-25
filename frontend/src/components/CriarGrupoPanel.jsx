@@ -95,20 +95,15 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                 for (const membro of added) {
                     const typeId = membro.tipo_utilizador?.id_tipo === 2 ? 2 : 3
                     try {
-                        try {
-                            await api.post(`/evento/${eventId}/participantes`, { codigo_username: membro.codigo_username })
-                        } catch (e) {
-                            if (e.response?.status !== 400 || !e.response?.data?.error?.includes('já está inscrito')) {
-                                console.warn('Erro ao inserir no evento:', e.response?.data || e)
-                            }
+                        if (typeId === 2) {
+                            await api.post(`/evento/${eventId}/grupos/${groupId}/docentes/${membro.id_utilizador}`, {})
+                        } else {
+                            await api.post(`/evento/${eventId}/grupos/${groupId}/alunos/${membro.id_utilizador}`, {})
                         }
-                        if (typeId === 2) await api.post(`/evento/${eventId}/grupos/${groupId}/docentes/${membro.id_utilizador}`, {})
-                        else await api.post(`/evento/${eventId}/grupos/${groupId}/alunos/${membro.id_utilizador}`, {})
-                    } catch (e) { 
+                    } catch (e) {
                         errors.push(`Membro ${membro.nome}: ${e.response?.data?.error || e.message}`)
                     }
                 }
-                
                 if (errors.length > 0) alert("Erros ao adicionar membros:\n" + errors.join("\n"))
 
                 for (const id of removedIds) {
@@ -127,21 +122,12 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                 for (const membro of selected) {
                     const typeId = membro.tipo_utilizador?.id_tipo === 2 ? 2 : 3
                     try {
-                        try {
-                            await api.post(`/evento/${eventId}/participantes`, {
-                                codigo_username: membro.codigo_username
-                            })
-                        } catch (e) { 
-                            if (e.response?.status !== 400 || !e.response?.data?.error?.includes('já está inscrito')) {
-                                console.warn('Erro ao inserir no evento:', e.response?.data || e)
-                            }
+                        if (typeId === 2){
+                            await api.post(`/evento/${eventId}/grupos/${groupId}/docentes/${membro.id_utilizador}`,{})
+                        }else{
+                            await api.post(`/evento/${eventId}/grupos/${groupId}/alunos/${membro.id_utilizador}`,{})
                         }
-                        if (typeId === 2) {
-                            await api.post(`/evento/${eventId}/grupos/${groupId}/docentes/${membro.id_utilizador}`, {})
-                        } else {
-                            await api.post(`/evento/${eventId}/grupos/${groupId}/alunos/${membro.id_utilizador}`, {})
-                        }
-                    } catch (e) { 
+                    } catch (e){
                         errors.push(`Membro ${membro.nome}: ${e.response?.data?.error || e.message}`)
                     }
                 }
