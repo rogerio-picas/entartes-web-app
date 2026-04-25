@@ -120,8 +120,9 @@ export default function ItemDetailModal({
                             />
                         )}
                         {isEvent && (item.duracao_minutos || item.duracao) && (() => {
-                            const dur = item.duracao_minutos || parseInt(item.duracao) || 60;
-                            const startStr = item.hora || item.hora_inicio || (item.data_de_realizacao ? item.data_de_realizacao.substring(11, 16) : '00:00');
+                            const dur = Number(item.duracao_minutos || item.duracao || 60);
+                            const startStr = item.hora || item.hora_inicio || (item.data_de_realizacao ? String(item.data_de_realizacao).substring(11, 16) : '00:00');
+                            if (isNaN(dur)) return null;
                             const endStr = addMinutesToTime(startStr, dur);
                             return <InfoItem icon={Clock} label="Data prevista de fim" value={endStr} />;
                         })()}

@@ -48,7 +48,7 @@ const parseHoraTime = (valor) => {
 /**
  * Verifica sobreposição de horários com outras disponibilidades
  */
-const verificarSobreposicao = async (id_docente, dia_semana, data_especifica, hora_inicio, hora_fim, id_modalidade = null, id_disponibilidade_atual = null) => {
+const verificarSobreposicao = async (id_docente, dia_semana, data_especifica, hora_inicio, hora_fim, id_disponibilidade_atual = null) => {
   const horaInicioDate = parseHoraTime(hora_inicio);
   const horaFimDate = parseHoraTime(hora_fim);
 
@@ -57,7 +57,6 @@ const verificarSobreposicao = async (id_docente, dia_semana, data_especifica, ho
     // Se for null ou undefined, o Prisma deve procurar especificamente por registros onde é NULL
     dia_semana: dia_semana !== null && dia_semana !== undefined ? parseInt(dia_semana) : null,
     data_especifica: data_especifica ? new Date(data_especifica) : null,
-    id_modalidade: id_modalidade ? parseInt(id_modalidade) : null,
     AND: [
       { hora_inicio: { lt: horaFimDate } },
       { hora_fim: { gt: horaInicioDate } },
@@ -123,31 +122,20 @@ const criarDisponibilidade = async (id_docente, dados) => {
 
   validarParametrosCreate(dia_semana, data_especifica, hora_inicio, hora_fim);
 
-  // Se vierem múltiplos IDs de modalidade, cria um registo para cada um
-  const idsModalidades = Array.isArray(dados.ids_modalidades) ? dados.ids_modalidades : [dados.id_modalidade];
+  // Verificar sobreposição
+  await verificarSobreposicao(id_docente, dia_semana, data_especifica, hora_inicio, hora_fim);
 
-  const resultados = [];
-  for (const idMod of idsModalidades) {
-    // Se for 'any' ou nulo, tratamos como nulo na BD
-    const currentIdMod = idMod === 'any' ? null : (idMod ? parseInt(idMod) : null);
+  const nova = await prisma.disponibilidade.create({
+    data: {
+      id_docente,
+      dia_semana: dia_semana !== undefined && dia_semana !== null ? parseInt(dia_semana) : null,
+      data_especifica: data_especifica ? new Date(data_especifica) : null,
+      hora_inicio: parseHoraTime(hora_inicio),
+      hora_fim: parseHoraTime(hora_fim),
+    },
+  });
 
-    // Verificar sobreposição específica para esta modalidade
-    await verificarSobreposicao(id_docente, dia_semana, data_especifica, hora_inicio, hora_fim, currentIdMod);
-
-    const nova = await prisma.disponibilidade.create({
-      data: {
-        id_docente,
-        id_modalidade: currentIdMod,
-        dia_semana: dia_semana !== undefined && dia_semana !== null ? parseInt(dia_semana) : null,
-        data_especifica: data_especifica ? new Date(data_especifica) : null,
-        hora_inicio: parseHoraTime(hora_inicio),
-        hora_fim: parseHoraTime(hora_fim),
-      },
-    });
-    resultados.push(nova);
-  }
-
-  return resultados.length === 1 ? resultados[0] : resultados;
+  return nova;
 };
 
 /**
@@ -196,15 +184,7 @@ const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) =
     : existente.data_especifica;
 
   // 3. Verificar sobreposição
-  await verificarSobreposicao(
-    id_docente,
-    diaSemana,
-    dataEspecifica,
-    novaHoraInicio,
-    novaHoraFim,
-    dados.id_modalidade ? parseInt(dados.id_modalidade) : existente.id_modalidade,
-    parseInt(id_disponibilidade)
-  );
+  await verificarSobreposicao(id_docente, diaSemana, dataEspecifica, novaHoraInicio, novaHoraFim, id_disponibilidade);
 
   // 4. Atualizar
   return await prisma.disponibilidade.update({
@@ -212,7 +192,6 @@ const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) =
     data: {
       dia_semana: diaSemana,
       data_especifica: dataEspecifica,
-      id_modalidade: dados.id_modalidade ? parseInt(dados.id_modalidade) : existente.id_modalidade,
       hora_inicio: novaHoraInicio,
       hora_fim: novaHoraFim,
     },
