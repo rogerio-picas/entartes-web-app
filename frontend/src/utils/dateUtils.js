@@ -61,14 +61,26 @@ export function addMinutesToTime(timeStr, minutes) {
 
 /**
  * Format a date as YYYY-MM-DD for HTML5 date inputs.
- * Uses local time components.
+ * Tries to avoid timezone shifts by splitting strings if possible.
  */
 export function formatDateForInput(raw) {
     if (!raw) return ''
+    const s = String(raw)
+    if (s.includes('T')) return s.split('T')[0]
+    
     const d = (raw instanceof Date) ? raw : new Date(raw)
     if (isNaN(d.getTime())) return ''
     const year = d.getFullYear()
     const month = String(d.getMonth() + 1).padStart(2, '0')
     const day = String(d.getDate()).padStart(2, '0')
     return `${year}-${month}-${day}`
+}
+
+/**
+ * Combines a date (YYYY-MM-DD) and a time (HH:MM) into a UTC ISO string
+ * while preserving the "wall-clock" time (no timezone shift).
+ */
+export function toWallClockISO(dateStr, timeStr) {
+    if (!dateStr || !timeStr) return null
+    return `${dateStr}T${timeStr.substring(0, 5)}:00.000Z`
 }

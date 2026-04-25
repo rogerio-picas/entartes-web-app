@@ -15,7 +15,7 @@ import ItemDetailModal from '../components/ItemDetailModal'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
 import coachingService from '../services/coachingService'
-import { formatDate, formatTime, parseDate, addMinutesToTime } from '../utils/dateUtils'
+import { formatDate, formatTime, parseDate, addMinutesToTime, toWallClockISO } from '../utils/dateUtils'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovoEventoModal from './NovoEventoModal'
 import NovaMarcacaoModal from './NovaMarcacaoModal'
@@ -242,10 +242,10 @@ function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
         setLoading(true)
         setErro('')
         try {
-            const dataHora = new Date(`${form.data}T${form.hora}:00`)
+            const isoWallClock = toWallClockISO(form.data, form.hora)
             await api.post('/aulas', {
-                data_a_realizar: dataHora.toISOString(),
-                hora_inicio: dataHora.toISOString(),
+                data_a_realizar: isoWallClock,
+                hora_inicio: isoWallClock,
                 duracao_minutos: Number(form.duracao),
                 id_modalidade: form.id_modalidade ? Number(form.id_modalidade) : undefined,
                 id_sala: form.id_sala ? Number(form.id_sala) : undefined,
