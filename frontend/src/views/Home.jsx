@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
+import { formatDate, formatTime } from '../utils/dateUtils'
 import coachingService from '../services/coachingService'
 import { eventService } from '../services/eventService'
 
@@ -21,6 +22,7 @@ import {
   LiveClassCard, CoachingCard, ConfirmedCard, RequisicaoCard, PresencaDocenteCard,
   PerfilModal, SectionHeader, ScrollRow, Toast
 } from '../components/HomeWidgets'
+import ItemDetailModal from '../components/ItemDetailModal'
 
 // ── Presence confirmation card (aluno confirma a SUA presença) ──
 function PresencaAlunoCard({ item, onConfirm, onReject, loading }) {
@@ -86,6 +88,7 @@ export default function Home() {
   const [selectedEventId, setSelectedEventId] = useState(null)
   const [perfilAluno, setPerfilAluno] = useState(null)
   const [showNovoEvento, setShowNovoEvento] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
 
   // Shared Data
   const [eventos, setEventos] = useState([])
@@ -122,7 +125,15 @@ export default function Home() {
       } else {
         evRes = await eventService.getMyEvents().catch(() => []);
       }
-      const evs = Array.isArray(evRes) ? evRes : []
+      const evs = (Array.isArray(evRes) ? evRes : []).map(e => ({
+        ...e,
+        id: e.id_evento,
+        _isEvent: true,
+        data: formatDate(e.data_de_realizacao),
+        hora: formatTime(e.data_de_realizacao),
+        duracao: e.duracao_minutos ? `${e.duracao_minutos} min` : '—',
+        // Outros campos já existem no objeto
+      })).filter(e => e.id_evento_estado !== 5)
       setEventos(evs)
 
       const normalizeAula = (m) => {
@@ -142,19 +153,26 @@ export default function Home() {
           else if (estadoStr.includes('cancel')) resolvedIdEstado = 5;
         }
 
+        // Extrair nomes se forem objetos
+        const modalidadeNome = typeof m.modalidade === 'object' ? m.modalidade.nome : (m.modalidade || '—');
+        const docenteNome = typeof m.docente === 'object' ? m.docente.nome : (m.docente || '—');
+
         return {
           ...m,
           id: m.id_marcacao || m.id,
           _data_raw: dt || m.data,
-          data: dt ? dt.toLocaleDateString('pt-PT') : '—',
-          hora: m.hora_inicio ? new Date(m.hora_inicio).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—',
+          data: formatDate(m.data),
+          hora: formatTime(m.hora_inicio),
           duracao: m.duracao_minutos ? `${m.duracao_minutos} min` : '—',
+          modalidade: modalidadeNome,
           docente: role === 2
-            ? (m.alunos?.length > 0 ? m.alunos.map(a => a.nome).join(', ') : 'A aguardar aluno(s)')
-            : (m.docente || '—'),
-          ja_validou: m.ja_validou,
+            ? (m.alunos?.length > 0 ? m.alunos.map(a => typeof a === 'object' ? a.nome : a).join(', ') : 'A aguardar aluno(s)')
+            : docenteNome,
+          alunos: m.alunos?.map(a => typeof a === 'object' ? a.nome : a) || [],
+           ja_validou: m.ja_validou,
           id_estado: resolvedIdEstado,
           estado_nome: m.estado || m.estado_nome || '—',
+          _type: 'aula',
         };
       }
 
@@ -375,7 +393,7 @@ export default function Home() {
           <section>
             <SectionHeader icon={Star} title="Aulas a decorrer" action="Ver todas" onAction={() => navigate('/aulas')} />
             <ScrollRow>
-              {liveAulas.slice(0, 3).map((a, i) => <LiveClassCard key={a.id} aula={a} idx={i} />)}
+              {liveAulas.slice(0, 3).map((a, i) => <LiveClassCard key={a.id} aula={a} idx={i} onOpen={() => setSelectedItem(a)} />)}
               {liveAulas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais aulas" />}
             </ScrollRow>
           </section>
@@ -439,8 +457,8 @@ export default function Home() {
             <ScrollRow>
               {aulasConfirmadas.slice(0, 3).map(a => (
                 isAdmin
-                  ? <ConfirmedCard key={a.id} aula={a} />
-                  : <ClassCard key={a.id} item={a} statusType="confirmada" />
+                  ? <ConfirmedCard key={a.id} aula={a} onOpen={() => setSelectedItem(a)} />
+                  : <ClassCard key={a.id} item={a} statusType="confirmada" onOpen={() => setSelectedItem(a)} />
               ))}
               {aulasConfirmadas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas', { state: { filtroEstado: '3' } })} label="Ver mais aulas" />}
             </ScrollRow>
@@ -453,7 +471,7 @@ export default function Home() {
             <SectionHeader icon={CalendarCheck} title="Inscrições pendentes" action="Ver todas" onAction={() => navigate('/aulas')} />
             <ScrollRow>
               {inscricoesAluno.slice(0, 3).map((item, idx) => (
-                <ClassCard key={item.id || idx} item={item} statusType="pendente" />
+                <ClassCard key={item.id || idx} item={item} statusType="pendente" onOpen={() => setSelectedItem(item)} />
               ))}
               {inscricoesAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais" />}
             </ScrollRow>
@@ -473,7 +491,7 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {eventos.slice(0, 3).map(item => (
-                <SimpleEventCard key={item.id_evento} event={item} onOpen={() => setSelectedEventId(item.id_evento)} />
+                <SimpleEventCard key={item.id_evento} event={item} onOpen={() => setSelectedItem(item)} />
               ))}
               {eventos.length > 3 && <ViewMoreCard onClick={() => navigate('/eventos')} label="Ver todos os eventos" />}
             </div>
@@ -503,6 +521,21 @@ export default function Home() {
 
       {perfilAluno && (
         <PerfilModal aluno={perfilAluno} onClose={() => setPerfilAluno(null)} />
+      )}
+
+      {selectedItem && (
+        <ItemDetailModal 
+          item={selectedItem} 
+          role={role} 
+          onClose={() => setSelectedItem(null)} 
+          onNavigate={(item) => {
+            if (item.id_evento || item._isEvent || item._type === 'evento') {
+              navigate(`/eventos/${item.id}`);
+            } else {
+              navigate('/aulas');
+            }
+          }}
+        />
       )}
 
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}

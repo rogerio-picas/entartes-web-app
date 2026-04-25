@@ -6,19 +6,13 @@ import {
     Users, MapPin, Music, User, TrendingUp, Star, Megaphone
 } from 'lucide-react'
 import { api } from '../services/api'
+import { formatDate, formatTime } from '../utils/dateUtils'
 import coachingService from '../services/coachingService'
 import { eventService } from '../services/eventService'
 import NovoEventoModal from './NovoEventoModal'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function formatDate(raw) {
-    if (!raw) return '—'
-    return new Date(raw).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
-function formatTime(raw) {
-    if (!raw) return '—'
-    return new Date(raw).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
-}
+
 function formatDuration(min) {
     if (!min) return '—'
     const h = Math.floor(min / 60), m = min % 60
@@ -257,16 +251,14 @@ function ConfirmedCard({ aula }) {
 
 // ─── Event Card ───────────────────────────────────────────────────────────────
 function EventCard({ event }) {
-    const dt = event.data_de_realizacao
-        ? new Date(event.data_de_realizacao).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
-        : 'Data por definir'
+    const dt = event.data_de_realizacao ?? 'Data por definir'
     return (
         <div className="flex-1 min-w-[300px] max-w-[380px] bg-[#F4FBF9] border border-[#006A68] rounded-xl p-5 flex flex-col gap-2">
             <div className="flex items-center gap-2">
                 <Megaphone size={20} className="text-[#006A68]" />
                 <h3 className="font-bold text-[#006A68] text-lg leading-snug">{event.nome}</h3>
             </div>
-            <p className="text-[#324B4A] font-semibold text-sm">{dt.charAt(0).toUpperCase() + dt.slice(1)}</p>
+            <p className="text-[#324B4A] font-semibold text-sm">{dt}</p>
             <div className="text-sm text-[#006A68]">
                 <span>Duração: </span><span className="text-[#000]">2h 30min</span>
             </div>
@@ -354,13 +346,15 @@ export default function HomeAdmin() {
                 ...a,
                 id: a.id_marcacao,
                 _data_raw: a.data,
-                data: new Date(a.data).toLocaleDateString('pt-PT'),
-                hora: new Date(a.hora_inicio).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+                data: formatDate(a.data),
+                hora: formatTime(a.hora_inicio),
                 duracao: formatDuration(a.duracao_minutos),
                 sala: a.sala_atual
             }))
 
-            const evs = eventosRes.status === 'fulfilled' && Array.isArray(eventosRes.value) ? eventosRes.value : []
+            const evs = eventosRes.status === 'fulfilled' && Array.isArray(eventosRes.value) 
+                ? eventosRes.value.filter(e => e.id_evento_estado !== 5) 
+                : []
             const horas = horasRes.status === 'fulfilled' && Array.isArray(horasRes.value) ? horasRes.value : []
             const alunos = alunosRes.status === 'fulfilled' && Array.isArray(alunosRes.value) ? alunosRes.value : []
 

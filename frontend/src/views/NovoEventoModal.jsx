@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { X, Plus, ChevronRight, Check, AlertCircle, RefreshCw, Trash2 } from 'lucide-react'
 import { api } from '../services/api'
+import { formatTime, formatDateForInput, toWallClockISO } from '../utils/dateUtils'
 
-function Field({ label, value, onChange, type = 'text', placeholder, multiline = false }) {
+function Field({ label, value, onChange, type = 'text', placeholder, multiline = false, ...props }) {
     const base = 'w-full bg-white border border-[#6F7978] rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] transition-colors'
 
     return (
@@ -18,6 +19,7 @@ function Field({ label, value, onChange, type = 'text', placeholder, multiline =
                     placeholder={placeholder}
                     rows={3}
                     className={`${base} resize-none`}
+                    {...props}
                 />
             ) : (
                 <input
@@ -26,22 +28,35 @@ function Field({ label, value, onChange, type = 'text', placeholder, multiline =
                     onChange={e => onChange(e.target.value)}
                     placeholder={placeholder}
                     className={base}
+                    {...props}
                 />
             )}
         </div>
     )
 }
 
-export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
+export default function NovoEventoModal({ onClose, onSuccess, selectedDate, initialData }) {
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
 
-    const [nome, setNome] = useState('')
-    const [data, setData] = useState(selectedDate ? (typeof selectedDate === 'string' ? selectedDate : selectedDate.toISOString().split('T')[0]) : '')
-    const [hora, setHora] = useState('19:00')
-    const [descricao, setDescricao] = useState('')
-    const [whatsapp, setWhatsapp] = useState('')
-    const [local, setLocal] = useState('')
+    const [nome, setNome] = useState(initialData?.nome || '')
+    const [data, setData] = useState(() => {
+        if (initialData?.data_de_realizacao) return formatDateForInput(initialData.data_de_realizacao)
+        if (selectedDate) return formatDateForInput(selectedDate)
+        return ''
+    })
+    
+    // Extrair hora do data_de_realizacao sem conversão de timezone
+    const [hora, setHora] = useState(initialData?.data_de_realizacao ? formatTime(initialData.data_de_realizacao) : '19:00')
+    
+    // Duração decomposta em Horas e Minutos
+    const initialDuration = initialData?.duracao_minutos || 60
+    const [duracaoHoras, setDuracaoHoras] = useState(Math.floor(initialDuration / 60))
+    const [duracaoMinutos, setDuracaoMinutos] = useState(initialDuration % 60)
+    
+    const [descricao, setDescricao] = useState(initialData?.descricao || '')
+    const [whatsapp, setWhatsapp] = useState(initialData?.link_whatsapp || '')
+    const [local, setLocal] = useState(initialData?.local || '')
 
     // FAQs
     const [faqs, setFaqs] = useState([])
@@ -84,20 +99,28 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
         setErro('')
 
         try {
-            await api.post('/evento', {
+            const totalMinutos = (Number(duracaoHoras) * 60) + Number(duracaoMinutos)
+            
+            const payload = {
                 nome: nome.trim(),
                 descricao: descricao || null,
-                data_de_realizacao: data ? new Date(data).toISOString() : null,
-                hora_inicio: hora || null,
+                data_de_realizacao: toWallClockISO(data, hora),
+                duracao_minutos: totalMinutos,
                 link_whatsapp: whatsapp || null,
                 local: local || null,
-                faqs: faqs // Enviando a lista de FAQs se a sua API suportar
-            })
+                faqs: faqs
+            }
+
+            if (initialData) {
+                await api.put(`/evento/${initialData.id_evento || initialData.id}`, payload)
+            } else {
+                await api.post('/evento', payload)
+            }
 
             onSuccess?.(nome)
-            onClose() // Fecha o modal após sucesso
+            onClose()
         } catch (e) {
-            setErro(e.response?.data?.message || e.message || 'Erro ao criar evento.')
+            setErro(e.response?.data?.message || e.message || 'Erro ao guardar evento.')
         } finally {
             setLoading(false)
         }
@@ -122,7 +145,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
                         </button>
                     </div>
                     <h2 className="text-4xl font-bold text-[#00504E] text-center font-['Sora'] mb-4">
-                        Novo evento
+                        {initialData ? 'Editar evento' : 'Novo evento'}
                     </h2>
                 </div>
 
@@ -141,10 +164,18 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
                             <Field label="Nome" value={nome} onChange={setNome} placeholder="Nome do evento" />
                         </div>
                         <div className="flex-1 min-w-[150px]">
-                            <Field label="Data" value={data} onChange={setData} type="date" />
+                            <Field label="Data" value={data} onChange={setData} type="date" min={formatDateForInput(new Date())} />
                         </div>
                         <div className="flex-1 min-w-[130px]">
-                            <Field label="Hora de início" value={hora} onChange={setHora} type="time" />
+                            <Field label="Início" value={hora} onChange={setHora} type="time" />
+                        </div>
+                        <div className="flex-1 min-w-[200px] flex gap-2">
+                            <div className="flex-1">
+                                <Field label="Dur. (Horas)" value={duracaoHoras} onChange={setDuracaoHoras} type="number" min="0" />
+                            </div>
+                            <div className="flex-1">
+                                <Field label="Dur. (Min)" value={duracaoMinutos} onChange={setDuracaoMinutos} type="number" min="0" max="59" />
+                            </div>
                         </div>
                     </div>
 
@@ -233,7 +264,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
                         className="flex items-center gap-2 px-8 py-4 bg-[#006A68] text-white font-semibold rounded-2xl hover:bg-[#00504E] transition-colors disabled:opacity-60 text-base"
                     >
                         {loading ? <RefreshCw size={18} className="animate-spin" /> : <Check size={18} />}
-                        Criar Evento
+                        {initialData ? 'Guardar Alterações' : 'Criar Evento'}
                     </button>
                 </div>
             </div>

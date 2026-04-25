@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react'
-import { X, ChevronRight, ChevronLeft, Music, User, CalendarDays, Clock, Check, Loader2, AlertCircle } from 'lucide-react'
+import { X, ChevronRight, ChevronLeft, Music, User, CalendarDays, Clock, Check, Loader2, AlertCircle, Search } from 'lucide-react'
 import { api } from '../services/api'
+import { formatDate, formatTime } from '../utils/dateUtils'
 
-const DURACOES = [30, 45, 60, 75, 90, 120]
+const DURACOES = [30, 60, 90, 120]
+
+function getInitials(nome) {
+  if (!nome) return '?'
+  const parts = nome.trim().split(' ')
+  return parts.length > 1
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : nome.slice(0, 2).toUpperCase()
+}
 
 function StepIndicator({ step }) {
   const steps = ['Modalidade', 'Disponibilidades', 'Horário', 'Confirmar']
@@ -52,6 +61,10 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
   const [duracao, setDuracao] = useState(60)
   const [horaSel, setHoraSel] = useState('')
   const [numAlunos, setNumAlunos] = useState(1)
+  const [colegas, setColegas] = useState([])
+  const [colegasSel, setColegasSel] = useState([])
+  const [loadingColegas, setLoadingColegas] = useState(false)
+  const [pesquisaColega, setPesquisaColega] = useState('')
 
   // ── Passo 1: carregar modalidades ──
   useEffect(() => {
@@ -74,15 +87,59 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
     setLoadingSlots(true)
     setSlots([])
 
-    // Podemos omitir a "data" na query se quisermos mostrar os slots genéricos dessa modalidade
-    // const params = new URLSearchParams({ id_modalidade: modalidadeSel.id_modalidade })
-    api.get(`/coaching/disponibilidades/consultar?`) //${params}
+    const params = new URLSearchParams({ id_modalidade: modalidadeSel.id_modalidade })
+    api.get(`/coaching/disponibilidades/consultar?${params}`)
       .then(r => setSlots(Array.isArray(r) ? r : r.data || []))
       .catch(() => setErro('Não foi possível consultar as disponibilidades.'))
       .finally(() => setLoadingSlots(false))
   }, [step, modalidadeSel])
 
   const DIAS = ['Domingo', 'Segunda-Feira', 'Terça-Feira', 'Quarta-Feira', 'Quinta-Feira', 'Sexta-Feira', 'Sábado']
+
+  // Função auxiliar para garantir que a data não salta de dia por causa do fuso horário
+  const formatLocalYYYYMMDD = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  // Calcula a próxima data válida para um slot (hoje ou futura)
+  const proximaDataDoSlot = (slot) => {
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+
+    if (slot.data_especifica) {
+      const d = new Date(slot.data_especifica)
+      d.setHours(0, 0, 0, 0)
+      const dataStr = d >= hoje ? formatLocalYYYYMMDD(d) : null
+      console.log('[DEBUG proximaDataDoSlot] data_especifica:', slot.data_especifica, '->', dataStr);
+      return dataStr;
+    }
+
+    if (slot.dia_semana != null) {
+      const alvo = Number(slot.dia_semana)
+      const d = new Date(hoje)
+      // Avançar até ao próximo dia da semana (pode ser hoje mesmo)
+      while (d.getDay() !== alvo) {
+        d.setDate(d.getDate() + 1)
+      }
+      const dataStr = formatLocalYYYYMMDD(d)
+      console.log('[DEBUG proximaDataDoSlot] dia_semana:', slot.dia_semana, '->', dataStr);
+      return dataStr;
+    }
+
+    return null
+  }
+
+  // Filtrar slots: remover data_especifica já passadas
+  const slotsFuturos = slots.filter(slot => {
+    if (slot.data_especifica) {
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
+      return new Date(slot.data_especifica) >= hoje
+    }
+    return true // dia_semana é sempre futuro
+  })
 
   // Calcular horas possíveis dentro do slot do docente selecionado
   const horasPossiveis = (() => {
@@ -104,30 +161,65 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
     return horas
   })()
 
-  const formatHora = (iso) => {
-    if (!iso) return ''
-    const d = new Date(iso)
-    if (isNaN(d)) return iso.substring(11, 16)
-    return d.toISOString().substring(11, 16)
+  // Carregar colegas se for em grupo
+  useEffect(() => {
+    if (step === 3 && numAlunos > 1 && colegas.length === 0) {
+      setLoadingColegas(true)
+      api.get('/coaching/colegas')
+        .then(r => setColegas(Array.isArray(r) ? r : r.data || []))
+        .catch(() => setErro('Não foi possível carregar a lista de colegas.'))
+        .finally(() => setLoadingColegas(false))
+    }
+  }, [step, numAlunos])
+
+  const toggleColega = (id) => {
+    setColegasSel(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= 9) {
+        setErro(`Uma sessão de grupo pode ter no máximo 10 alunos.`);
+        return prev;
+      }
+      setErro('');
+      return [...prev, id];
+    });
   }
+
 
   // ── Submeter ──
   const handleSubmit = async () => {
     setErro('')
+
+    console.log('[DEBUG handleSubmit] Validação:', {
+      modalidadeSel: !!modalidadeSel,
+      docenteSel: !!docenteSel,
+      slotSel: !!slotSel,
+      data,
+      horaSel
+    });
+
     if (!modalidadeSel || !docenteSel || !slotSel || !data || !horaSel) {
       setErro('Preenche todos os campos antes de confirmar.')
       return
     }
+    if (numAlunos > 1 && colegasSel.length === 0) {
+      setErro('Adiciona pelo menos um colega para criar uma sessão de grupo.')
+      return
+    }
     setSubmitting(true)
+
+    const payload = {
+      id_docente: docenteSel.id_docente,
+      id_modalidade: modalidadeSel.id_modalidade,
+      data_a_realizar: data,
+      hora_inicio: horaSel,
+      duracao_minutos: duracao,
+      numero_alunos_pretendidos: numAlunos === 1 ? 1 : colegasSel.length + 1,
+      ...(numAlunos > 1 && { outros_alunos: colegasSel })
+    };
+    console.log('[DEBUG handleSubmit] Payload a enviar:', payload);
+
     try {
-      await api.post('/coaching/marcacao/solicitar', {
-        id_docente: docenteSel.id_docente,
-        id_modalidade: modalidadeSel.id_modalidade,
-        data_a_realizar: data,
-        hora_inicio: horaSel,
-        duracao_minutos: duracao,
-        numero_alunos_pretendidos: numAlunos,
-      })
+      await api.post('/coaching/marcacao/solicitar', payload)
       onSuccess?.()
       onClose()
     } catch (err) {
@@ -145,12 +237,26 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
     // Se o slot tem data específica, deve bater certo
     if (slotSel.data_especifica) {
       const dSpec = new Date(slotSel.data_especifica);
-      return d.toDateString() === dSpec.toDateString();
+      const isValido = d.toDateString() === dSpec.toDateString();
+      console.log('[DEBUG verificarDataSelecionada] Data específica:', {
+        data_input: data,
+        d_toDateString: d.toDateString(),
+        dSpec_toDateString: dSpec.toDateString(),
+        isValido
+      });
+      return isValido;
     }
 
     // Se tem dia da semana, a data tem de ser desse dia
     if (slotSel.dia_semana != null) {
-      return d.getDay() === slotSel.dia_semana;
+      const isValido = d.getDay() === slotSel.dia_semana;
+      console.log('[DEBUG verificarDataSelecionada] Dia da semana:', {
+        data_input: data,
+        d_getDay: d.getDay(),
+        slot_dia_semana: slotSel.dia_semana,
+        isValido
+      });
+      return isValido;
     }
 
     return true;
@@ -160,7 +266,8 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
       <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-y-auto hide-scrollbar"
+        style={{ maxHeight: '80%' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -238,14 +345,15 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                   <div className="flex justify-center py-8">
                     <Loader2 size={28} className="text-[#006A68] animate-spin" />
                   </div>
-                ) : slots.length === 0 ? (
+                ) : slotsFuturos.length === 0 ? (
                   <div className="text-center py-6 text-sm text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                     Nenhum horário disponível para esta modalidade.
                   </div>
                 ) : (
-                  slots.map((slot, i) => {
+                  slotsFuturos.map((slot, i) => {
+                    const proximaData = proximaDataDoSlot(slot)
                     const dataOuDia = slot.data_especifica
-                      ? new Date(slot.data_especifica).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
+                      ? formatDate(slot.data_especifica)
                       : (slot.dia_semana != null ? DIAS[slot.dia_semana] : '—')
 
                     return (
@@ -254,7 +362,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                         onClick={() => {
                           setSlotSel(slot);
                           setDocenteSel({ id_docente: slot.id_docente, nome_docente: slot.nome_docente });
-                          setData(''); setHoraSel(''); setErro('');
+                          setData(proximaData || ''); setHoraSel(''); setErro('');
                           setStep(3);
                         }}
                         className="w-full px-4 py-3 flex flex-wrap sm:flex-nowrap items-center gap-4 hover:bg-[#F4FBF9] bg-white border border-gray-200 rounded-xl transition-colors text-left group"
@@ -269,7 +377,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                               <CalendarDays size={12} /> {dataOuDia}
                             </span>
                             <span className="flex items-center gap-1 text-xs text-gray-500">
-                              <Clock size={12} /> {formatHora(slot.hora_inicio)} – {formatHora(slot.hora_fim)}
+                              <Clock size={12} /> {formatTime(slot.hora_inicio)} – {formatTime(slot.hora_fim)}
                             </span>
                           </div>
                         </div>
@@ -293,25 +401,20 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                   <p className="font-bold text-[#006A68] text-sm">{docenteSel?.nome_docente}</p>
                   <p className="text-xs text-[#4A6362]">
                     Disponibilidade: {slotSel.data_especifica
-                      ? new Date(slotSel.data_especifica).toLocaleDateString('pt-PT')
-                      : (slotSel.dia_semana != null ? DIAS[slotSel.dia_semana] : '')} ({formatHora(slotSel.hora_inicio)} - {formatHora(slotSel.hora_fim)})
+                      ? formatDate(slotSel.data_especifica)
+                      : (slotSel.dia_semana != null ? DIAS[slotSel.dia_semana] : '')} ({formatTime(slotSel.hora_inicio)} - {formatTime(slotSel.hora_fim)})
                   </p>
                 </div>
               </div>
 
-              {/* Data */}
+              {/* Data (preenchida automaticamente) */}
               <div>
                 <label className="block text-xs font-semibold text-[#4A6362] uppercase tracking-wide mb-1.5">Data da sessão</label>
-                <input
-                  type="date"
-                  min={new Date().toISOString().split('T')[0]}
-                  value={data}
-                  onChange={e => { setData(e.target.value); setErro(''); setHoraSel('') }}
-                  className={`w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:border-[#006A68] text-[#324B4A] ${!verificarDataSelecionada() ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
-                />
-                {!verificarDataSelecionada() && (
-                  <p className="text-xs text-red-500 mt-1">A data selecionada não corresponde ao dia de disponibilidade do docente.</p>
-                )}
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[#006A68]/30 bg-[#EFF5F4] text-sm text-[#324B4A] font-semibold">
+                  <CalendarDays size={15} className="text-[#006A68] shrink-0" />
+                  {data ? new Date(data + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+                </div>
+                <p className="text-[10px] text-[#4A6362] mt-1">Data preenchida automaticamente com base na disponibilidade selecionada.</p>
               </div>
 
               {/* Duração */}
@@ -331,22 +434,141 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                 </div>
               </div>
 
-              {/* Nº alunos */}
+              {/* Tipo de sessão */}
               <div>
                 <label className="block text-xs font-semibold text-[#4A6362] uppercase tracking-wide mb-1.5">Tipo de sessão</label>
                 <div className="flex gap-2">
-                  {[1, 2, 3].map(n => (
-                    <button
-                      key={n}
-                      onClick={() => setNumAlunos(n)}
-                      className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all
-                        ${numAlunos === n ? 'bg-[#006A68] text-white border-[#006A68]' : 'border-gray-200 text-[#4A6362] hover:border-[#006A68]'}`}
-                    >
-                      {n === 1 ? 'Individual' : `Grupo (${n})`}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => { setNumAlunos(1); setColegasSel([]); setErro(''); }}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all
+                      ${numAlunos === 1 ? 'bg-[#006A68] text-white border-[#006A68]' : 'border-gray-200 text-[#4A6362] hover:border-[#006A68]'}`}
+                  >
+                    Individual
+                  </button>
+                  <button
+                    onClick={() => { setNumAlunos(10); setErro(''); }}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all
+                      ${numAlunos > 1 ? 'bg-[#006A68] text-white border-[#006A68]' : 'border-gray-200 text-[#4A6362] hover:border-[#006A68]'}`}
+                  >
+                    Grupo
+                  </button>
                 </div>
               </div>
+
+              {/* Hora de início */}
+              <div>
+                <label className="block text-xs font-semibold text-[#4A6362] uppercase tracking-wide mb-1.5">Hora de Início</label>
+                {horasPossiveis.length === 0 ? (
+                  <div className="text-center py-3 text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    Não é possível encaixar {duracao} min neste slot. Escolhe uma duração menor.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2">
+                    {horasPossiveis.map(h => (
+                      <button
+                        key={h}
+                        onClick={() => { setHoraSel(h); setErro('') }}
+                        className={`py-2 text-sm font-semibold rounded-lg border transition-all
+                          ${horaSel === h ? 'bg-[#006A68] text-white border-[#006A68]' : 'border-gray-200 text-[#324B4A] hover:border-[#006A68]'}`}
+                      >
+                        {h.substring(0, 5)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Seleção de Colegas */}
+              {numAlunos > 1 && (() => {
+                const filtered = colegas.filter(c => {
+                  const q = pesquisaColega.toLowerCase()
+                  const name = `${c.nome ?? ''} ${c.apelido ?? ''}`.toLowerCase()
+                  const code = (c.codigo_username ?? '').toLowerCase()
+                  return name.includes(q) || code.includes(q)
+                })
+
+                return (
+                  <div>
+                    <div className="flex justify-between items-end mb-1.5">
+                      <label className="block text-xs font-semibold text-[#4A6362] uppercase tracking-wide">Colegas</label>
+                    </div>
+
+                    {/* Search box */}
+                    <div className="flex items-center gap-2 bg-[#E3E9E8] rounded-xl px-4 py-2.5 mb-3">
+                      <Search size={16} className="text-[#49454F] shrink-0" />
+                      <input
+                        value={pesquisaColega}
+                        onChange={e => setPesquisaColega(e.target.value)}
+                        placeholder="Pesquise por nome..."
+                        className="flex-1 bg-transparent text-sm text-[#49454F] focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Selected chips */}
+                    {colegasSel.length > 0 && (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[10px] font-bold text-[#006A68] uppercase tracking-wider">Selecionados</p>
+                          <span className="text-[10px] font-bold text-[#006A68] bg-[#CCE8E6] px-2 py-0.5 rounded-md">
+                            {colegasSel.length} / {numAlunos - 1}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {colegasSel.map(id => {
+                            const u = colegas.find(c => c.id_utilizador === id)
+                            if (!u) return null
+                            return (
+                              <div key={u.id_utilizador} className="flex items-center gap-2 bg-[#CCE8E6] rounded-xl px-3 py-2 border border-[#006A68]/20">
+                                <div className="w-8 h-8 rounded-full bg-[#006A68] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                                  {getInitials(`${u.nome ?? ''} ${u.apelido ?? ''}`)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-[#161D1C] truncate">{u.nome} {u.apelido}</p>
+                                </div>
+                                <button onClick={() => toggleColega(u.id_utilizador)} className="w-5 h-5 rounded-full bg-white/60 flex items-center justify-center shrink-0 hover:bg-red-100">
+                                  <X size={11} className="text-[#4A6362]" />
+                                </button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Results list */}
+                    {loadingColegas ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 size={20} className="text-[#006A68] animate-spin" />
+                      </div>
+                    ) : pesquisaColega.length > 0 && filtered.length === 0 ? (
+                      <p className="text-sm text-center text-[#4A6362] italic py-4">Nenhum aluno encontrado.</p>
+                    ) : pesquisaColega.length > 0 ? (
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                        {filtered.slice(0, 10).map(u => {
+                          const isSel = colegasSel.includes(u.id_utilizador)
+                          return (
+                            <button
+                              key={u.id_utilizador}
+                              onClick={() => toggleColega(u.id_utilizador)}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left ${isSel ? 'border-[#006A68] bg-[#EFF5F4]' : 'border-[#BEC9C7] bg-white hover:border-[#006A68]'}`}
+                            >
+                              <div className="w-9 h-9 rounded-full bg-[#CCE8E6] flex items-center justify-center text-xs font-bold text-[#006A68] shrink-0">
+                                {getInitials(`${u.nome ?? ''} ${u.apelido ?? ''}`)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-[#161D1C] truncate">{u.nome} {u.apelido}</p>
+                              </div>
+                              {isSel && <Check size={15} className="text-[#006A68] shrink-0" />}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-center text-[#6F7978] italic py-2">Começa a escrever para pesquisar colegas...</p>
+                    )}
+                  </div>
+                )
+              })()}
 
             </div>
           )}
@@ -358,10 +580,10 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
               <div className="bg-[#EFF5F4] rounded-2xl p-5 space-y-3 border border-[#006A68]/10">
                 <Row icon={Music} label="Modalidade" value={modalidadeSel?.nome} />
                 <Row icon={User} label="Docente" value={docenteSel?.nome_docente} />
-                <Row icon={CalendarDays} label="Data" value={new Date(data + 'T00:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />
+                <Row icon={CalendarDays} label="Data" value={data} />
                 <Row icon={Clock} label="Hora" value={horaSel?.substring(0, 5)} />
                 <Row icon={Clock} label="Duração" value={`${duracao} minutos`} />
-                <Row icon={User} label="Tipo" value={numAlunos === 1 ? 'Individual' : `Grupo (${numAlunos} alunos)`} />
+                <Row icon={User} label="Tipo" value={numAlunos === 1 ? 'Individual' : `Grupo`} />
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700 flex items-start gap-2">
                 <AlertCircle size={14} className="shrink-0 mt-0.5" />
@@ -390,7 +612,10 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
               disabled={
                 (step === 1 && !modalidadeSel) ||
                 (step === 2 && !slotSel) ||
-                (step === 3 && (!data || !horaSel || !verificarDataSelecionada()))
+                (step === 3 && (!data ||
+                  !horaSel ||
+                  !verificarDataSelecionada() ||
+                  (numAlunos > 1 && colegasSel.length === 0)))
               }
               onClick={() => { setStep(s => s + 1); setErro('') }}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#006A68] text-white text-sm font-bold hover:bg-[#00504E] transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"

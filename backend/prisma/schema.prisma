@@ -113,6 +113,8 @@ model evento {
   data_de_realizacao  DateTime?             @db.Timestamp(6)
   id_evento_estado    Int?
   local               String?               @db.VarChar(150)
+  duracao_minutos     Int?                  @default(60)
+  link_whatsapp       String?               @db.VarChar(255)
   anuncio             anuncio[]
   coordenadora_evento coordenadora_evento[]
   evento_estado       evento_estado?        @relation(fields: [id_evento_estado], references: [id_evento_estado], onDelete: NoAction, onUpdate: NoAction)
@@ -221,9 +223,9 @@ model aluno_marcacao {
   id_marcacoes       Int?
   data_resposta      DateTime?     @default(dbgenerated("CURRENT_DATE")) @db.Timestamp(6)
   id_aluno_estado    Int?
+  aluno_estado       aluno_estado? @relation(fields: [id_aluno_estado], references: [id_aluno_estado], onDelete: NoAction, onUpdate: NoAction, map: "aluno_estado")
   aluno              aluno?        @relation(fields: [id_aluno], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction, map: "aluno_marcacoes_id_aluno_fkey")
   marcacao           marcacao?     @relation(fields: [id_marcacoes], references: [id_marcacoes], onDelete: Cascade, onUpdate: NoAction, map: "aluno_marcacoes_id_marcacoes_fkey")
-  aluno_estado       aluno_estado? @relation(fields: [id_aluno_estado], references: [id_aluno_estado], onDelete: NoAction, onUpdate: NoAction, map: "aluno_estado")
 }
 
 model estado_marcacao {

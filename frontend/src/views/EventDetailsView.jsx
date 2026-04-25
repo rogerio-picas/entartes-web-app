@@ -7,10 +7,7 @@ import EditEventPanel from '../components/EditEventPanel'
 import AddEventMemberPanel from '../components/AddEventMemberPanel'
 import { authService } from '../services/authService'
 
-function formatDate(dateStr) {
-    if (!dateStr) return 'Data por definir'
-    return new Date(dateStr).toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })
-}
+import { formatDate, addMinutesToTime } from '../utils/dateUtils'
 
 export default function EventDetailsView() {
     const { id } = useParams()
@@ -224,6 +221,16 @@ export default function EventDetailsView() {
                         <p className="text-[#4A6362] flex items-center gap-2 text-sm font-medium mt-1.5">
                             <MapPin size={15}/> {event?.local || 'Local a definir'}
                         </p>
+                        {event?.duracao_minutos && event?.data_de_realizacao && (
+                            <p className="text-[#4A6362] flex items-center gap-2 text-sm font-medium mt-1.5">
+                                <Clock size={15}/> Data prevista de fim: {(() => {
+                                    const startStr = event.data_de_realizacao ? event.data_de_realizacao.substring(11, 16) : '00:00';
+                                    return addMinutesToTime(startStr, event.duracao_minutos);
+                                })()}
+
+                            </p>
+                        )}
+
                         {/* Botao discreto de participantes */}
                         <button
                             onClick={() => setShowParticipants(true)}

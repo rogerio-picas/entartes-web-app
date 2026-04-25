@@ -6,19 +6,10 @@ import {
     Search, Upload, Eye, ChevronDown
 } from 'lucide-react'
 import { api } from '../services/api'
+import { formatDate, formatTime, toWallClockISO } from '../utils/dateUtils'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-export function formatDate(raw) {
-    if (!raw) return '—'
-    return new Date(raw).toLocaleDateString('pt-PT', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
-    })
-}
-
-export function formatTime(raw) {
-    if (!raw) return '—'
-    return new Date(raw).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
-}
+export { formatDate, formatTime }
 
 export function formatDuration(min) {
     if (!min) return '—'
@@ -645,8 +636,8 @@ export function ValidacaoCoachingModal({ onClose }) {
 
     async function handleStartConfirm(row, refetch) {
         try {
-            const dataStr = new Date(row._data_raw).toISOString().split('T')[0]
-            const horaStr = new Date(row._hora_raw).toISOString().substring(11, 19)
+            const dataStr = row._data_raw ? row._data_raw.split('T')[0] : ''
+            const horaStr = row._hora_raw ? (row._hora_raw.includes('T') ? row._hora_raw.split('T')[1].substring(0, 8) : row._hora_raw.substring(0, 8)) : ''
             const salas = await api.get(`/coaching/salas-disponiveis?data_a_realizar=${dataStr}&hora_inicio=${horaStr}&duracao_minutos=${row._duracao}`)
             setConfirmCtx({ row, salas: Array.isArray(salas) ? salas.filter(s => s.disponivel) : [], refetch })
             setSelectedSala('')

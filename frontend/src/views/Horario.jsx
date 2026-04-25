@@ -11,11 +11,14 @@ import {
 import { horarioService } from '../services/horarioService'
 import { eventService } from '../services/eventService'
 import { disponibilidadeService } from '../services/disponibilidadeService'
+import ItemDetailModal from '../components/ItemDetailModal'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
 import coachingService from '../services/coachingService'
+import { formatDate, formatTime, parseDate, addMinutesToTime, toWallClockISO } from '../utils/dateUtils'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovoEventoModal from './NovoEventoModal'
+import NovaMarcacaoModal from './NovaMarcacaoModal'
 // ─── Localizer para português ───────────────────────────────────────────────
 const localizer = dateFnsLocalizer({
     format,
@@ -26,11 +29,6 @@ const localizer = dateFnsLocalizer({
 })
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function parseDate(raw) {
-    if (!raw) return null
-    const d = new Date(raw)
-    return isNaN(d.getTime()) ? null : d
-}
 
 // ─── Color coding per modalidade ─────────────────────────────────────────────
 const MODALITY_COLORS = [
@@ -56,13 +54,14 @@ function getModalityColor(nome) {
 const EVENT_COLOR = { bg: '#FFF3E0', text: '#B36A00', border: '#FFCC02' }
 
 // ─── Status badge colors ─────────────────────────────────────────────────────
+const STATUS_LABEL = { 1: 'Pendente', 2: 'Em Validação', 3: 'Confirmada', 4: 'Concluída', 5: 'Cancelada' }
 const STATUS_COLOR = {
-    1: 'bg-amber-50 text-amber-700 border-amber-200',
-    2: 'bg-[#EFF5F4] text-[#006A68] border-[#80D5D2]',
-    3: 'bg-red-50 text-red-600 border-red-200',
-    4: 'bg-[#CCE8E6] text-[#006A68] border-[#006A68]',
+    1: 'bg-amber-100 border-amber-300 text-amber-700',
+    2: 'bg-blue-100 border-blue-300 text-blue-700',
+    3: 'bg-emerald-100 border-emerald-300 text-emerald-700',
+    4: 'bg-[#CCE8E6] border-[#006A68] text-[#006A68]',
+    5: 'bg-red-100 border-red-300 text-red-700'
 }
-const STATUS_LABEL = { 1: 'Pendente', 2: 'Confirmado', 3: 'Cancelado', 4: 'Finalizado' }
 
 // ─── Custom Calendar Event ───────────────────────────────────────────────────
 function EventComponent({ event }) {
@@ -70,11 +69,13 @@ function EventComponent({ event }) {
         ? EVENT_COLOR
         : getModalityColor(event.modalidade)
 
-    const timeStr = event.start instanceof Date
-        ? format(event.start, 'HH:mm')
-        : (typeof event.start === 'string' && event.start.includes('T')
-            ? event.start.split('T')[1].substring(0, 5)
-            : (typeof event.start === 'string' ? event.start.substring(0, 5) : '—'));
+    const timeStr = event.hora || event.hora_inicio_str || event.hora_inicio || '—'
+    
+    // Calcular fim se tiver duração
+    let endTimeStr = ''
+    if (event.duracao_minutos) {
+        endTimeStr = addMinutesToTime(timeStr, event.duracao_minutos)
+    }
 
     return (
         <div
@@ -83,11 +84,65 @@ function EventComponent({ event }) {
                 color: color.text,
                 border: `1px solid ${color.border}`,
             }}
-            className="rounded px-1.5 py-0.5 text-[11px] font-medium truncate overflow-hidden"
+            className="rounded px-1.5 py-0.5 text-[11px] font-medium overflow-hidden truncate leading-tight shadow-sm"
         >
-            <span className="font-semibold">{timeStr}</span>
-            {' '}
-            <span className="truncate">{event.title}</span>
+            <span className="font-bold mr-1">{timeStr}</span>
+            <span className="opacity-90">{event.title}</span>
+        </div>
+    )
+}
+
+function EditSalaModal({ item, salas, onClose, onSuccess }) {
+    const [loading, setLoading] = useState(false)
+    const [erro, setErro] = useState('')
+    const [idSala, setIdSala] = useState(item?.id_sala || '')
+
+    if (!item) return null;
+
+
+    async function handleSubmit() {
+        if (!idSala) { setErro('Seleciona uma sala.'); return }
+        setLoading(true)
+        try {
+            await coachingService.reatribuirSala(item.id, Number(idSala))
+            onSuccess()
+        } catch (e) {
+            alert(e.response?.data?.message || 'Erro ao mudar sala')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={onClose}>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="px-6 py-5 bg-[#F4FBF9] border-b-2 border-[#80D5D2] flex items-center justify-between">
+                    <h3 className="font-bold text-lg text-[#006A68]">Mudar Sala</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+                </div>
+                <div className="p-6 space-y-4">
+                    {erro && <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100">{erro}</div>}
+                    <div>
+                        <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Sala Atual: {item.sala || 'Nenhuma'}</label>
+                        <select 
+                            value={idSala} 
+                            onChange={e => setIdSala(e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#006A68]"
+                        >
+                            <option value="">Selecionar nova sala...</option>
+                            {salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
+                        </select>
+                    </div>
+                    <button 
+                        onClick={handleSubmit} 
+                        disabled={loading}
+                        className="w-full py-2.5 bg-[#006A68] text-white font-bold rounded-xl hover:bg-[#00504E] disabled:opacity-50 transition-colors"
+                    >
+                        {loading ? 'A guardar...' : 'Confirmar Alteração'}
+                    </button>
+                </div>
+            </div>
         </div>
     )
 }
@@ -145,180 +200,20 @@ function CustomToolbar({ label, onNavigate, onView, view }) {
     )
 }
 
-// ─── Detail Modal ─────────────────────────────────────────────────────────────
-function DetailModal({ item, onClose, role, navigate, onEdit, onDelete }) {
-    if (!item) return null
-    const color = item._isEvent ? EVENT_COLOR : (item._isDisponibilidade ? { bg: '#F4FBF9', border: '#80D5D2', text: '#006A68' } : getModalityColor(item.modalidade))
-    const statusClass = STATUS_COLOR[item.id_estado] ?? 'bg-gray-50 text-gray-600 border-gray-200'
-    const statusLabel = STATUS_LABEL[item.id_estado] ?? item.estado_nome ?? '—'
-
-    // Permissões de Ação
-    let canEdit = false;
-    let canDelete = false;
-
-    // Verificar se o item está no passado
-    const isPast = item.start && new Date(item.start).getTime() < new Date().getTime();
-
-    if (!isPast) {
-        if (role === 1 && item._type === 'evento') {
-            canEdit = true;
-            canDelete = true;
-        } else if (role === 2) {
-            if (item._type === 'disponibilidade') {
-                canEdit = true;
-                canDelete = true;
-            } else if (item._type === 'aula') {
-                canDelete = true; // Cancelar
-            }
-        } else if (role === 3 && item._type === 'aula') {
-            canDelete = true;
-        }
-    }
-
+// ─── Componente de Info (reutilizado do Aulas.jsx) ──────────────────────────
+function InfoItem({ icon: Icon, label, value }) {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-            <div
-                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-                onClick={e => e.stopPropagation()}
-            >
-                <div
-                    className="px-6 py-5 flex items-start justify-between"
-                    style={{ backgroundColor: color.bg, borderBottom: `2px solid ${color.border}` }}
-                >
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: color.text }}>
-                            {item._isEvent ? 'Evento' : (item._isDisponibilidade ? 'Disponibilidade' : 'Aula')}
-                        </p>
-                        <h3 className="font-bold text-xl" style={{ color: color.text }}>
-                            {item.modalidade || item.nome || 'Disponibilidade'}
-                        </h3>
-                    </div>
-                    <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/70 flex items-center justify-center text-gray-500 hover:bg-white transition-colors">
-                        <X size={16} />
-                    </button>
-                </div>
-                <div className="px-6 py-5 space-y-3">
-                    {!item._isEvent && !item._isDisponibilidade && (
-                        <span className={`inline-flex items-center text-xs font-bold px-3 py-1 rounded-full border ${statusClass}`}>
-                            {statusLabel}
-                        </span>
-                    )}
-                    {item._isEvent && role === 2 && (
-                        <span className={`inline-flex items-center text-xs font-bold px-3 py-1 rounded-full border ${item._inserido ? 'bg-[#EFF5F4] text-[#006A68] border-[#80D5D2]' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-                            {item._inserido ? 'Inscrito' : 'Não Inscrito'}
-                        </span>
-                    )}
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                        {item.data && (
-                            <div className="flex items-start gap-2">
-                                <CalendarDays size={14} className="text-[#006A68] mt-0.5 shrink-0" />
-                                <div>
-                                    <p className="text-[10px] text-[#4A6362] uppercase font-semibold">Data</p>
-                                    <p className="font-medium text-[#324B4A]">{item.data}</p>
-                                </div>
-                            </div>
-                        )}
-                        {(item.hora || item.hora_inicio_str || (item.hora_inicio && item.hora_fim)) && (
-                            <div className="flex items-start gap-2">
-                                <Clock size={14} className="text-[#006A68] mt-0.5 shrink-0" />
-                                <div>
-                                    <p className="text-[10px] text-[#4A6362] uppercase font-semibold">Hora</p>
-                                    <p className="font-medium text-[#324B4A]">{item.hora || item.hora_inicio_str || `${item.hora_inicio} - ${item.hora_fim}`}</p>
-                                </div>
-                            </div>
-                        )}
-                        {item.duracao && (
-                            <div className="flex items-start gap-2">
-                                <Clock size={14} className="text-[#006A68] mt-0.5 shrink-0" />
-                                <div>
-                                    <p className="text-[10px] text-[#4A6362] uppercase font-semibold">Duração</p>
-                                    <p className="font-medium text-[#324B4A]">{item.duracao}</p>
-                                </div>
-                            </div>
-                        )}
-                        {item.sala && (
-                            <div className="flex items-start gap-2">
-                                <MapPin size={14} className="text-[#006A68] mt-0.5 shrink-0" />
-                                <div>
-                                    <p className="text-[10px] text-[#4A6362] uppercase font-semibold">Sala</p>
-                                    <p className="font-medium text-[#324B4A]">{item.sala}</p>
-                                </div>
-                            </div>
-                        )}
-                        {item.docente && (
-                            <div className="flex items-start gap-2 col-span-2">
-                                <User size={14} className="text-[#006A68] mt-0.5 shrink-0" />
-                                <div>
-                                    <p className="text-[10px] text-[#4A6362] uppercase font-semibold">Professor</p>
-                                    <p className="font-medium text-[#324B4A]">{item.docente}</p>
-                                </div>
-                            </div>
-                        )}
-                        {item.descricao && (
-                            <div className="col-span-2">
-                                <p className="text-[10px] text-[#4A6362] uppercase font-semibold mb-1">Descrição</p>
-                                <p className="text-sm text-gray-600 leading-relaxed">{item.descricao}</p>
-                            </div>
-                        )}
-                    </div>
-                    {item.alunos?.length > 0 && (
-                        <div className="mt-2">
-                            <p className="text-[10px] text-[#4A6362] uppercase font-semibold mb-2">
-                                Alunos ({item.alunos.length}{item.numero_alunos_pretendidos ? `/${item.numero_alunos_pretendidos}` : ''})
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                                {item.alunos.map((a, i) => (
-                                    <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full">{a}</span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-                <div className="px-6 py-4 flex gap-2 border-t border-gray-100 bg-gray-50/50 justify-between">
-                    <div className="flex gap-2">
-                        {canDelete && (
-                            <button
-                                onClick={() => { onDelete(item); onClose(); }}
-                                className="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center hover:bg-red-100 transition-colors border border-red-200"
-                                title={item._type === 'aula' ? 'Cancelar' : 'Eliminar'}
-                            >
-                                <Trash2 size={16} />
-                            </button>
-                        )}
-                        {canEdit && (
-                            <button
-                                onClick={() => { onEdit(item); onClose(); }}
-                                className="w-10 h-10 bg-[#E0F2F1] text-[#006A68] rounded-xl flex items-center justify-center hover:bg-[#CCE8E6] transition-colors"
-                                title="Editar"
-                            >
-                                <Pencil size={16} />
-                            </button>
-                        )}
-                    </div>
-                    <div className="flex gap-2 flex-1 justify-end">
-                        <button onClick={onClose} className="px-4 py-2 rounded-xl text-gray-500 font-medium text-sm hover:bg-gray-100 transition-colors">
-                            Fechar
-                        </button>
-                        {!item._isDisponibilidade && (
-                            <button onClick={() => {
-                                onClose();
-                                if (item._isEvent) {
-                                    navigate(`/eventos/${item.id}`);
-                                } else {
-                                    navigate(role === 1 ? '/admin/aulas' : '/aulas');
-                                }
-                            }} className="px-5 py-2 rounded-xl bg-[#006A68] text-white font-medium text-sm hover:bg-[#00504E] transition-colors shadow-sm">
-                                Ver Detalhes
-                            </button>
-                        )}
-                    </div>
-                </div>
+        <div className="flex items-start gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-[#CCE8E6] flex items-center justify-center shrink-0 mt-0.5">
+                {Icon && <Icon size={14} className="text-[#006A68]" />}
+            </div>
+            <div>
+                <p className="text-[10px] uppercase tracking-wider text-[#4A6362] font-semibold">{label}</p>
+                <p className="text-sm font-medium text-gray-800">{String(value || '—')}</p>
             </div>
         </div>
     )
 }
-
 
 // ─── Novo Coaching Modal (Docente) ────────────────────────────────────────────
 function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
@@ -347,10 +242,10 @@ function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
         setLoading(true)
         setErro('')
         try {
-            const dataHora = new Date(`${form.data}T${form.hora}:00`)
+            const isoWallClock = toWallClockISO(form.data, form.hora)
             await api.post('/aulas', {
-                data_a_realizar: dataHora.toISOString(),
-                hora_inicio: dataHora.toISOString(),
+                data_a_realizar: isoWallClock,
+                hora_inicio: isoWallClock,
                 duracao_minutos: Number(form.duracao),
                 id_modalidade: form.id_modalidade ? Number(form.id_modalidade) : undefined,
                 id_sala: form.id_sala ? Number(form.id_sala) : undefined,
@@ -424,7 +319,7 @@ function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
                             <select value={form.id_sala} onChange={e => set('id_sala', e.target.value)}
                                 className="w-full appearance-none bg-white border border-[#6F7978] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#006A68] pr-8">
                                 <option value="">Selecionar sala...</option>
-                                {salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
+                                {Array.isArray(salas) && salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
                             </select>
                             <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6362] pointer-events-none" />
                         </div>
@@ -480,7 +375,7 @@ export default function Horario() {
     }, [])
 
     const user = authService.getUser()
-    const role = user?.role ?? 3
+    const role = Number(user?.role ?? 3)
     const [showNovoEvento, setShowNovoEvento] = useState(false)
     // View state
     const [viewMode, setViewMode] = useState('month') // 'month' | 'week'
@@ -496,6 +391,7 @@ export default function Horario() {
     const [disponibilidades, setDisponibilidades] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const [salas, setSalas] = useState([])
 
     // Modals
     const [selectedItem, setSelectedItem] = useState(null)
@@ -503,6 +399,7 @@ export default function Horario() {
     const [showNovaDisponibilidade, setShowNovaDisponibilidade] = useState(false)
     const [selectedDate, setSelectedDate] = useState(null)
     const [itemToEdit, setItemToEdit] = useState(null)
+    const [showEditSala, setShowEditSala] = useState(false)
     const [toast, setToast] = useState(null)
 
     function showToast(msg, type = 'success') {
@@ -524,7 +421,30 @@ export default function Horario() {
             ])
 
             const rawAulas = aulasRes.status === 'fulfilled' ? (Array.isArray(aulasRes.value) ? aulasRes.value : (aulasRes.value?.data || [])) : []
-            setAulas(rawAulas.map(a => ({ ...a, id: a.id_marcacao, data_de_realizacao: a.data, _data_raw: a.data, _type: 'aula' })))
+            setAulas(rawAulas.map(a => {
+                let resolvedIdEstado = a.id_estado;
+                if (!resolvedIdEstado && a.estado) {
+                    const est = String(a.estado).toLowerCase();
+                    if (est.includes('pend') || est.includes('agend')) resolvedIdEstado = 1;
+                    else if (est.includes('valida')) resolvedIdEstado = 2;
+                    else if (est.includes('confirm')) resolvedIdEstado = 3;
+                    else if (est.includes('conclui') || est.includes('finaliz')) resolvedIdEstado = 4;
+                    else if (est.includes('cancel')) resolvedIdEstado = 5;
+                }
+                return {
+                    ...a,
+                    id: a.id_marcacao,
+                    id_estado: resolvedIdEstado,
+                    data_de_realizacao: a.data,
+                    _data_raw: a.data,
+                    _type: 'aula',
+                    modalidade: typeof a.modalidade === 'object' ? a.modalidade.nome : (a.modalidade || '—'),
+                    docente: typeof a.docente === 'object' ? a.docente.nome : (a.docente || '—'),
+                    sala: typeof a.sala === 'object' ? a.sala.nome : (a.sala || a.sala_atual || 'Por atribuir'),
+                    alunos: a.alunos?.map(al => typeof al === 'object' ? al.nome : al) || [],
+                    duracao: a.duracao_minutos ? `${a.duracao_minutos} min` : (a.duracao || '—')
+                }
+            }))
 
             const rawDisp = dispRes.status === 'fulfilled' ? (Array.isArray(dispRes.value) ? dispRes.value : (dispRes.value?.data || [])) : []
             setDisponibilidades(rawDisp.map(d => ({ ...d, _type: 'disponibilidade' })))
@@ -542,6 +462,12 @@ export default function Horario() {
                 fetchedEvents = fetchedEvents.map(e => ({ ...e, _inserido: true }))
             }
             setEventos(fetchedEvents.map(e => ({ ...e, _type: 'evento' })))
+
+            // Fetch salas (apenas admin precisa para editar sala)
+            if (role === 1) {
+                const salasRes = await api.get('/salas')
+                setSalas(Array.isArray(salasRes) ? salasRes : (salasRes?.data || []))
+            }
         } catch (e) {
             setError(e.message || 'Erro ao carregar horário.')
         } finally {
@@ -557,38 +483,49 @@ export default function Horario() {
         const aulasToUse = aulas
 
         const mappedAulas = aulasToUse.map(a => {
+            const dur = a.duracao_minutos || 60
             const start = parseDate(a.data_de_realizacao || a._data_raw)
-            const end = start ? new Date(start.getTime() + (a.duracao_minutos || 60) * 60000) : null
+            const end = start ? new Date(start.getTime() + dur * 60000) : null
             return {
+                ...a,
                 id: a.id,
                 title: a.modalidade || 'Aula',
                 start: start,
                 end: end,
                 _type: 'aula',
-                ...a,
-                data: start ? format(start, 'dd/MM/yyyy') : (a.data?.includes('T') ? a.data.split('T')[0] : a.data)
+                data: formatDate(a.data || a.data_de_realizacao),
+                hora: formatTime(a.hora_inicio),
+                duracao_minutos: dur,
+                duracao: `${dur} min`,
             }
-        }).filter(e => e.start)
+        }).filter(e => e.start && e.id_estado !== 4 && e.id_estado !== 5)
 
         const mappedEventos = eventos.map(e => {
+            const dur = e.duracao_minutos || 60
             const start = parseDate(e.data_de_realizacao)
-            const end = start ? new Date(start.getTime() + 60 * 60000) : null
+            const end = start ? new Date(start.getTime() + dur * 60000) : null
             return {
+                ...e,
                 id: e.id_evento,
                 title: e.nome || 'Evento',
                 start: start,
                 end: end,
                 _isEvent: true,
                 _type: 'evento',
-                data: start ? format(start, 'dd/MM/yyyy') : '—',
-                hora_inicio_str: start ? format(start, 'HH:mm') : '—',
-                hora: start ? format(start, 'HH:mm') : '',
+                data: formatDate(e.data_de_realizacao),
+                hora_inicio_str: formatTime(e.data_de_realizacao),
+                hora: formatTime(e.data_de_realizacao),
+                duracao_minutos: dur,
+                duracao: `${dur} min`,
                 descricao: e.descricao,
+                local: e.local,
+                sala: e.local,
+                link_whatsapp: e.link_whatsapp,
                 data_de_realizacao: e.data_de_realizacao,
                 _data_raw: e.data_de_realizacao,
                 _inserido: e._inserido
             }
-        }).filter(e => e.start)
+        }).filter(e => e.start && e.id_evento_estado !== 5)
 
         let combined = [...mappedAulas, ...mappedEventos]
 
@@ -619,14 +556,17 @@ export default function Horario() {
 
                             combined.push({
                                 ...d,
-                                hora_inicio: hIni,
-                                hora_fim: hFim,
                                 title: `Livre (${hIni} - ${hFim})`,
                                 start,
                                 end,
                                 _isEvent: false,
                                 _isDisponibilidade: true,
-                                modalidade: 'Disponível'
+                                _type: 'disponibilidade',
+                                modalidade: 'Disponível',
+                                data: format(start, 'dd/MM/yyyy'),
+                                hora: hIni,
+                                hora_inicio: hIni,
+                                hora_fim: hFim
                             });
                         }
                     } else if (d.dia_semana !== undefined && d.dia_semana !== null) {
@@ -638,14 +578,16 @@ export default function Horario() {
 
                                 combined.push({
                                     ...d,
-                                    hora_inicio: hIni,
-                                    hora_fim: hFim,
                                     title: `Livre (${hIni} - ${hFim})`,
                                     start,
                                     end,
                                     _isEvent: false,
                                     _isDisponibilidade: true,
-                                    modalidade: 'Disponível'
+                                    modalidade: 'Disponível',
+                                    data: format(start, 'dd/MM/yyyy'),
+                                    hora: hIni,
+                                    hora_inicio: hIni,
+                                    hora_fim: hFim
                                 });
                             }
                         }
@@ -693,38 +635,62 @@ export default function Horario() {
     }, [])
 
     const handleAdd = (date) => {
+        // Bloquear datas passadas
+        const d = new Date(date)
+        d.setHours(0,0,0,0)
+        if (d < today) {
+            showToast('Não é possível marcar eventos ou disponibilidades em datas passadas.', 'error')
+            return
+        }
+        
         setSelectedDate(date)
         if (role === 1) setShowNovoEvento(true)
         else if (role === 2) setShowNovaDisponibilidade(true)
         else setShowNovoCoaching(true)
     }
 
-    const handleEdit = (item) => {
+    const handleEditItem = (item) => {
         setItemToEdit(item)
         if (item._type === 'disponibilidade') {
             setShowNovaDisponibilidade(true)
         } else if (item._type === 'evento') {
-            // Se houver um modal de edição de evento, abre-se aqui.
-            // Por agora, o Docente foca-se nas disponibilidades.
-            showToast('Edição de eventos disponível para administradores', 'info')
+            if (role === 1) {
+                setShowNovoEvento(true)
+            } else {
+                showToast('Edição de eventos disponível para administradores', 'info')
+            }
+        } else if (item._type === 'aula') {
+            if (role === 1) {
+                setShowEditSala(true)
+            }
         }
     }
 
-    const handleDelete = async (item) => {
-        if (!window.confirm('Tem a certeza que deseja eliminar este registo?')) return
+    const handleDeleteItem = async (item) => {
+        if (!window.confirm(`Tem a certeza que deseja ${item._type === 'aula' ? 'cancelar' : 'eliminar'} este registo?`)) return
         try {
             if (item._type === 'disponibilidade') {
                 await disponibilidadeService.eliminar(item.id_disponibilidade)
             } else if (item._type === 'aula') {
-                if (role === 2) await coachingService.cancelarMarcacaoDocente(item.id, 'Cancelado pelo docente')
-                else await coachingService.cancelarPedidoPendente(item.id)
+                if (role === 2) {
+                    await coachingService.cancelarMarcacaoDocente(item.id, 'Cancelado pelo docente')
+                } else if (role === 1) {
+                    // Admin: Se estiver confirmada, cancela. Se estiver pendente, rejeita.
+                    if (item.id_estado === 3) {
+                        await coachingService.cancelarMarcacaoConfirmada(item.id, 'Cancelado pelo administrador')
+                    } else {
+                        await coachingService.cancelarPedidoPendente(item.id)
+                    }
+                } else {
+                    await coachingService.cancelarPedidoPendente(item.id)
+                }
             } else if (item._type === 'evento') {
                 await eventService.delete(item.id_evento)
             }
-            showToast('Eliminado com sucesso!')
+            showToast('Operação realizada com sucesso!')
             fetchAll()
         } catch (e) {
-            showToast(e.message || 'Erro ao eliminar', 'error')
+            showToast(e.message || 'Erro ao processar', 'error')
         }
     }
 
@@ -1038,21 +1004,54 @@ export default function Horario() {
             </div>
 
             {/* Modals */}
-            {selectedItem && (
-                <DetailModal
-                    item={selectedItem}
-                    onClose={() => setSelectedItem(null)}
-                    role={role}
-                    navigate={navigate}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                />
-            )}
+            {selectedItem && (() => {
+                const isEvent = !!(selectedItem._isEvent || selectedItem._type === 'evento');
+                const isDisp = !!(selectedItem._isDisponibilidade || selectedItem._type === 'disponibilidade');
+                const isAula = !!(selectedItem._type === 'aula');
+
+                let canEdit = false;
+                let canDelete = false;
+
+                if (role === 1) {
+                    // Admin pode tudo em itens futuros
+                    canEdit = true;
+                    canDelete = true;
+                } else if (role === 2) {
+                    // Docente gere suas disponibilidades e pode cancelar suas aulas
+                    if (isDisp) {
+                        canEdit = true;
+                        canDelete = true;
+                    } else if (isAula) {
+                        canDelete = true; // "Cancelar"
+                    }
+                } else if (role === 3) {
+                    // Aluno pode cancelar suas aulas
+                    if (isAula) {
+                        canDelete = true;
+                    }
+                }
+
+                return (
+                    <ItemDetailModal
+                        item={selectedItem}
+                        role={role}
+                        onClose={() => setSelectedItem(null)}
+                        onEdit={canEdit ? handleEditItem : null}
+                        onDelete={canDelete ? handleDeleteItem : null}
+                        onNavigate={(item) => {
+                            if (item._isEvent || item._type === 'evento') {
+                                navigate(`/eventos/${item.id}`);
+                            } else {
+                                navigate('/aulas');
+                            }
+                        }}
+                    />
+                );
+            })()}
 
             {showNovoCoaching && (
-                <NovoCoachingModal
+                <NovaMarcacaoModal
                     onClose={() => setShowNovoCoaching(false)}
-                    selectedDate={selectedDate}
                     onSuccess={() => {
                         setShowNovoCoaching(false)
                         showToast('Coaching criado com sucesso!')
@@ -1080,15 +1079,38 @@ export default function Horario() {
 
             {showNovoEvento && (
                 <NovoEventoModal
-                    onClose={() => setShowNovoEvento(false)}
+                    onClose={() => {
+                        setShowNovoEvento(false)
+                        setItemToEdit(null)
+                    }}
                     selectedDate={selectedDate}
+                    initialData={itemToEdit}
                     onSuccess={(nome) => {
                         setShowNovoEvento(false)
-                        showToast(`Evento "${nome}" criado com sucesso!`)
+                        setItemToEdit(null)
+                        showToast(itemToEdit ? `Evento "${nome}" atualizado!` : `Evento "${nome}" criado com sucesso!`)
                         fetchAll()
                     }}
                 />
             )}
+
+            {showEditSala && (
+                <EditSalaModal
+                    item={itemToEdit}
+                    salas={salas}
+                    onClose={() => {
+                        setShowEditSala(false)
+                        setItemToEdit(null)
+                    }}
+                    onSuccess={() => {
+                        setShowEditSala(false)
+                        setItemToEdit(null)
+                        showToast('Sala alterada com sucesso!')
+                        fetchAll()
+                    }}
+                />
+            )}
+
 
             {toast && <Toast {...toast} onClose={() => setToast(null)} />}
         </>

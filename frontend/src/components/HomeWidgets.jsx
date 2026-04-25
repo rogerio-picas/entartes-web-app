@@ -3,14 +3,7 @@ import { Clock, User, Check, X, RefreshCw, ChevronRight } from 'lucide-react'
 import { api } from '../services/api'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-export function formatDate(raw) {
-    if (!raw) return '—'
-    return new Date(raw).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
-export function formatTime(raw) {
-    if (!raw) return '—'
-    return new Date(raw).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
-}
+export { formatDate, formatTime } from '../utils/dateUtils'
 export function formatDuration(min) {
     if (!min) return '—'
     const h = Math.floor(min / 60), m = min % 60
@@ -109,22 +102,27 @@ export function EnrollmentChart({ data }) {
     )
 }
 
-export function LiveClassCard({ aula, idx }) {
+export function LiveClassCard({ aula, idx, onOpen }) {
     const DOT_COLORS = ['#89AFFF', '#B800D8', '#02B2AF', '#049A59', '#B93815']
     const progress = aula.numero_alunos_pretendidos
         ? Math.round((aula.aluno_marcacao?.length ?? 0) / aula.numero_alunos_pretendidos * 100)
         : 0
     return (
         <div className="flex-1 min-w-[300px] max-w-[380px] bg-[#F4FBF9] border border-[#BEC9C7] rounded-xl p-4 flex flex-col gap-2.5">
-            <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: DOT_COLORS[idx % DOT_COLORS.length] }} />
-                <span className="text-sm font-medium text-[#161D1C]">{aula.modalidade}</span>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: DOT_COLORS[idx % DOT_COLORS.length] }} />
+                    <span className="text-sm font-medium text-[#161D1C]">{String(aula.modalidade || '—')}</span>
+                </div>
+                <button onClick={onOpen} className="text-[10px] font-bold text-[#006A68] hover:underline uppercase tracking-wider">
+                    Ver mais
+                </button>
             </div>
             <div className="bg-white/60 border border-[#006A68] rounded-xl flex items-center gap-3 px-4 py-2">
                 <div className="w-9 h-9 rounded-full bg-[#CCE8E6] border border-[#006A68] flex items-center justify-center shrink-0">
                     <User size={16} className="text-[#006A68]" />
                 </div>
-                <span className="font-medium text-[#000] text-sm">{aula.docente}</span>
+                <span className="font-medium text-[#000] text-sm">{String(aula.docente || '—')}</span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
                 <span className="bg-[#006A68] text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">{aula.hora}</span>
@@ -162,9 +160,9 @@ export function CoachingCard({ aula, onConfirm, onReject, loading }) {
   return (
     <div className="flex-1 min-w-[300px] max-w-[380px] bg-[#F4FBF9] border border-[#006A68] rounded-xl p-4 flex flex-col gap-2.5">
       <div className="flex flex-col gap-1 text-sm">
-        {[['Modalidade', aula.modalidade], ['Data', aula.data],
-          ['Docente', aula.docente], ['Duração', aula.duracao],
-          ['Hora início', aula.hora], ['Tipo', 'Individual']
+        {[['Modalidade', String(aula.modalidade || '—')], ['Data', String(aula.data || '—')],
+          ['Docente', String(aula.docente || '—')], ['Duração', String(aula.duracao || '—')],
+          ['Hora início', String(aula.hora || '—')], ['Tipo', 'Individual']
         ].map(([k, v]) => (
           <div key={k}>
             <span className="text-[#006A68]">{k}: </span>
@@ -203,15 +201,15 @@ export function CoachingCard({ aula, onConfirm, onReject, loading }) {
   )
 }
 
-export function ConfirmedCard({ aula }) {
+export function ConfirmedCard({ aula, onOpen }) {
     return (
         <div className="flex-1 min-w-[300px] max-w-[380px] bg-[#F4FBF9] border border-[#006A68] rounded-xl p-5 flex flex-col gap-3">
             <div className="flex gap-3">
                 <div className="flex-1 text-sm flex flex-col gap-0.5">
                     {[
-                        ['Modalidade', aula.modalidade], ['Data', aula.data],
-                        ['Hora início', aula.hora], ['Duração', aula.duracao],
-                        ['Estúdio', aula.sala], ['Tipo', 'Individual']
+                        ['Modalidade', String(aula.modalidade || '—')], ['Data', String(aula.data || '—')],
+                        ['Hora início', String(aula.hora || '—')], ['Duração', String(aula.duracao || '—')],
+                        ['Estúdio', String(aula.sala || '—')], ['Tipo', 'Individual']
                     ].map(([k, v]) => (
                         <div key={k}>
                             <span className="text-[#006A68]">{k}: </span>
@@ -223,7 +221,7 @@ export function ConfirmedCard({ aula }) {
                     <div className="w-12 h-12 rounded-full bg-[#CCE8E6] flex items-center justify-center">
                         <User size={24} className="text-[#006A68] mt-2" />
                     </div>
-                    <span className="text-[10px] font-bold text-[#00504E]">{aula.docente}</span>
+                    <span className="text-[10px] font-bold text-[#00504E]">{String(aula.docente || '—')}</span>
                     <span className="text-[10px] text-[#000]">1852</span>
                 </div>
             </div>
@@ -231,7 +229,10 @@ export function ConfirmedCard({ aula }) {
                 <span className="bg-[#049A59] border border-[#0A7659] text-white text-[11px] font-semibold px-3 py-0.5 rounded-full">
                     Confirmada
                 </span>
-                <button className="bg-[#80D5D2] border border-[#006A68] text-white text-[11px] font-semibold px-3 py-0.5 rounded-full hover:brightness-95">
+                <button 
+                    onClick={onOpen}
+                    className="bg-[#80D5D2] border border-[#006A68] text-white text-[11px] font-semibold px-3 py-0.5 rounded-full hover:brightness-95 transition-all"
+                >
                     Ver mais
                 </button>
             </div>
@@ -260,7 +261,7 @@ export function RequisicaoCard({ item, onAccept, onReject, loading, onVerPerfil 
             <div className="w-6 h-6 rounded-full bg-[#006A68] flex items-center justify-center">
               <User size={13} className="text-white" />
             </div>
-            <span className="text-xs font-semibold text-[#006A68]">{item.alunos[0]}</span>
+            <span className="text-xs font-semibold text-[#006A68]">{String(item.alunos[0] || '—')}</span>
             <ChevronRight size={12} className="text-[#006A68]" />
           </button>
         )}
