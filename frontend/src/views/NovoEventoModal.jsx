@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { X, Plus, ChevronRight, Check, AlertCircle, RefreshCw, Trash2 } from 'lucide-react'
 import { api } from '../services/api'
-import { formatTime, formatDateForInput } from '../utils/dateUtils'
+import { formatTime, formatDateForInput, toWallClockISO } from '../utils/dateUtils'
 
 function Field({ label, value, onChange, type = 'text', placeholder, multiline = false, ...props }) {
     const base = 'w-full bg-white border border-[#6F7978] rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] transition-colors'
@@ -104,7 +104,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
             const payload = {
                 nome: nome.trim(),
                 descricao: descricao || null,
-                data_de_realizacao: data ? new Date(`${data}T${hora}:00`).toISOString() : null,
+                data_de_realizacao: toWallClockISO(data, hora),
                 duracao_minutos: totalMinutos,
                 link_whatsapp: whatsapp || null,
                 local: local || null,

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { X, Check, RefreshCw, AlertCircle } from 'lucide-react'
 import { api } from '../services/api'
-import { formatTime } from '../utils/dateUtils'
+import { formatTime, toWallClockISO } from '../utils/dateUtils'
 
 export default function EditEventPanel({ onClose, onSuccess, initialEvent }) {
     const [nome, setNome] = useState(initialEvent ? initialEvent.nome : '')
@@ -39,7 +39,7 @@ export default function EditEventPanel({ onClose, onSuccess, initialEvent }) {
                 nome: nome.trim(),
                 descricao: descricao.trim() || undefined,
                 local: local.trim() || undefined,
-                data_de_realizacao: dataRealizacao ? new Date(`${dataRealizacao}T${hora}:00`).toISOString() : undefined,
+                data_de_realizacao: toWallClockISO(dataRealizacao, hora) || undefined,
                 duracao_minutos: totalMinutos,
                 link_whatsapp: whatsapp || undefined
             }
