@@ -164,7 +164,7 @@ export default function Login() {
           <FloatingInput
             id="username"
             name="codigo_username"
-            label="E-mail"
+            label="Código username"
             value={form.codigo_username}
             onChange={handleChange}
             autoComplete="username"
