@@ -170,6 +170,7 @@ model modalidade {
   nome               String               @db.VarChar(100)
   docente_modalidade docente_modalidade[]
   marcacao           marcacao[]
+  disponibilidade    disponibilidade[]
 }
 
 model participacao_conclusao {
