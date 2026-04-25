@@ -728,6 +728,21 @@ async function _cancelarMarcacaoPorExpiracao(id_marcacao) {
 // ─────────────────────────────────────────────────────────────
 // EXPORTAÇÕES
 // ─────────────────────────────────────────────────────────────
+const listarColegas = async (id_aluno_atual) => {
+  return await prisma.utilizador.findMany({
+    where: {
+      id_tipo: 3, // Aluno
+      id_utilizador: { not: id_aluno_atual }
+    },
+    select: {
+      id_utilizador: true,
+      nome: true,
+      apelido: true,
+    },
+    orderBy: { nome: 'asc' }
+  });
+};
+
 module.exports = {
   consultarDisponibilidades,
   solicitarMarcacao,
@@ -736,6 +751,7 @@ module.exports = {
   cancelarPedidoPendente,
   confirmarPresencaGrupo,
   validarConclusaoSessao,
+  listarColegas,
   _cancelarMarcacaoPorExpiracao,
   ESTADO_MARCACAO,
   ESTADO_ALUNO_MARCACAO,
