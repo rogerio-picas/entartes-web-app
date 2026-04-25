@@ -354,6 +354,7 @@ router.get('/meus-pedidos', tokenValidation, authorize([3]), coachingAlunoContro
 router.delete('/pedido/:id_marcacao/cancelar', tokenValidation, authorize([3]), coachingAlunoController.cancelarPedidoPendente);
 router.post('/presenca-grupo', tokenValidation, authorize([3]), coachingAlunoController.confirmarPresencaGrupo);
 router.post('/aluno/conclusao-sessao/:id_marcacao', tokenValidation, authorize([3]), coachingAlunoController.validarConclusaoSessao);
+router.get('/colegas', tokenValidation, authorize([3]), coachingAlunoController.listarColegas);
 
 // ========== ROTAS DA COORDENADORA ==========
 router.get('/pedidos-pendentes', tokenValidation, authorize([1]), coachingCoordenacaoController.listarPedidosPendentes);

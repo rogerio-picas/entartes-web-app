@@ -259,10 +259,12 @@ export default function Aulas() {
         {/* Cabeçalho de conteúdo */}
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
           <div>
-            <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Gestão de Presenças</p>
+            <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">
+              {role === 1 ? 'Gestão de Aulas' : 'Gestão de Presenças'}
+            </p>
             <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
               {showAll ? 'Todas as Aulas' : 'Confirmação de Aulas'}
-              {!showAll && <span className="text-[#006A68] font-semibold"> (48h)</span>}
+              {!showAll && role !== 1 && <span className="text-[#006A68] font-semibold"> (48h)</span>}
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -518,7 +520,27 @@ export default function Aulas() {
                               className="w-8 h-8 bg-[#049A59] border border-[#0A7659] rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
                               <Check size={15} strokeWidth={3} className="text-white" />
                             </button>
+                            <button onClick={() => {
+                              if (window.confirm('Tem a certeza que deseja rejeitar esta marcação?')) {
+                                handleReject(row.id)
+                              }
+                            }} title="Rejeitar"
+                              className="w-8 h-8 bg-[#C23C3C] border border-[#9A2D2D] rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
+                              <X size={15} strokeWidth={3} className="text-white" />
+                            </button>
                           </div>
+                        ) : (role === 2 || role === 3) && isPendente ? (
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Tem a certeza que deseja cancelar esta marcação?')) {
+                                handleReject(row.id)
+                              }
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
+                          >
+                            <X size={12} strokeWidth={3} />
+                            Cancelar
+                          </button>
                         ) : podeConfirmarPresenca ? (
                           <button
                             onClick={() => handleConfirm(row.id)}
@@ -660,7 +682,16 @@ export default function Aulas() {
 
       {/* Modal de detalhes */}
       {modalAula && (
-        <ItemDetailModal item={modalAula} role={role} onClose={() => setModalAula(null)} />
+        <ItemDetailModal 
+          item={modalAula} 
+          role={role} 
+          onClose={() => setModalAula(null)} 
+          onDelete={(modalAula.id_estado === 1 || modalAula.id_estado === 2) ? () => {
+            if (window.confirm('Tem a certeza que deseja cancelar esta marcação?')) {
+              handleReject(modalAula.id)
+            }
+          } : undefined}
+        />
       )}
 
       {showNovaDisponibilidade && (

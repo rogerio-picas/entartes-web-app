@@ -191,8 +191,8 @@ async function solicitarMarcacao(id_aluno, dados) {
   const horaFimDate = new Date(horaInicioDate.getTime() + duracao_minutos * 60 * 1000);
   const [ano, mes, dia] = data_a_realizar.split('T')[0].split('-').map(Number);
   const diaSemana = new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay();
-  // Normaliza a data para T12:00:00Z (mesmo formato que as disponibilidades guardadas)
-  const dataRealizarDate = new Date(`${data_a_realizar.split('T')[0]}T12:00:00.000Z`);
+  // Normaliza a data para T00:00:00.000Z (mesmo formato que as disponibilidades guardadas)
+  const dataRealizarDate = new Date(`${data_a_realizar.split('T')[0]}T00:00:00.000Z`);
   console.log('[DEBUG solicitarMarcacao] data_a_realizar:', data_a_realizar, '| dataRealizarDate:', dataRealizarDate.toISOString(), '| diaSemana:', diaSemana, '| hora_inicio:', hora_inicio)
 
   const disponibilidadeValida = await prisma.disponibilidade.findFirst({
@@ -470,6 +470,7 @@ async function listarMeusPedidos(id_aluno, { id_estado = null } = {}) {
     data: a.marcacao.data_a_realizar,
     hora_inicio: a.marcacao.hora_inicio,
     duracao_minutos: a.marcacao.duracao_minutos,
+    numero_alunos_pretendidos: a.marcacao.numero_alunos_pretendidos,
     estado: a.marcacao.estado_marcacao?.nome ?? '—',
     id_estado: a.marcacao.id_estado ?? null,
     data_criacao: a.marcacao.data_criacao,
@@ -728,6 +729,21 @@ async function _cancelarMarcacaoPorExpiracao(id_marcacao) {
 // ─────────────────────────────────────────────────────────────
 // EXPORTAÇÕES
 // ─────────────────────────────────────────────────────────────
+const listarColegas = async (id_aluno_atual) => {
+  return await prisma.utilizador.findMany({
+    where: {
+      id_tipo: 3, // Aluno
+      id_utilizador: { not: id_aluno_atual }
+    },
+    select: {
+      id_utilizador: true,
+      nome: true,
+      apelido: true,
+    },
+    orderBy: { nome: 'asc' }
+  });
+};
+
 module.exports = {
   consultarDisponibilidades,
   solicitarMarcacao,
@@ -736,6 +752,7 @@ module.exports = {
   cancelarPedidoPendente,
   confirmarPresencaGrupo,
   validarConclusaoSessao,
+  listarColegas,
   _cancelarMarcacaoPorExpiracao,
   ESTADO_MARCACAO,
   ESTADO_ALUNO_MARCACAO,
