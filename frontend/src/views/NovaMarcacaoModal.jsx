@@ -583,7 +583,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                 <Row icon={CalendarDays} label="Data" value={data} />
                 <Row icon={Clock} label="Hora" value={horaSel?.substring(0, 5)} />
                 <Row icon={Clock} label="Duração" value={`${duracao} minutos`} />
-                <Row icon={User} label="Tipo" value={numAlunos === 1 ? 'Individual' : `Grupo (${numAlunos} alunos)`} />
+                <Row icon={User} label="Tipo" value={numAlunos === 1 ? 'Individual' : `Grupo`} />
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700 flex items-start gap-2">
                 <AlertCircle size={14} className="shrink-0 mt-0.5" />
