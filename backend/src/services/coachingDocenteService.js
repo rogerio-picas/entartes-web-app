@@ -46,6 +46,7 @@ async function listarMinhasAulas(id_docente, { id_estado = null } = {}) {
     data: m.data_a_realizar,
     hora_inicio: m.hora_inicio,
     duracao_minutos: m.duracao_minutos,
+    numero_alunos_pretendidos: m.numero_alunos_pretendidos,
     estado: m.estado_marcacao?.nome ?? '—',
     id_estado: m.id_estado,
     ja_validou: m.participacao_conclusao?.some(p => p.confirmou_conclusao) ?? false,
@@ -140,7 +141,6 @@ async function validarConclusaoSessao(id_docente, id_marcacao) {
 }
 
 async function cancelarMarcacao(id_docente, id_marcacao, motivo) {
-  if (!motivo || motivo.trim() === '') throw new Error('O motivo do cancelamento é obrigatório.');
 
   const marcacao = await prisma.marcacao.findUnique({
     where: { id_marcacoes: id_marcacao },
@@ -167,11 +167,12 @@ async function cancelarMarcacao(id_docente, id_marcacao, motivo) {
     // Notifica os alunos do cancelamento
     const dataFormatada = marcacao.data_a_realizar.toLocaleDateString('pt-PT');
     for (const am of marcacao.aluno_marcacao) {
+      const motivoTexto = motivo && motivo.trim() !== '' ? ` Motivo: ${motivo}` : '';
       await tx.notificacao.create({
         data: {
           id_user: am.id_aluno,
           titulo: 'Sessão de Coaching Cancelada',
-          mensagem: `O teu docente cancelou a sessão de ${dataFormatada}. Motivo: ${motivo}`,
+          mensagem: `O teu docente cancelou a sessão de ${dataFormatada}.${motivoTexto}`,
         },
       });
     }

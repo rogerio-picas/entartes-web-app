@@ -6,11 +6,11 @@ import { formatDate, formatTime } from '../utils/dateUtils'
 const DURACOES = [30, 60, 90, 120]
 
 function getInitials(nome) {
-    if (!nome) return '?'
-    const parts = nome.trim().split(' ')
-    return parts.length > 1
-        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-        : nome.slice(0, 2).toUpperCase()
+  if (!nome) return '?'
+  const parts = nome.trim().split(' ')
+  return parts.length > 1
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : nome.slice(0, 2).toUpperCase()
 }
 
 function StepIndicator({ step }) {
@@ -87,9 +87,8 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
     setLoadingSlots(true)
     setSlots([])
 
-    // Podemos omitir a "data" na query se quisermos mostrar os slots genéricos dessa modalidade
-    // const params = new URLSearchParams({ id_modalidade: modalidadeSel.id_modalidade })
-    api.get(`/coaching/disponibilidades/consultar?`) //${params}
+    const params = new URLSearchParams({ id_modalidade: modalidadeSel.id_modalidade })
+    api.get(`/coaching/disponibilidades/consultar?${params}`)
       .then(r => setSlots(Array.isArray(r) ? r : r.data || []))
       .catch(() => setErro('Não foi possível consultar as disponibilidades.'))
       .finally(() => setLoadingSlots(false))
@@ -202,6 +201,10 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
       setErro('Preenche todos os campos antes de confirmar.')
       return
     }
+    if (numAlunos > 1 && colegasSel.length === 0) {
+      setErro('Adiciona pelo menos um colega para criar uma sessão de grupo.')
+      return
+    }
     setSubmitting(true)
 
     const payload = {
@@ -210,7 +213,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
       data_a_realizar: data,
       hora_inicio: horaSel,
       duracao_minutos: duracao,
-      numero_alunos_pretendidos: numAlunos,
+      numero_alunos_pretendidos: numAlunos === 1 ? 1 : colegasSel.length + 1,
       ...(numAlunos > 1 && { outros_alunos: colegasSel })
     };
     console.log('[DEBUG handleSubmit] Payload a enviar:', payload);
@@ -263,7 +266,8 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
       <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-y-auto hide-scrollbar"
+        style={{ maxHeight: '80%' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -430,20 +434,24 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                 </div>
               </div>
 
-              {/* Nº alunos */}
+              {/* Tipo de sessão */}
               <div>
                 <label className="block text-xs font-semibold text-[#4A6362] uppercase tracking-wide mb-1.5">Tipo de sessão</label>
                 <div className="flex gap-2">
-                  {[1, 2, 3].map(n => (
-                    <button
-                      key={n}
-                      onClick={() => setNumAlunos(n)}
-                      className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all
-                        ${numAlunos === n ? 'bg-[#006A68] text-white border-[#006A68]' : 'border-gray-200 text-[#4A6362] hover:border-[#006A68]'}`}
-                    >
-                      {n === 1 ? 'Individual' : `Grupo (${n})`}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => { setNumAlunos(1); setColegasSel([]); setErro(''); }}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all
+                      ${numAlunos === 1 ? 'bg-[#006A68] text-white border-[#006A68]' : 'border-gray-200 text-[#4A6362] hover:border-[#006A68]'}`}
+                  >
+                    Individual
+                  </button>
+                  <button
+                    onClick={() => { setNumAlunos(10); setErro(''); }}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all
+                      ${numAlunos > 1 ? 'bg-[#006A68] text-white border-[#006A68]' : 'border-gray-200 text-[#4A6362] hover:border-[#006A68]'}`}
+                  >
+                    Grupo
+                  </button>
                 </div>
               </div>
 
@@ -472,94 +480,94 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
 
               {/* Seleção de Colegas */}
               {numAlunos > 1 && (() => {
-                  const filtered = colegas.filter(c => {
-                      const q = pesquisaColega.toLowerCase()
-                      const name = `${c.nome ?? ''} ${c.apelido ?? ''}`.toLowerCase()
-                      const code = (c.codigo_username ?? '').toLowerCase()
-                      return name.includes(q) || code.includes(q)
-                  })
-                  
-                  return (
-                    <div>
-                      <div className="flex justify-between items-end mb-1.5">
-                        <label className="block text-xs font-semibold text-[#4A6362] uppercase tracking-wide">Colegas</label>
-                      </div>
-                      
-                      {/* Search box */}
-                      <div className="flex items-center gap-2 bg-[#E3E9E8] rounded-xl px-4 py-2.5 mb-3">
-                          <Search size={16} className="text-[#49454F] shrink-0" />
-                          <input
-                              value={pesquisaColega}
-                              onChange={e => setPesquisaColega(e.target.value)}
-                              placeholder="Pesquise por nome..."
-                              className="flex-1 bg-transparent text-sm text-[#49454F] focus:outline-none"
-                          />
-                      </div>
+                const filtered = colegas.filter(c => {
+                  const q = pesquisaColega.toLowerCase()
+                  const name = `${c.nome ?? ''} ${c.apelido ?? ''}`.toLowerCase()
+                  const code = (c.codigo_username ?? '').toLowerCase()
+                  return name.includes(q) || code.includes(q)
+                })
 
-                      {/* Selected chips */}
-                      {colegasSel.length > 0 && (
-                          <div className="mb-3">
-                              <div className="flex items-center justify-between mb-2">
-                                  <p className="text-[10px] font-bold text-[#006A68] uppercase tracking-wider">Selecionados</p>
-                                  <span className="text-[10px] font-bold text-[#006A68] bg-[#CCE8E6] px-2 py-0.5 rounded-md">
-                                      {colegasSel.length} / {numAlunos - 1}
-                                  </span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                  {colegasSel.map(id => {
-                                      const u = colegas.find(c => c.id_utilizador === id)
-                                      if(!u) return null
-                                      return (
-                                          <div key={u.id_utilizador} className="flex items-center gap-2 bg-[#CCE8E6] rounded-xl px-3 py-2 border border-[#006A68]/20">
-                                              <div className="w-8 h-8 rounded-full bg-[#006A68] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                                                  {getInitials(`${u.nome ?? ''} ${u.apelido ?? ''}`)}
-                                              </div>
-                                              <div className="flex-1 min-w-0">
-                                                  <p className="text-xs font-semibold text-[#161D1C] truncate">{u.nome} {u.apelido}</p>
-                                              </div>
-                                              <button onClick={() => toggleColega(u.id_utilizador)} className="w-5 h-5 rounded-full bg-white/60 flex items-center justify-center shrink-0 hover:bg-red-100">
-                                                  <X size={11} className="text-[#4A6362]" />
-                                              </button>
-                                          </div>
-                                      )
-                                  })}
-                              </div>
-                          </div>
-                      )}
-
-                      {/* Results list */}
-                      {loadingColegas ? (
-                          <div className="flex justify-center py-4">
-                            <Loader2 size={20} className="text-[#006A68] animate-spin" />
-                          </div>
-                      ) : pesquisaColega.length > 0 && filtered.length === 0 ? (
-                          <p className="text-sm text-center text-[#4A6362] italic py-4">Nenhum aluno encontrado.</p>
-                      ) : pesquisaColega.length > 0 ? (
-                          <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                              {filtered.slice(0, 10).map(u => {
-                                  const isSel = colegasSel.includes(u.id_utilizador)
-                                  return (
-                                      <button
-                                          key={u.id_utilizador}
-                                          onClick={() => toggleColega(u.id_utilizador)}
-                                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left ${isSel ? 'border-[#006A68] bg-[#EFF5F4]' : 'border-[#BEC9C7] bg-white hover:border-[#006A68]'}`}
-                                      >
-                                          <div className="w-9 h-9 rounded-full bg-[#CCE8E6] flex items-center justify-center text-xs font-bold text-[#006A68] shrink-0">
-                                              {getInitials(`${u.nome ?? ''} ${u.apelido ?? ''}`)}
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                              <p className="text-sm font-semibold text-[#161D1C] truncate">{u.nome} {u.apelido}</p>
-                                          </div>
-                                          {isSel && <Check size={15} className="text-[#006A68] shrink-0" />}
-                                      </button>
-                                  )
-                              })}
-                          </div>
-                      ) : (
-                          <p className="text-xs text-center text-[#6F7978] italic py-2">Começa a escrever para pesquisar colegas...</p>
-                      )}
+                return (
+                  <div>
+                    <div className="flex justify-between items-end mb-1.5">
+                      <label className="block text-xs font-semibold text-[#4A6362] uppercase tracking-wide">Colegas</label>
                     </div>
-                  )
+
+                    {/* Search box */}
+                    <div className="flex items-center gap-2 bg-[#E3E9E8] rounded-xl px-4 py-2.5 mb-3">
+                      <Search size={16} className="text-[#49454F] shrink-0" />
+                      <input
+                        value={pesquisaColega}
+                        onChange={e => setPesquisaColega(e.target.value)}
+                        placeholder="Pesquise por nome..."
+                        className="flex-1 bg-transparent text-sm text-[#49454F] focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Selected chips */}
+                    {colegasSel.length > 0 && (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[10px] font-bold text-[#006A68] uppercase tracking-wider">Selecionados</p>
+                          <span className="text-[10px] font-bold text-[#006A68] bg-[#CCE8E6] px-2 py-0.5 rounded-md">
+                            {colegasSel.length} / {numAlunos - 1}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {colegasSel.map(id => {
+                            const u = colegas.find(c => c.id_utilizador === id)
+                            if (!u) return null
+                            return (
+                              <div key={u.id_utilizador} className="flex items-center gap-2 bg-[#CCE8E6] rounded-xl px-3 py-2 border border-[#006A68]/20">
+                                <div className="w-8 h-8 rounded-full bg-[#006A68] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                                  {getInitials(`${u.nome ?? ''} ${u.apelido ?? ''}`)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-[#161D1C] truncate">{u.nome} {u.apelido}</p>
+                                </div>
+                                <button onClick={() => toggleColega(u.id_utilizador)} className="w-5 h-5 rounded-full bg-white/60 flex items-center justify-center shrink-0 hover:bg-red-100">
+                                  <X size={11} className="text-[#4A6362]" />
+                                </button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Results list */}
+                    {loadingColegas ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 size={20} className="text-[#006A68] animate-spin" />
+                      </div>
+                    ) : pesquisaColega.length > 0 && filtered.length === 0 ? (
+                      <p className="text-sm text-center text-[#4A6362] italic py-4">Nenhum aluno encontrado.</p>
+                    ) : pesquisaColega.length > 0 ? (
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                        {filtered.slice(0, 10).map(u => {
+                          const isSel = colegasSel.includes(u.id_utilizador)
+                          return (
+                            <button
+                              key={u.id_utilizador}
+                              onClick={() => toggleColega(u.id_utilizador)}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left ${isSel ? 'border-[#006A68] bg-[#EFF5F4]' : 'border-[#BEC9C7] bg-white hover:border-[#006A68]'}`}
+                            >
+                              <div className="w-9 h-9 rounded-full bg-[#CCE8E6] flex items-center justify-center text-xs font-bold text-[#006A68] shrink-0">
+                                {getInitials(`${u.nome ?? ''} ${u.apelido ?? ''}`)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-[#161D1C] truncate">{u.nome} {u.apelido}</p>
+                              </div>
+                              {isSel && <Check size={15} className="text-[#006A68] shrink-0" />}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-center text-[#6F7978] italic py-2">Começa a escrever para pesquisar colegas...</p>
+                    )}
+                  </div>
+                )
               })()}
 
             </div>
