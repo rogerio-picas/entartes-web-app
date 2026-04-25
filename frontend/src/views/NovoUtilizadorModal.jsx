@@ -40,6 +40,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
             ? utilizador.data_nascimento.split('T')[0]
             : '',
         descricao: utilizador?.descricao ?? '',
+        coaching: utilizador?.aluno?.coaching ?? false,
     })
     const [errors, setErrors] = useState({})
     const [loading, setLoading] = useState(false)
@@ -135,6 +136,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                 ...(form.nif && { nif: form.nif.trim() }),
                 data_nascimento: form.data_nascimento,
                 ...(form.descricao.trim() && { descricao: form.descricao.trim() }),
+                ...(parseInt(form.id_tipo) === 3 && { coaching: form.coaching }),
             }
             if (!isEdit) payload.password = form.password
             else if (form.password) payload.password = form.password
@@ -371,6 +373,22 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                             {availableModalidades.length === 0 && selectedModalidades.length === 0 && (
                                 <p className="text-xs text-[#4A6362]">Nenhuma modalidade disponível.</p>
                             )}
+                        </div>
+                    )}
+
+                    {/* Coaching — apenas para Aluno */}
+                    {parseInt(form.id_tipo) === 3 && (
+                        <div className="flex items-center justify-between px-4 py-3 bg-white border border-[#6F7978] rounded-lg">
+                            <span className="text-sm text-[#161D1C]">Coaching</span>
+                            <button
+                                type="button"
+                                onClick={() => set('coaching', !form.coaching)}
+                                className={`relative w-11 h-6 rounded-full transition-colors ${form.coaching ? 'bg-[#006A68]' : 'bg-[#6F7978]/40'}`}
+                            >
+                                <span
+                                    className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.coaching ? 'translate-x-5' : 'translate-x-0'}`}
+                                />
+                            </button>
                         </div>
                     )}
 

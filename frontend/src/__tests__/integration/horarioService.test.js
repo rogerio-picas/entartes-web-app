@@ -23,7 +23,7 @@ describe('horarioService Integration-like Test', () => {
                 data_a_realizar: '2026-05-10',
                 hora_inicio: '14:00',
                 duracao_minutos: 60,
-                modalidade: { nome: 'Piano' },
+                modalidade: { nome: 'Ballet' },
                 sala: { nome: 'Sala A' },
                 estado_marcacao: { id_estado: 2, nome: 'Confirmada' },
                 docente: {
@@ -46,7 +46,7 @@ describe('horarioService Integration-like Test', () => {
         expect(result).toHaveLength(1)
         expect(result[0]).toMatchObject({
             id: 101,
-            modalidade: 'Piano',
+            modalidade: 'Ballet',
             docente: 'John Doe',
             sala: 'Sala A',
             estado_nome: 'Confirmada',

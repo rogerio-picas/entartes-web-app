@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Plus, RefreshCw, Pencil, Trash2, X, Check, AlertCircle } from 'lucide-react'
+import { Users, Plus, RefreshCw, Pencil, Trash2, X, Check, AlertCircle, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 import { utilizadorService } from '../services/utilizadorService'
 import { modalidadeService } from '../services/modalidadeService'
 import { authService } from '../services/authService'
@@ -22,7 +22,7 @@ const TABS = [
 function SkeletonRow() {
     return (
         <tr className="animate-pulse border-b border-[#4a6362]/10">
-            {[30, 15, 40, 50, 15].map((w, i) => (
+            {[30, 15, 40, 50, 20, 15].map((w, i) => (
                 <td key={i} className="px-4 py-4">
                     <div className="h-4 bg-gray-100 rounded-lg" style={{ width: `${w}%` }} />
                 </td>
@@ -50,6 +50,8 @@ export default function GestaoUtilizadores() {
     const [editTarget, setEditTarget] = useState(null)
     const [confirmDeleteId, setConfirmDeleteId] = useState(null)
     const [deletingId, setDeletingId] = useState(null)
+    const [sortKey, setSortKey] = useState(null)
+    const [sortDir, setSortDir] = useState('asc')
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type })
@@ -82,9 +84,44 @@ export default function GestaoUtilizadores() {
 
     useEffect(() => { fetchData() }, [fetchData])
 
-    const filtered = activeTab
+    const SORT_KEYS = { 'Tipo': 'id_tipo', 'Número': 'id_utilizador', 'Nome': 'nome', 'Coaching': 'coaching' }
+
+    function toggleSort(col) {
+        const key = SORT_KEYS[col]
+        if (!key) return
+        if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+        else { setSortKey(key); setSortDir('asc') }
+    }
+
+    function getSortIcon(col) {
+        const key = SORT_KEYS[col]
+        if (!key) return null
+        if (sortKey !== key) return <ArrowUpDown size={10} className="text-[#006A68]/30" />
+        return sortDir === 'asc'
+            ? <ChevronUp size={10} className="text-[#006A68]" />
+            : <ChevronDown size={10} className="text-[#006A68]" />
+    }
+
+    const baseFiltered = activeTab
         ? utilizadores.filter(u => u.id_tipo === activeTab)
         : utilizadores
+
+    const filtered = sortKey ? [...baseFiltered].sort((a, b) => {
+        let av, bv
+        if (sortKey === 'nome') {
+            av = [a.nome, a.apelido].filter(Boolean).join(' ') || a.codigo_username
+            bv = [b.nome, b.apelido].filter(Boolean).join(' ') || b.codigo_username
+        } else if (sortKey === 'coaching') {
+            av = a.aluno?.coaching ? 1 : 0
+            bv = b.aluno?.coaching ? 1 : 0
+        } else {
+            av = a[sortKey] ?? ''
+            bv = b[sortKey] ?? ''
+        }
+        if (av < bv) return sortDir === 'asc' ? -1 : 1
+        if (av > bv) return sortDir === 'asc' ? 1 : -1
+        return 0
+    }) : baseFiltered
 
     const handleDelete = async (id) => {
         setDeletingId(id)
@@ -170,12 +207,16 @@ export default function GestaoUtilizadores() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="bg-[#EFF5F4] border-b-2 border-[#4a6362]/20">
-                                {['Tipo', 'Número', 'Nome', 'Modalidade', ''].map((col, i) => (
+                                {['Tipo', 'Número', 'Nome', 'Modalidade', 'Coaching', ''].map((col, i) => (
                                     <th
                                         key={i}
-                                        className="px-4 py-3.5 text-left text-xs font-bold text-[#006A68] uppercase tracking-wider whitespace-nowrap"
+                                        onClick={() => toggleSort(col)}
+                                        className={`px-4 py-3.5 text-left text-xs font-bold text-[#006A68] uppercase tracking-wider whitespace-nowrap ${SORT_KEYS[col] ? 'cursor-pointer select-none hover:bg-[#E4F2F0]' : ''}`}
                                     >
-                                        {col}
+                                        <span className="flex items-center gap-1">
+                                            {col}
+                                            {getSortIcon(col)}
+                                        </span>
                                     </th>
                                 ))}
                             </tr>
@@ -185,7 +226,7 @@ export default function GestaoUtilizadores() {
                                 [...Array(6)].map((_, i) => <SkeletonRow key={i} />)
                             ) : filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="py-20 text-center">
+                                    <td colSpan={6} className="py-20 text-center">
                                         <Users size={40} className="mx-auto text-[#006A68]/15 mb-3" />
                                         <p className="text-sm text-[#4A6362] font-medium">
                                             Nenhum utilizador encontrado.
@@ -219,6 +260,15 @@ export default function GestaoUtilizadores() {
                                                 {modalidades.length > 0 ? (
                                                     <span className="text-[#4A6362]">
                                                         {modalidades.join(', ')}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-300 text-xs">—</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3.5">
+                                                {u.id_tipo === 3 ? (
+                                                    <span className={`text-xs px-2.5 py-1 rounded-md border font-medium ${u.aluno?.coaching ? 'bg-teal-50 text-teal-700 border-teal-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
+                                                        {u.aluno?.coaching ? 'Sim' : 'Não'}
                                                     </span>
                                                 ) : (
                                                     <span className="text-gray-300 text-xs">—</span>

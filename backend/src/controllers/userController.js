@@ -25,6 +25,7 @@ const getUsers = async (req, res) => {
         nif: true,
         estado: true,
         id_tipo: true,
+        aluno: { select: { coaching: true } },
       },
     });
 
