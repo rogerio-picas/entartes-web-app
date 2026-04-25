@@ -352,7 +352,9 @@ export default function HomeAdmin() {
                 sala: a.sala_atual
             }))
 
-            const evs = eventosRes.status === 'fulfilled' && Array.isArray(eventosRes.value) ? eventosRes.value : []
+            const evs = eventosRes.status === 'fulfilled' && Array.isArray(eventosRes.value) 
+                ? eventosRes.value.filter(e => e.id_evento_estado !== 5) 
+                : []
             const horas = horasRes.status === 'fulfilled' && Array.isArray(horasRes.value) ? horasRes.value : []
             const alunos = alunosRes.status === 'fulfilled' && Array.isArray(alunosRes.value) ? alunosRes.value : []
 

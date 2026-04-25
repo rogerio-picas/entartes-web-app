@@ -525,7 +525,7 @@ export default function Horario() {
                 _data_raw: e.data_de_realizacao,
                 _inserido: e._inserido
             }
-        }).filter(e => e.start)
+        }).filter(e => e.start && e.id_evento_estado !== 5)
 
         let combined = [...mappedAulas, ...mappedEventos]
 
