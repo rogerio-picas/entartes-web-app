@@ -556,8 +556,6 @@ export default function Horario() {
 
                             combined.push({
                                 ...d,
-                                hora_inicio: hIni,
-                                hora_fim: hFim,
                                 title: `Livre (${hIni} - ${hFim})`,
                                 start,
                                 end,
@@ -580,8 +578,6 @@ export default function Horario() {
 
                                 combined.push({
                                     ...d,
-                                    hora_inicio: hIni,
-                                    hora_fim: hFim,
                                     title: `Livre (${hIni} - ${hFim})`,
                                     start,
                                     end,
@@ -589,7 +585,9 @@ export default function Horario() {
                                     _isDisponibilidade: true,
                                     modalidade: 'Disponível',
                                     data: format(start, 'dd/MM/yyyy'),
-                                    hora: hIni
+                                    hora: hIni,
+                                    hora_inicio: hIni,
+                                    hora_fim: hFim
                                 });
                             }
                         }
