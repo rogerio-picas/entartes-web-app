@@ -47,6 +47,35 @@ export function parseDate(raw) {
 }
 
 /**
+ * Parse a datetime string (ISO "YYYY-MM-DDTHH:mm...") into a local Date object
+ * while preserving the "wall-clock" time (no timezone conversion).
+ */
+export function parseDateTime(raw) {
+    if (!raw) return null
+    if (raw instanceof Date) return raw
+    const s = String(raw)
+    
+    // If it's just a date without time, use parseDate
+    if (!s.includes('T') && !s.includes(':')) {
+        return parseDate(raw)
+    }
+
+    try {
+        const datePart = s.includes('T') ? s.split('T')[0] : s.split(' ')[0]
+        const timePart = s.includes('T') ? s.split('T')[1] : s.split(' ')[1]
+
+        const [year, month, day] = datePart.split('-').map(Number)
+        const [hour, min] = (timePart || '00:00').split(':').map(Number)
+
+        const d = new Date(year, month - 1, day, hour || 0, min || 0, 0)
+        return isNaN(d.getTime()) ? null : d
+    } catch (e) {
+        const d = new Date(s)
+        return isNaN(d.getTime()) ? null : d
+    }
+}
+
+/**
  * Adds minutes to a time string (HH:MM) and returns the result as HH:MM.
  * Handles overflow to next day (but doesn't return the date).
  */
