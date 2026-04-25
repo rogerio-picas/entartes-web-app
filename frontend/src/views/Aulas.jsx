@@ -11,6 +11,7 @@ import { authService } from '../services/authService'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovaMarcacaoModal from './NovaMarcacaoModal'
 import { disponibilidadeService } from '../services/disponibilidadeService'
+import ItemDetailModal from '../components/ItemDetailModal'
 
 // ─── Mapeamento de estados e Funções Auxiliares ───────────
 const STATUS_CFG = {
@@ -33,74 +34,7 @@ function getStatusCfg(id_estado, estado_nome) {
 }
 
 
-// ─── Modal Detalhe ─────────────────────────────────────────────
-function AulaModal({ aula, onClose, role }) {
-  if (!aula) return null
-  const cfg = getStatusCfg(aula.id_estado, aula.estado_nome)
-  const StatusIcon = cfg.icon
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-      <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="bg-[#EFF5F4] border-b-2 border-[#006A68] px-6 py-5 flex items-start justify-between">
-          <div>
-            <p className="text-[#4A6362] text-xs font-medium tracking-widest uppercase mb-1">Detalhe da Aula</p>
-            <h3 className="text-[#006A68] font-bold text-xl">{aula.modalidade}</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/80 flex items-center justify-center hover:bg-white transition-colors text-[#4A6362]"
-          >
-            <X size={16} />
-          </button>
-        </div>
-        {/* Body */}
-        <div className="px-6 py-6 space-y-4">
-          {/* Estado */}
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border ${cfg.bg} ${cfg.textColor} ${cfg.border}`}>
-            {StatusIcon && <StatusIcon size={13} />}
-            {cfg.label}
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <InfoItem icon={CalendarDays} label="Data" value={aula.data} />
-            <InfoItem icon={Clock} label="Hora" value={aula.hora} />
-            <InfoItem icon={Clock} label="Duração" value={aula.duracao} />
-            <InfoItem icon={MapPin} label="Sala / Estúdio" value={aula.sala} />
-            <InfoItem icon={User} label={role === 2 ? "Aluno(s)" : "Professor"} value={aula.docente} />
-            <InfoItem icon={Music} label="Modalidade" value={aula.modalidade} />
-            <InfoItem label="Tipo de Aula" value={aula.tipo_aula ?? 'Individual'} icon={BookOpen} />
-          </div>
-          {aula.alunos && aula.alunos.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-[#4A6362] uppercase tracking-wider mb-2">
-                Alunos ({aula.alunos.length})
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {aula.alunos.map((a, i) => (
-                  <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full font-medium">
-                    {a}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="px-6 pb-6">
-          <button
-            onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-[#006A68] text-white font-semibold text-sm hover:bg-[#00504E] transition-colors"
-          >
-            Fechar
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+// O componente AulaModal foi removido pois agora usamos o ItemDetailModal compartilhado.
 
 function InfoItem({ icon: Icon, label, value }) {
   return (
@@ -184,18 +118,18 @@ export default function Aulas() {
       const formatadas = rawData.map(m => {
         return {
           id: m.id_marcacao,
-          modalidade: m.modalidade || '—',
+          modalidade: typeof m.modalidade === 'object' ? m.modalidade.nome : (m.modalidade || '—'),
           data: formatDate(m.data),
           hora: formatTime(m.hora_inicio),
           duracao: `${m.duracao_minutos} min`,
           tipo_aula: m.numero_alunos_pretendidos > 1 ? 'Grupo' : 'Individual',
-          sala: m.sala || m.sala_atual || 'Por atribuir',
+          sala: typeof m.sala === 'object' ? m.sala.nome : (m.sala || m.sala_atual || 'Por atribuir'),
           docente: role === 2
-            ? (m.alunos?.length > 0 ? m.alunos.map(a => a.nome).join(', ') : 'A aguardar alunos')
-            : (m.docente || '—'),
+            ? (m.alunos?.length > 0 ? m.alunos.map(a => typeof a === 'object' ? a.nome : a).join(', ') : 'A aguardar alunos')
+            : (typeof m.docente === 'object' ? m.docente.nome : (m.docente || '—')),
           id_estado: m.id_estado,
           estado_nome: m.estado || '—',
-          alunos: m.alunos?.map(a => a.nome) || [],
+          alunos: m.alunos?.map(a => typeof a === 'object' ? a.nome : a) || [],
           numero_alunos_pretendidos: m.numero_alunos_pretendidos,
           ja_validou: m.ja_validou
         }
@@ -726,7 +660,7 @@ export default function Aulas() {
 
       {/* Modal de detalhes */}
       {modalAula && (
-        <AulaModal aula={modalAula} onClose={() => setModalAula(null)} />
+        <ItemDetailModal item={modalAula} role={role} onClose={() => setModalAula(null)} />
       )}
 
       {showNovaDisponibilidade && (

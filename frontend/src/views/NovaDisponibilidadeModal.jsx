@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { X, Clock, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react'
+import { X, Clock, ChevronDown, AlertCircle, RefreshCw, Check } from 'lucide-react'
 import { disponibilidadeService } from '../services/disponibilidadeService'
-import { modalidadeService } from '../services/modalidadeService'
+import { api } from '../services/api'
+import { formatDateForInput } from '../utils/dateUtils'
 
 // Normaliza uma hora para o formato HH:mm que o <input type="time"> espera
 function parseHoraParaInput(raw) {
@@ -40,56 +41,59 @@ function Field({ label, children }) {
     )
 }
 
-const inputCls = "w-full border border-[#6F7978] rounded-lg px-4 py-3.5 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] bg-white transition-colors font-['Sora']"
+const inputCls = "w-full border border-[#6F7978] rounded-lg px-4 py-3.5 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] bg-white transition-colors font['Sora']"
 
 export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedDate, initialData }) {
-    const [horaInicio, setHoraInicio]     = useState(parseHoraParaInput(initialData?.hora_inicio))
-    const [horaFim, setHoraFim]           = useState(parseHoraParaInput(initialData?.hora_fim))
-    const [modalidade, setModalidade]     = useState(initialData?.id_modalidade || '')
-    const [modalidades, setModalidades]   = useState([])
-    const [frequencia, setFrequencia]     = useState(
+    const [horaInicio, setHoraInicio] = useState(parseHoraParaInput(initialData?.hora_inicio) || '09:00')
+    const [horaFim, setHoraFim] = useState(parseHoraParaInput(initialData?.hora_fim) || '10:00')
+    const [modalidade, setModalidade] = useState('')
+    const [modalidades, setModalidades] = useState([])
+    const [frequencia, setFrequencia] = useState(
         initialData 
             ? (initialData.data_especifica ? 'unica' : 'semanal') 
             : (selectedDate ? 'unica' : 'semanal')
     )
-    const [diaSemana, setDiaSemana]       = useState(initialData?.dia_semana ?? 1)
-    const [data, setData]                 = useState(
-        initialData?.data_especifica 
-            ? initialData.data_especifica.split('T')[0] 
-            : (selectedDate ? (typeof selectedDate === 'string' ? selectedDate : selectedDate.toISOString().split('T')[0]) : '')
-    )
-    const [saving, setSaving]             = useState(false)
-    const [erro, setErro]                 = useState('')
+    const [diaSemana, setDiaSemana] = useState(initialData?.dia_semana ?? 1)
+    const [data, setData] = useState(() => {
+        if (initialData?.data_especifica) return formatDateForInput(initialData.data_especifica)
+        if (selectedDate) return formatDateForInput(selectedDate)
+        return ''
+    })
+    const [saving, setSaving] = useState(false)
+    const [erro, setErro] = useState('')
 
     const isEdit = !!initialData
 
     useEffect(() => {
-        const token = localStorage.getItem('token')
-        const id_docente = token ? JSON.parse(atob(token.split('.')[1])).id : null
-        modalidadeService.listar(id_docente)
-            .then(list => {
-                setModalidades(list)
-                if (!isEdit && list.length > 0) setModalidade(list[0].id_modalidade)
-            })
-            .catch(() => {})
-    }, [isEdit])
+        const fetchModalidades = async () => {
+            try {
+                const res = await api.get('/modalidades?docentes=true')
+                const data = Array.isArray(res) ? res : (res?.data || [])
+                setModalidades(data)
+                if (data.length > 0 && !isEdit) {
+                    setModalidade(data[0].id_modalidade)
+                } else if (isEdit && initialData?.id_modalidade) {
+                    setModalidade(initialData.id_modalidade)
+                }
+            } catch (err) {
+                console.error('Erro ao carregar modalidades:', err)
+            }
+        }
+        fetchModalidades()
+    }, [isEdit, initialData])
 
-    async function handleSave() {
-        if (!horaInicio || !horaFim) {
-            setErro('Hora de início e hora de fim são obrigatórios.')
-            return
-        }
-        if (frequencia === 'unica' && !data) {
-            setErro('A data é obrigatória para disponibilidade única.')
-            return
-        }
+    const handleSave = async () => {
+        if (!horaInicio || !horaFim) return setErro('Horários são obrigatórios.')
+        if (frequencia === 'unica' && !data) return setErro('Data é obrigatória.')
+
         setSaving(true)
         setErro('')
+
         try {
-            const payload = { 
-                hora_inicio: horaInicio, 
-                hora_fim: horaFim,
-                id_modalidade: modalidade
+            const payload = {
+                hora_inicio: horaInicio,
+                hora_fim: horaFim
+                // Nota: id_modalidade foi removido da tabela disponibilidade conforme pedido para reverter
             }
             if (frequencia === 'semanal') {
                 payload.dia_semana = diaSemana
@@ -106,6 +110,7 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
             }
             
             onSuccess?.()
+            onClose()
         } catch (e) {
             setErro(e.message || `Erro ao ${isEdit ? 'editar' : 'criar'} disponibilidade.`)
         } finally {
@@ -151,6 +156,7 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                             onChange={e => setData(e.target.value)}
                             placeholder="DD/MM/YYYY"
                             disabled={frequencia === 'semanal'}
+                            min={formatDateForInput(new Date())}
                             className={`${inputCls} ${frequencia === 'semanal' ? 'opacity-40 cursor-not-allowed' : ''}`}
                         />
                     </Field>
@@ -166,15 +172,16 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                         />
                     </Field>
 
-                    {/* Modalidade */}
-                    <Field label="Modalidade">
+                    {/* Modalidade (Apenas visual, pois revertemos o suporte no backend conforme pedido) */}
+                    <Field label="Modalidade (Preferencial)">
                         <div className="relative">
                             <select
                                 value={modalidade}
                                 onChange={e => setModalidade(Number(e.target.value))}
                                 className={`${inputCls} appearance-none cursor-pointer pr-10`}
                             >
-                                {modalidades.map(m => (
+                                <option value="">Qualquer modalidade</option>
+                                {Array.isArray(modalidades) && modalidades.map(m => (
                                     <option key={m.id_modalidade} value={m.id_modalidade}>{m.nome}</option>
                                 ))}
                             </select>

@@ -65,6 +65,12 @@ const coachingService = {
     return response;
   },
 
+  reatribuirSala: async (id_marcacao, nova_id_sala) => {
+    const response = await api.post('/coaching/reatribuir-sala', { id_marcacao, nova_id_sala });
+    return response;
+  },
+
+
   // ==========================================
   // ROTAS DO DOCENTE
   // ==========================================

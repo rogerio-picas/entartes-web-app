@@ -85,7 +85,7 @@ export function ActionCard({ item, onAccept, onReject }) {
 }
 
 // Cartão: Próximas aulas / Inscrições aguardar
-export function ClassCard({ item, statusType }) {
+export function ClassCard({ item, statusType, onOpen }) {
   const isConfirmada = statusType === 'confirmada'
   
   return (
@@ -110,11 +110,11 @@ export function ClassCard({ item, statusType }) {
           </p>
           <p className="text-sm">
              <span className="text-brand-darkest font-medium">Estúdio: </span>
-             <span className="text-brand-dark">{item.estudio}</span>
+             <span className="text-brand-dark">{item.estudio || item.sala}</span>
           </p>
           <p className="text-sm">
              <span className="text-brand-darkest font-medium">Tipo: </span>
-             <span className="text-brand-dark">{item.tipo}</span>
+             <span className="text-brand-dark">{item.tipo || 'Individual'}</span>
           </p>
         </div>
 
@@ -134,7 +134,10 @@ export function ClassCard({ item, statusType }) {
         }`}>
           {isConfirmada ? 'Confirmada' : 'Pendente'}
         </div>
-        <button className="px-5 py-0.5 rounded-full bg-brand-accent border border-brand-dark text-white text-sm font-medium hover:brightness-95 transition-all">
+        <button 
+          onClick={onOpen}
+          className="px-5 py-0.5 rounded-full bg-brand-accent border border-brand-dark text-white text-sm font-medium hover:brightness-95 transition-all"
+        >
           Ver mais
         </button>
       </div>

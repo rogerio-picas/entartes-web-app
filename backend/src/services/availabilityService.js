@@ -125,8 +125,7 @@ const criarDisponibilidade = async (id_docente, dados) => {
   // Verificar sobreposição
   await verificarSobreposicao(id_docente, dia_semana, data_especifica, hora_inicio, hora_fim);
 
-  // Criar
-  const novaDisponibilidade = await prisma.disponibilidade.create({
+  const nova = await prisma.disponibilidade.create({
     data: {
       id_docente,
       dia_semana: dia_semana !== undefined && dia_semana !== null ? parseInt(dia_semana) : null,
@@ -136,7 +135,7 @@ const criarDisponibilidade = async (id_docente, dados) => {
     },
   });
 
-  return novaDisponibilidade;
+  return nova;
 };
 
 /**
@@ -185,14 +184,7 @@ const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) =
     : existente.data_especifica;
 
   // 3. Verificar sobreposição
-  await verificarSobreposicao(
-    id_docente,
-    diaSemana,
-    dataEspecifica,
-    novaHoraInicio,
-    novaHoraFim,
-    parseInt(id_disponibilidade)
-  );
+  await verificarSobreposicao(id_docente, diaSemana, dataEspecifica, novaHoraInicio, novaHoraFim, id_disponibilidade);
 
   // 4. Atualizar
   return await prisma.disponibilidade.update({
