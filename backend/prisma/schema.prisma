@@ -65,15 +65,13 @@ model coordenadora_evento {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model disponibilidade {
-  id_disponibilidade Int         @id @default(autoincrement())
+  id_disponibilidade Int       @id @default(autoincrement())
   id_docente         Int?
-  id_modalidade      Int?
   dia_semana         Int?
-  data_especifica    DateTime?   @db.Timestamp(6)
-  hora_inicio        DateTime?   @db.Time(6)
-  hora_fim           DateTime?   @db.Time(6)
-  docente            docente?    @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
-  modalidade         modalidade? @relation(fields: [id_modalidade], references: [id_modalidade], onDelete: SetNull, onUpdate: NoAction)
+  data_especifica    DateTime? @db.Timestamp(6)
+  hora_inicio        DateTime? @db.Time(6)
+  hora_fim           DateTime? @db.Time(6)
+  docente            docente?  @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model docente {
@@ -170,7 +168,6 @@ model modalidade {
   nome               String               @db.VarChar(100)
   docente_modalidade docente_modalidade[]
   marcacao           marcacao[]
-  disponibilidade    disponibilidade[]
 }
 
 model participacao_conclusao {

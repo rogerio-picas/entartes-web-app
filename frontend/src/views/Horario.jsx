@@ -97,6 +97,9 @@ function EditSalaModal({ item, salas, onClose, onSuccess }) {
     const [erro, setErro] = useState('')
     const [idSala, setIdSala] = useState(item?.id_sala || '')
 
+    if (!item) return null;
+
+
     async function handleSubmit() {
         if (!idSala) { setErro('Seleciona uma sala.'); return }
         setLoading(true)
@@ -316,7 +319,7 @@ function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
                             <select value={form.id_sala} onChange={e => set('id_sala', e.target.value)}
                                 className="w-full appearance-none bg-white border border-[#6F7978] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#006A68] pr-8">
                                 <option value="">Selecionar sala...</option>
-                                {salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
+                                {Array.isArray(salas) && salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
                             </select>
                             <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6362] pointer-events-none" />
                         </div>
@@ -421,7 +424,7 @@ export default function Horario() {
             setAulas(rawAulas.map(a => {
                 let resolvedIdEstado = a.id_estado;
                 if (!resolvedIdEstado && a.estado) {
-                    const est = a.estado.toLowerCase();
+                    const est = String(a.estado).toLowerCase();
                     if (est.includes('pend') || est.includes('agend')) resolvedIdEstado = 1;
                     else if (est.includes('valida')) resolvedIdEstado = 2;
                     else if (est.includes('confirm')) resolvedIdEstado = 3;
@@ -560,6 +563,7 @@ export default function Horario() {
                                 end,
                                 _isEvent: false,
                                 _isDisponibilidade: true,
+                                _type: 'disponibilidade',
                                 modalidade: 'Disponível',
                                 data: format(start, 'dd/MM/yyyy'),
                                 hora: hIni,
