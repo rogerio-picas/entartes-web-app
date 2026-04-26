@@ -2,50 +2,54 @@
 config:
   theme: base
   layout: elk
+  look: classic
+  flowchart:
+    padding: 40
+    nodeSpacing: 60
+    rankSpacing: 80
 ---
 classDiagram
 direction TB
 
 %% ==== CLASSES DE DOMÍNIO ====
-class Utilizador {
+class Utilizador ["`Utilizador **`"] {
   +login(username, pass)
   +logout()
   +atualizarPerfil()
   +alterarPassword()
 }
 
-class Aluno {
+class Aluno ["`Aluno **`"] {
   +solicitarCoaching()
   +convidarColegas()
   +confirmarPresenca()
   +inscreverEvento()
 }
 
-class Docente {
+class Docente ["`Docente **`"] {
   +definirDisponibilidade()
   +cancelarAula()
   +validarSessao()
 }
 
-class Coordenadora {
+class Coordenadora ["`Coordenadora **`"] {
   +aprovarSolicitacao()
   +atribuirSala()
   +gerarRelatorios()
   +gerirEscola()
 }
 
-Utilizador <|-- Aluno
 Utilizador <|-- Docente
 Utilizador <|-- Coordenadora
 
 
 %% ==== CONTROLLERS ====
-class AuthController {
+class AuthController ["`AuthController **`"] {
   +login(req, res)
   +getMe(req, res)
 }
 
-class AlunoCoachingController {
+class AlunoCoachingController ["`AlunoCoachingController **`"] {
   +consultarDisponibilidades()
   +solicitarMarcacao()
   +listarMeusPedidos()
@@ -54,13 +58,13 @@ class AlunoCoachingController {
   +listarColegas()
 }
 
-class DocenteCoachingController {
+class DocenteCoachingController ["`DocenteCoachingController **`"] {
   +listarMinhasAulas()
   +validarConclusaoSessao()
   +cancelarMarcacao()
 }
 
-class CoordenacaoCoachingController {
+class CoordenacaoCoachingController ["`CoordenacaoCoachingController **`"] {
   +listarPedidosPendentes()
   +confirmarMarcacao()
   +rejeitarMarcacao()
@@ -69,7 +73,7 @@ class CoordenacaoCoachingController {
   +consultarHistorico()
 }
 
-class EventController {
+class EventController ["`EventController **`"] {
   +listarEventos()
   +criarEvento()
   +editarEvento()
@@ -78,7 +82,7 @@ class EventController {
   +listarParticipantes()
 }
 
-class GroupController {
+class GroupController ["`GroupController **`"] {
   +criarGrupo()
   +editarGrupo()
   +eliminarGrupo()
@@ -86,7 +90,7 @@ class GroupController {
   +removerMembro()
 }
 
-class AdminController {
+class AdminController ["`AdminController **`"] {
   +listSalas()
   +createSala()
   +updateSala()
@@ -97,25 +101,25 @@ class AdminController {
 
 
 %% ==== SERVICES ====
-class AuthService {
+class AuthService ["`AuthService **`"] {
   +validarCredenciais()
   +obterUtilizador()
 }
 
-class CoachingService {
+class CoachingService ["`CoachingService **`"] {
   +validarSobreposicaoHorario()
   +processarSolicitacaoGrupo()
   +notificarAlteracaoEstado()
   +verificarPrazoCancelamento()
 }
 
-class EventService {
+class EventService ["`EventService **`"] {
   +validarCapacidade()
   +gerirParticipantes()
   +dispararNotificacoes()
 }
 
-class AdminService {
+class AdminService ["`AdminService **`"] {
   +validarDuplicadosSala()
   +sincronizarSequenciasDB()
   +processarExportacaoCSV()
@@ -123,13 +127,11 @@ class AdminService {
 
 
 %% ==== INFRAESTRUTURA ====
-class PrismaClient {
+class PrismaClient ["`PrismaClient **`"] {
   +utilizador.find()
   +marcacao.create()
   +sala.upsert()
 }
-
-<<Infrastructure>> PrismaClient
 
 
 %% ==== RELAÇÕES PRINCIPAIS ====
