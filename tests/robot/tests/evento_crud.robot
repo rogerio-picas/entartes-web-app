@@ -1,7 +1,7 @@
 *** Settings ***
-Documentation       End-to-end CRUD tests for the Eventos API.
-...                 Requires the backend server running at http://localhost:3000
-...                 and the automation admin account (automation/1234567).
+Documentation       Testes end-to-end de CRUD para a API de Eventos.
+...                 Requer o servidor backend em execução em http://localhost:3000
+...                 e a conta de administrador de automação (automation/1234567).
 Library             RequestsLibrary
 Library             Collections
 Library             BuiltIn
@@ -22,7 +22,8 @@ ${ADMIN_TOKEN}          ${NONE}
 # ---------------------------------------------------------------------------
 
 Token De Admin É Válido
-    [Documentation]    Verifies the admin token obtained in Suite Setup is accepted by the API.
+    [Documentation]    Verifica que o token de admin obtido no Suite Setup é aceite pela API.
+    ...                Utiliza /api/auth/me para evitar tentativas de login adicionais que possam causar bloqueio.
     [Tags]    auth    smoke
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${response}=    GET    ${BASE_URL}/api/auth/me    headers=${headers}    expected_status=200
@@ -31,7 +32,8 @@ Token De Admin É Válido
     Dictionary Should Contain Key    ${json}    codigo_username
 
 Login Com Credenciais Inválidas Retorna 401
-    [Documentation]    Login endpoint returns 401 for a nonexistent username.
+    [Documentation]    O endpoint de login retorna 401 para um utilizador inexistente.
+    ...                Utiliza um username que não existe para não arriscar o bloqueio de contas reais.
     [Tags]    auth    negative
     ${body}=    Create Dictionary    codigo_username=nonexistent_user_robot    password=wrong_password
     ${response}=    POST    ${BASE_URL}/api/auth/login    json=${body}    expected_status=401
@@ -42,12 +44,12 @@ Login Com Credenciais Inválidas Retorna 401
 # ---------------------------------------------------------------------------
 
 Criar Evento Com Dados Válidos
-    [Documentation]    Admin creates a new event; expects 201 with the evento object.
+    [Documentation]    O admin cria um novo evento; espera resposta 201 com o objeto do evento.
     [Tags]    evento    crud    create    smoke
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${body}=    Create Dictionary
     ...    nome=Robot Framework Test Event
-    ...    descricao=Created by automated tests
+    ...    descricao=Criado por testes automáticos
     ...    local=Sala A
     ...    duracao_minutos=${90}
     ${response}=    POST    ${BASE_URL}/api/evento    json=${body}    headers=${headers}    expected_status=201
@@ -63,32 +65,32 @@ Criar Evento Com Dados Válidos
     Set Suite Variable    ${CREATED_EVENTO_ID}    ${evento}[id_evento]
 
 Criar Evento Sem Autenticação Retorna 401
-    [Documentation]    Creating an event without a token must return 401.
+    [Documentation]    Criar um evento sem token de autenticação deve retornar 401.
     [Tags]    evento    negative    auth
-    ${body}=    Create Dictionary    nome=Unauthorized Event
+    ${body}=    Create Dictionary    nome=Evento Não Autorizado
     ${response}=    POST    ${BASE_URL}/api/evento    json=${body}    expected_status=401
 
 Criar Evento Sem Campo Obrigatório Retorna 400
-    [Documentation]    Creating an event without the required 'nome' field returns 400.
+    [Documentation]    Criar um evento sem o campo obrigatório 'nome' deve retornar 400.
     [Tags]    evento    negative    create
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
-    ${body}=    Create Dictionary    descricao=Missing name field
+    ${body}=    Create Dictionary    descricao=Campo nome em falta
     ${response}=    POST    ${BASE_URL}/api/evento    json=${body}    headers=${headers}    expected_status=400
     Dictionary Should Contain Key    ${response.json()}    error
 
 # ---------------------------------------------------------------------------
-# READ — GET /api/evento  and  GET /api/evento/:id
+# READ — GET /api/evento  e  GET /api/evento/:id
 # ---------------------------------------------------------------------------
 
 Listar Eventos Retorna 200
-    [Documentation]    Admin can list all events.
+    [Documentation]    O admin consegue listar todos os eventos.
     [Tags]    evento    crud    read    smoke
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${response}=    GET    ${BASE_URL}/api/evento    headers=${headers}    expected_status=200
     Should Not Be Empty    ${response.json()}
 
 Evento Criado Aparece Na Listagem
-    [Documentation]    The event created earlier appears in the full events list.
+    [Documentation]    O evento criado anteriormente aparece na listagem completa de eventos.
     [Tags]    evento    crud    read
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${response}=    GET    ${BASE_URL}/api/evento    headers=${headers}    expected_status=200
@@ -96,7 +98,7 @@ Evento Criado Aparece Na Listagem
     Should Contain    ${ids}    ${CREATED_EVENTO_ID}
 
 Obter Evento Por ID
-    [Documentation]    Fetching the created event by its ID returns the correct record.
+    [Documentation]    Consultar o evento criado pelo seu ID retorna o registo correto.
     [Tags]    evento    crud    read    smoke
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${response}=    GET    ${BASE_URL}/api/evento/${CREATED_EVENTO_ID}    headers=${headers}    expected_status=200
@@ -105,7 +107,7 @@ Obter Evento Por ID
     Should Be Equal    ${json}[nome]    Robot Framework Test Event
 
 Obter Evento Com ID Inexistente Retorna 404
-    [Documentation]    Fetching an event ID that does not exist returns 404.
+    [Documentation]    Consultar um evento com ID inexistente deve retornar 404.
     [Tags]    evento    negative    read
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${response}=    GET    ${BASE_URL}/api/evento/999999    headers=${headers}    expected_status=404
@@ -116,52 +118,52 @@ Obter Evento Com ID Inexistente Retorna 404
 # ---------------------------------------------------------------------------
 
 Atualizar Evento Com Dados Válidos
-    [Documentation]    Admin updates the event name and duration; expects 200.
+    [Documentation]    O admin atualiza o nome e a duração do evento; espera resposta 200.
     [Tags]    evento    crud    update    smoke
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${body}=    Create Dictionary
-    ...    nome=Robot Framework Test Event (Updated)
-    ...    descricao=Updated by automated tests
+    ...    nome=Robot Framework Test Event (Atualizado)
+    ...    descricao=Atualizado por testes automáticos
     ...    duracao_minutos=${120}
     ${response}=    PUT    ${BASE_URL}/api/evento/${CREATED_EVENTO_ID}    json=${body}    headers=${headers}    expected_status=200
     ${json}=    Set Variable    ${response.json()}
     Dictionary Should Contain Key    ${json}    mensagem
-    Should Be Equal    ${json}[evento][nome]    Robot Framework Test Event (Updated)
+    Should Be Equal    ${json}[evento][nome]    Robot Framework Test Event (Atualizado)
     Should Be Equal As Integers    ${json}[evento][duracao_minutos]    120
 
 Atualização Reflete Na Consulta Por ID
-    [Documentation]    After update, GET by ID returns the updated values.
+    [Documentation]    Após a atualização, a consulta por ID retorna os valores atualizados.
     [Tags]    evento    crud    update
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${response}=    GET    ${BASE_URL}/api/evento/${CREATED_EVENTO_ID}    headers=${headers}    expected_status=200
-    Should Be Equal    ${response.json()}[nome]    Robot Framework Test Event (Updated)
+    Should Be Equal    ${response.json()}[nome]    Robot Framework Test Event (Atualizado)
 
 Atualizar Evento Sem Campos Válidos Retorna 400
-    [Documentation]    Sending only unrecognised fields returns 400.
+    [Documentation]    Enviar apenas campos não reconhecidos na atualização deve retornar 400.
     [Tags]    evento    negative    update
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
-    ${body}=    Create Dictionary    unknown_field=value
+    ${body}=    Create Dictionary    campo_desconhecido=valor
     ${response}=    PUT    ${BASE_URL}/api/evento/${CREATED_EVENTO_ID}    json=${body}    headers=${headers}    expected_status=400
 
 Atualizar Evento Inexistente Retorna 404
-    [Documentation]    Trying to update an event that does not exist returns 404.
+    [Documentation]    Tentar atualizar um evento que não existe deve retornar 404.
     [Tags]    evento    negative    update
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
-    ${body}=    Create Dictionary    nome=Ghost Event
+    ${body}=    Create Dictionary    nome=Evento Fantasma
     ${response}=    PUT    ${BASE_URL}/api/evento/999999    json=${body}    headers=${headers}    expected_status=404
 
 # ---------------------------------------------------------------------------
-# DELETE (Cancel) — DELETE /api/evento/:id
+# DELETE (Cancelar) — DELETE /api/evento/:id
 # ---------------------------------------------------------------------------
 
 Cancelar Evento Inexistente Retorna 404
-    [Documentation]    Trying to cancel an event that does not exist returns 404.
+    [Documentation]    Tentar cancelar um evento que não existe deve retornar 404.
     [Tags]    evento    negative    delete
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${response}=    DELETE    ${BASE_URL}/api/evento/999999    headers=${headers}    expected_status=404
 
 Cancelar Evento
-    [Documentation]    Admin cancels the created event; expects 200.
+    [Documentation]    O admin cancela o evento criado; espera resposta 200.
     [Tags]    evento    crud    delete    smoke
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${response}=    DELETE    ${BASE_URL}/api/evento/${CREATED_EVENTO_ID}    headers=${headers}    expected_status=200
@@ -170,14 +172,14 @@ Cancelar Evento
     Should Be Equal As Integers    ${json}[evento_id]    ${CREATED_EVENTO_ID}
 
 Evento Cancelado Tem Estado 5
-    [Documentation]    After cancellation, GET returns id_evento_estado = 5 (CANCELADO).
+    [Documentation]    Após o cancelamento, a consulta do evento retorna id_evento_estado = 5 (CANCELADO).
     [Tags]    evento    crud    delete
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${response}=    GET    ${BASE_URL}/api/evento/${CREATED_EVENTO_ID}    headers=${headers}    expected_status=200
     Should Be Equal As Integers    ${response.json()}[id_evento_estado]    5
 
 Cancelar Evento Já Cancelado Retorna 400
-    [Documentation]    Trying to cancel an already-cancelled event returns 400.
+    [Documentation]    Tentar cancelar um evento que já foi cancelado deve retornar 400.
     [Tags]    evento    negative    delete
     ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
     ${response}=    DELETE    ${BASE_URL}/api/evento/${CREATED_EVENTO_ID}    headers=${headers}    expected_status=400
@@ -186,6 +188,6 @@ Cancelar Evento Já Cancelado Retorna 400
 
 *** Keywords ***
 Authenticate As Admin
-    [Documentation]    Suite-level setup: login once as admin and store the token.
+    [Documentation]    Configuração da suite: realiza login uma única vez como admin e guarda o token.
     ${token}=    Login As Admin
     Set Suite Variable    ${ADMIN_TOKEN}    ${token}
