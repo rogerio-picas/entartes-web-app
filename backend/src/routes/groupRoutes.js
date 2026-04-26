@@ -6,7 +6,7 @@ const groupController = require('../controllers/groupController');
 
 /**
  * @swagger
- * /api/evento/{id_evento}/:
+ * /api/evento/{id_evento}/grupos:
  *   post:
  *     summary: Cria um grupo para um evento
  *     tags: [Events - Grupos]
@@ -211,7 +211,7 @@ const groupController = require('../controllers/groupController');
 // Obs: mergeParams: true permite aceder a parâmetros da rota pai (id_evento)
 
 // Criar: POST /api/event/:id_evento/grupos
-router.post("/:id_evento/", tokenValidation, authorize([1]), groupController.criarGrupo);
+router.post("/:id_evento/grupos", tokenValidation, authorize([1]), groupController.criarGrupo);
 
 // Listar: GET /api/event/:id_evento/grupos
 router.get("/:id_evento/grupos", tokenValidation, authorize([1,2,3]), groupController.listarGruposDoEvento);

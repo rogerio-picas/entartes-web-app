@@ -21,7 +21,16 @@ const swaggerOptions = {
     tags: [
       { name: 'Auth', description: 'Endpoints de Autenticação (Login, Registo)' },
       { name: 'Users', description: 'Operações CRUD de Utilizadores' },
-      { name: 'Events', description: 'Gestão de Eventos e relacionados' }
+      { name: 'Events', description: 'Gestão de Eventos e relacionados' },
+      { name: 'Coaching - Aluno', description: 'Operações de Coaching para Alunos' },
+      { name: 'Coaching - Docente', description: 'Operações de Coaching para Docentes' },
+      { name: 'Coaching - Coordenadora', description: 'Gestão de Coaching pela Coordenação' },
+      { name: 'Disponibilidades', description: 'Gestão de disponibilidades de Docentes' },
+      { name: 'Salas', description: 'Gestão de Salas' },
+      { name: 'Modalidades', description: 'Gestão de Modalidades' },
+      { name: 'Notificações', description: 'Gestão de Notificações' },
+      { name: 'Anúncios', description: 'Gestão de Anúncios' },
+      { name: 'Relatórios', description: 'Geração de Relatórios' }
     ],
     components: {
       securitySchemes: {
