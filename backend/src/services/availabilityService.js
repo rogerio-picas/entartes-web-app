@@ -25,6 +25,10 @@ const validarParametrosCreate = (dia_semana, data_especifica, hora_inicio, hora_
   if (!hora_inicio || !hora_fim) {
     throw new Error("Horários de início e fim são obrigatórios.");
   }
+
+  if (parseHoraTime(hora_fim) <= parseHoraTime(hora_inicio)) {
+    throw new Error("A hora de fim tem de ser posterior à hora de início.");
+  }
 };
 
 /**
@@ -173,6 +177,10 @@ const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) =
   // 2. Preparar dados finais com lógica de limpeza
   const novaHoraInicio = hora_inicio ? parseHoraTime(hora_inicio) : existente.hora_inicio;
   const novaHoraFim = hora_fim ? parseHoraTime(hora_fim) : existente.hora_fim;
+
+  if (novaHoraFim <= novaHoraInicio) {
+    throw new Error("A hora de fim tem de ser posterior à hora de início.");
+  }
 
   // Garantir que diaSemana é um número ou null (evitar NaN)
   const diaSemana = dia_semana !== undefined

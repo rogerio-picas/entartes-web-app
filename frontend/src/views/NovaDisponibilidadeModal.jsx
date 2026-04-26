@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
-import { X, Clock, ChevronDown, AlertCircle, RefreshCw, Check } from 'lucide-react'
+import { useState } from 'react'
+import { X, Clock, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react'
 import { disponibilidadeService } from '../services/disponibilidadeService'
-import { api } from '../services/api'
 import { formatDateForInput } from '../utils/dateUtils'
 
 // Normaliza uma hora para o formato HH:mm que o <input type="time"> espera
@@ -46,8 +45,6 @@ const inputCls = "w-full border border-[#6F7978] rounded-lg px-4 py-3.5 text-sm 
 export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedDate, initialData }) {
     const [horaInicio, setHoraInicio] = useState(parseHoraParaInput(initialData?.hora_inicio) || '09:00')
     const [horaFim, setHoraFim] = useState(parseHoraParaInput(initialData?.hora_fim) || '10:00')
-    const [modalidade, setModalidade] = useState('')
-    const [modalidades, setModalidades] = useState([])
     const [frequencia, setFrequencia] = useState(
         initialData 
             ? (initialData.data_especifica ? 'unica' : 'semanal') 
@@ -64,26 +61,9 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
 
     const isEdit = !!initialData
 
-    useEffect(() => {
-        const fetchModalidades = async () => {
-            try {
-                const res = await api.get('/modalidades?docentes=true')
-                const data = Array.isArray(res) ? res : (res?.data || [])
-                setModalidades(data)
-                if (data.length > 0 && !isEdit) {
-                    setModalidade(data[0].id_modalidade)
-                } else if (isEdit && initialData?.id_modalidade) {
-                    setModalidade(initialData.id_modalidade)
-                }
-            } catch (err) {
-                console.error('Erro ao carregar modalidades:', err)
-            }
-        }
-        fetchModalidades()
-    }, [isEdit, initialData])
-
     const handleSave = async () => {
         if (!horaInicio || !horaFim) return setErro('Horários são obrigatórios.')
+        if (horaFim <= horaInicio) return setErro('A hora de fim tem de ser posterior à hora de início.')
         if (frequencia === 'unica' && !data) return setErro('Data é obrigatória.')
 
         setSaving(true)
@@ -161,6 +141,9 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                         />
                     </Field>
 
+                    {/* empty cell to keep Data on the left */}
+                    <div />
+
                     {/* Hora de início */}
                     <Field label="Hora de início">
                         <input
@@ -170,23 +153,6 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                             placeholder="HH:mm"
                             className={inputCls}
                         />
-                    </Field>
-
-                    {/* Modalidade (Apenas visual, pois revertemos o suporte no backend conforme pedido) */}
-                    <Field label="Modalidade (Preferencial)">
-                        <div className="relative">
-                            <select
-                                value={modalidade}
-                                onChange={e => setModalidade(Number(e.target.value))}
-                                className={`${inputCls} appearance-none cursor-pointer pr-10`}
-                            >
-                                <option value="">Qualquer modalidade</option>
-                                {Array.isArray(modalidades) && modalidades.map(m => (
-                                    <option key={m.id_modalidade} value={m.id_modalidade}>{m.nome}</option>
-                                ))}
-                            </select>
-                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6362] pointer-events-none" />
-                        </div>
                     </Field>
 
                     {/* Hora de fim */}
