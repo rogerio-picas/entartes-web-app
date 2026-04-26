@@ -55,6 +55,11 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *                 type: integer
  *               numero_alunos_pretendidos:
  *                 type: integer
+ *               outros_alunos:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: IDs dos colegas convidados (para grupo)
  *     responses:
  *       201:
  *         description: Pedido de marcação enviado com sucesso
@@ -260,6 +265,25 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *       200:
  *         description: Lista de salas disponíveis
  *
+ * /api/coaching/concluir-marcacao:
+ *   post:
+ *     summary: Conclui uma marcação (coordenadora)
+ *     tags: [Coaching - Coordenadora]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id_marcacao:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Marcação concluída com sucesso
+ *
  * /api/coaching/historico-marcacao/{id_marcacao}:
  *   get:
  *     summary: Consulta histórico de uma marcação
@@ -338,6 +362,16 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *     responses:
  *       200:
  *         description: Sessão cancelada com sucesso
+ *
+ * /api/coaching/colegas:
+ *   get:
+ *     summary: Lista colegas disponíveis para convite de coaching (aluno)
+ *     tags: [Coaching - Aluno]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de colegas (alunos com coaching ativo)
  */
 
 // ========== ROTAS GENÉRICAS (coordenador) ==========

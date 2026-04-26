@@ -113,6 +113,32 @@ const groupRoutes = require("../routes/groupRoutes");
  *       404:
  *         description: Evento não encontrado
  *
+ * /api/evento/meus-eventos:
+ *   get:
+ *     summary: Lista eventos onde o utilizador autenticado participa (docente/aluno)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de eventos do utilizador
+ *
+ * /api/evento/{id}/concluir:
+ *   post:
+ *     summary: Marca um evento como concluído
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Evento concluído com sucesso
+ *
  * /api/evento/{id}/participantes:
  *   post:
  *     summary: Adiciona um participante ao evento

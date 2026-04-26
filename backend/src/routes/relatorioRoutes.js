@@ -9,7 +9,7 @@ const relController = require('../controllers/relatorioController');
  * /api/relatorio/sessoes:
  *   get:
  *     summary: Relatório de sessões
- *     tags: [Relatorios]
+ *     tags: [Relatórios]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -19,7 +19,7 @@ const relController = require('../controllers/relatorioController');
  * /api/relatorio/horas-docente:
  *   get:
  *     summary: Relatório de horas por docente
- *     tags: [Relatorios]
+ *     tags: [Relatórios]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -29,7 +29,17 @@ const relController = require('../controllers/relatorioController');
  * /api/relatorio/alunos:
  *   get:
  *     summary: Relatório de alunos
- *     tags: [Relatorios]
+ *     tags: [Relatórios]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ *
+ * /api/relatorio/docentes:
+ *   get:
+ *     summary: Relatório de docentes
+ *     tags: [Relatórios]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -39,7 +49,7 @@ const relController = require('../controllers/relatorioController');
  * /api/relatorio/exportar:
  *   get:
  *     summary: Exporta relatório em CSV
- *     tags: [Relatorios]
+ *     tags: [Relatórios]
  *     security:
  *       - bearerAuth: []
  *     responses:
