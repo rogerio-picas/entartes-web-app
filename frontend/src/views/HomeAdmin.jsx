@@ -352,8 +352,8 @@ export default function HomeAdmin() {
                 sala: a.sala_atual
             }))
 
-            const evs = eventosRes.status === 'fulfilled' && Array.isArray(eventosRes.value) 
-                ? eventosRes.value.filter(e => e.id_evento_estado !== 5) 
+            const evs = eventosRes.status === 'fulfilled' && Array.isArray(eventosRes.value)
+                ? eventosRes.value.filter(e => e.id_evento_estado !== 5)
                 : []
             const horas = horasRes.status === 'fulfilled' && Array.isArray(horasRes.value) ? horasRes.value : []
             const alunos = alunosRes.status === 'fulfilled' && Array.isArray(alunosRes.value) ? alunosRes.value : []
@@ -541,7 +541,7 @@ export default function HomeAdmin() {
                     onSuccess={(nome) => {
                         setShowNovoEvento(false)
                         showToast(`Evento "${nome}" criado com sucesso!`)
-                       eventService.getAll().then(d => setEventos(Array.isArray(d) ? d.filter(e => ![4, 5].includes(e.id_evento_estado)).slice(0, 3) : []))
+                        eventService.getAll().then(d => setEventos(Array.isArray(d) ? d.filter(e => ![4, 5].includes(e.id_evento_estado)).slice(0, 3) : []))
                     }}
                 />
             )}

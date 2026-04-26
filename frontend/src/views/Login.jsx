@@ -8,29 +8,7 @@ function DancerLogo() {
   return (
     <div className="flex flex-col items-center mb-10">
       {/* Dancer silhouette */}
-      <svg
-        viewBox="0 0 120 130"
-        width="110"
-        height="110"
-        fill="none"
-        stroke="#444"
-        strokeWidth="1.1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {/* Head */}
-        <ellipse cx="72" cy="14" rx="7" ry="7.5" />
-        {/* Neck + body */}
-        <path d="M72 21.5 C70 32 63 46 52 60" />
-        {/* Right arm — flows up-right with ribbon curl */}
-        <path d="M69 30 C79 24 91 19 100 15 C107 12 111 8 109 3" />
-        {/* Left arm — extends left */}
-        <path d="M67 34 C56 28 40 23 22 18" />
-        {/* Front leg — down */}
-        <path d="M52 60 C46 72 41 84 38 98" />
-        {/* Back leg — extends right */}
-        <path d="M52 60 C65 55 79 53 92 52 C101 51 107 49 109 45" />
-      </svg>
+      <img src="src/logo.png" alt="Dancer Logo" height="300" width="300" />
 
       {/* Brand name */}
       <div className="text-center leading-tight">
@@ -38,7 +16,7 @@ function DancerLogo() {
           className="text-2xl tracking-widest"
           style={{ fontWeight: 300, color: '#555', letterSpacing: '0.15em' }}
         >
-          en&apos;artes
+          ent&apos;artes
           <sup className="text-xs align-super" style={{ fontWeight: 400 }}>®</sup>
         </div>
         <div
