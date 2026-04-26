@@ -169,7 +169,7 @@ export default function Home() {
             ? (m.alunos?.length > 0 ? m.alunos.map(a => typeof a === 'object' ? a.nome : a).join(', ') : 'A aguardar aluno(s)')
             : docenteNome,
           alunos: m.alunos?.map(a => typeof a === 'object' ? a.nome : a) || [],
-           ja_validou: m.ja_validou,
+          ja_validou: m.ja_validou,
           id_estado: resolvedIdEstado,
           estado_nome: m.estado || m.estado_nome || '—',
           _type: 'aula',
@@ -524,10 +524,10 @@ export default function Home() {
       )}
 
       {selectedItem && (
-        <ItemDetailModal 
-          item={selectedItem} 
-          role={role} 
-          onClose={() => setSelectedItem(null)} 
+        <ItemDetailModal
+          item={selectedItem}
+          role={role}
+          onClose={() => setSelectedItem(null)}
           onNavigate={(item) => {
             if (item.id_evento || item._isEvent || item._type === 'evento') {
               navigate(`/eventos/${item.id}`);
