@@ -1,132 +1,163 @@
+---
+config:
+  theme: base
+  layout: elk
+---
 classDiagram
-    direction TB
+direction TB
 
-    %% --- INFRAESTRUTURA E PERSISTÊNCIA ---
-    class PrismaClient {
-        <<Infrastructure>>
-        +utilizador
-        +marcacao
-        +evento
-        +grupo
-        +sala
-        +modalidade
-        +executeRaw()
-    }
+%% ==== CLASSES DE DOMÍNIO ====
+class Utilizador {
+  +login(username, pass)
+  +logout()
+  +atualizarPerfil()
+  +alterarPassword()
+}
 
-    %% --- MÓDULO AUTH & USERS ---
-    class AuthController {
-        -IAuthService authService
-        +login(req, res)
-        +getMe(req, res)
-    }
-    class UserController {
-        -IUserService userService
-        +getUsers(req, res)
-        +createUser(req, res)
-        +updateUser(req, res)
-        +deleteUser(req, res)
-        +atualizarPassword(req, res)
-        +atualizarDadosPessoais(req, res)
-    }
+class Aluno {
+  +solicitarCoaching()
+  +convidarColegas()
+  +confirmarPresenca()
+  +inscreverEvento()
+}
 
-    %% --- MÓDULO COACHING (SEGREGADO POR ATOR) ---
-    class AlunoCoachingController {
-        -ICoachingService service
-        +consultarDisponibilidades(req, res)
-        +solicitarMarcacao(req, res)
-        +listarMeusPedidos(req, res)
-        +cancelarPedidoPendente(req, res)
-        +confirmarPresencaGrupo(req, res)
-        +listarColegas(req, res)
-    }
+class Docente {
+  +definirDisponibilidade()
+  +cancelarAula()
+  +validarSessao()
+}
 
-    class DocenteCoachingController {
-        -ICoachingService service
-        +listarMinhasAulas(req, res)
-        +validarConclusaoSessao(req, res)
-        +cancelarMarcacao(req, res)
-    }
+class Coordenadora {
+  +aprovarSolicitacao()
+  +atribuirSala()
+  +gerarRelatorios()
+  +gerirEscola()
+}
 
-    class CoordenacaoCoachingController {
-        -ICoachingService service
-        +listarPedidosPendentes(req, res)
-        +confirmarMarcacao(req, res)
-        +rejeitarMarcacao(req, res)
-        +reatribuirSala(req, res)
-        +concluirMarcacao(req, res)
-    }
+Utilizador <|-- Aluno
+Utilizador <|-- Docente
+Utilizador <|-- Coordenadora
 
-    %% --- MÓDULO EVENTOS E GRUPOS ---
-    class EventController {
-        -IEventService eventService
-        +listarEventos(req, res)
-        +criarEvento(req, res)
-        +editarEvento(req, res)
-        +cancelarEvento(req, res)
-        +listarParticipantes(req, res)
-    }
 
-    class GroupController {
-        -IGroupService groupService
-        +criarGrupo(req, res)
-        +editarGrupo(req, res)
-        +adicionarAlunoAoGrupo(req, res)
-        +removerAlunoDoGrupo(req, res)
-        +adicionarDocenteAoGrupo(req, res)
-    }
+%% ==== CONTROLLERS ====
+class AuthController {
+  +login(req, res)
+  +getMe(req, res)
+}
 
-    %% --- MÓDULO ADMIN & RELATÓRIOS ---
-    class SalaController {
-        +listSalas(req, res)
-        +createSala(req, res)
-    }
+class AlunoCoachingController {
+  +consultarDisponibilidades()
+  +solicitarMarcacao()
+  +listarMeusPedidos()
+  +cancelarPedidoPendente()
+  +confirmarPresencaGrupo()
+  +listarColegas()
+}
 
-    class RelatorioController {
-        -IRelatorioService service
-        +getSessoesRelatorio(req, res)
-        +getHorasDocente(req, res)
-        +exportCSV(req, res)
-    }
+class DocenteCoachingController {
+  +listarMinhasAulas()
+  +validarConclusaoSessao()
+  +cancelarMarcacao()
+}
 
-    %% --- SERVICES (LÓGICA DE NEGÓCIO) ---
-    class CoachingService {
-        +verificarRegrasSobreposicao()
-        +validarPrazoCancelamento()
-        +notificarAlteracaoEstado()
-    }
+class CoordenacaoCoachingController {
+  +listarPedidosPendentes()
+  +confirmarMarcacao()
+  +rejeitarMarcacao()
+  +reatribuirSala()
+  +concluirMarcacao()
+  +consultarHistorico()
+}
 
-    class EventService {
-        +validarCapacidadeSalas()
-        +gerirCicloVidaEvento()
-    }
+class EventController {
+  +listarEventos()
+  +criarEvento()
+  +editarEvento()
+  +cancelarEvento()
+  +concluirEvento()
+  +listarParticipantes()
+}
 
-    %% --- RELAÇÕES ---
-    AuthController ..> AuthService
-    UserController ..> UserService
-    
-    AlunoCoachingController ..> CoachingService
-    DocenteCoachingController ..> CoachingService
-    CoordenacaoCoachingController ..> CoachingService
-    
-    EventController ..> EventService
-    GroupController ..> GroupService
-    
-    RelatorioController ..> RelatorioService
+class GroupController {
+  +criarGrupo()
+  +editarGrupo()
+  +eliminarGrupo()
+  +adicionarMembro()
+  +removerMembro()
+}
 
-    %% Todos os Services dependem do Prisma
-    AuthService --> PrismaClient
-    UserService --> PrismaClient
-    CoachingService --> PrismaClient
-    EventService --> PrismaClient
-    GroupService --> PrismaClient
-    RelatorioService --> PrismaClient
+class AdminController {
+  +listSalas()
+  +createSala()
+  +updateSala()
+  +deleteSala()
+  +listModalidades()
+  +associarDocente()
+}
 
-    %% Estilos
-    style PrismaClient fill:#f9f,stroke:#333
-    style AuthController fill:#e1f5fe
-    style UserController fill:#e1f5fe
-    style AlunoCoachingController fill:#e1f5fe
-    style DocenteCoachingController fill:#e1f5fe
-    style CoordenacaoCoachingController fill:#e1f5fe
-    style EventController fill:#e1f5fe
-    style GroupController fill:#e1f5fe
+
+%% ==== SERVICES ====
+class AuthService {
+  +validarCredenciais()
+  +obterUtilizador()
+}
+
+class CoachingService {
+  +validarSobreposicaoHorario()
+  +processarSolicitacaoGrupo()
+  +notificarAlteracaoEstado()
+  +verificarPrazoCancelamento()
+}
+
+class EventService {
+  +validarCapacidade()
+  +gerirParticipantes()
+  +dispararNotificacoes()
+}
+
+class AdminService {
+  +validarDuplicadosSala()
+  +sincronizarSequenciasDB()
+  +processarExportacaoCSV()
+}
+
+
+%% ==== INFRAESTRUTURA ====
+class PrismaClient {
+  +utilizador.find()
+  +marcacao.create()
+  +sala.upsert()
+}
+
+<<Infrastructure>> PrismaClient
+
+
+%% ==== RELAÇÕES PRINCIPAIS ====
+
+%% Controllers usam seus respectivos serviços
+AuthController --> AuthService : usa
+AlunoCoachingController --> CoachingService : usa
+DocenteCoachingController --> CoachingService : usa
+CoordenacaoCoachingController --> CoachingService : usa
+EventController --> EventService : usa
+GroupController --> EventService : usa
+AdminController --> AdminService : usa
+
+%% Services acedem à base de dados
+AuthService --> PrismaClient : consulta credenciais
+CoachingService --> PrismaClient : acede
+EventService --> PrismaClient : acede
+AdminService --> PrismaClient : acede
+
+%% ==== INTERAÇÕES UTILIZADORAS ====
+Utilizador ..> AuthController : faz login
+
+Aluno ..> AlunoCoachingController : interage com
+Docente ..> DocenteCoachingController : interage com
+Coordenadora ..> CoordenacaoCoachingController : interage com
+Coordenadora ..> AdminController : interage com
+Coordenadora ..> EventController : gere eventos
+Coordenadora ..> GroupController : gere grupos
+
+Aluno ..> EventController : consulta
+Docente ..> EventController : consulta
