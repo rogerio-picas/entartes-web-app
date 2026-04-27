@@ -55,3 +55,4 @@ Regenera o cliente após alterares o schema.prisma.
 
 npx prisma studio
 Interface gráfica para visualizar/editar dados da BD no browser.
+

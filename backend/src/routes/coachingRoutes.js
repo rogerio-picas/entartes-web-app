@@ -374,13 +374,6 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *         description: Lista de colegas (alunos com coaching ativo)
  */
 
-// ========== ROTAS GENÉRICAS (coordenador) ==========
-// router.post('/', tokenValidation, authorize([1]), coachingController.createNewCoaching);
-// router.get('/', tokenValidation, authorize([1]), coachingController.getAllCoachings);
-// router.get('/:id_utilizador', tokenValidation, authorize([1,2,3]), coachingController.getCoachingById);
-// router.put('/:id_utilizador', tokenValidation, authorize([1]), coachingController.updateCoaching);
-// router.delete('/:id_utilizador', tokenValidation, authorize([1]), coachingController.deleteCoaching);
-
 // ========== ROTAS DO ALUNO ==========
 router.get('/disponibilidades/consultar', tokenValidation, authorize([3]), coachingAlunoController.consultarDisponibilidades);
 router.post('/marcacao/solicitar', tokenValidation, authorize([3]), coachingAlunoController.solicitarMarcacao);
