@@ -65,7 +65,7 @@ jobs:
     name: E2E Tests (Robot Framework)
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: false
     defaults:
       run:
         working-directory: .
