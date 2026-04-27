@@ -20,6 +20,9 @@ deletedfiles/
 .DS_Store
 Thumbs.db
 
+# Robot Framework
+tests/robot/results/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
