@@ -198,21 +198,28 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
             }
 
             // Adicionar na nova tabela
-            if (novoTipo === 3) { // Novo aluno
-                await tx.aluno.create({
-                    data: { id_utilizador: userId },
-                });
-            } else if (novoTipo === 2) { // Novo docente
-                await tx.docente.create({
-                    data: {
-                        id_utilizador: userId,
-                        estado_atividade: true,
-                    },
-                });
-            } else if (novoTipo === 1) { // Nova coordenadora
-                await tx.coordenadora.create({
-                    data: { id_utilizador: userId },
-                });
+            switch (novoTipo) {
+                case 3: // Novo aluno
+                    await tx.aluno.create({
+                        data: { id_utilizador: userId },
+                    });
+                    break;
+                case 2: // Novo docente
+                    await tx.docente.create({
+                        data: {
+                            id_utilizador: userId,
+                            estado_atividade: true,
+                        },
+                    });
+                    break;
+                case 1: // Nova coordenadora
+                    await tx.coordenadora.create({
+                        data: { id_utilizador: userId },
+                    });
+                    break;
+                default:
+                    // Outros tipos não têm tabelas específicas
+                    break;
             }
         }
 
