@@ -29,16 +29,16 @@ const listarModalidades = async (id_docente = null, comDocentes = false) => {
     where,
     include: comDocentes
       ? {
-          docente_modalidade: {
-            include: {
-              docente: {
-                include: {
-                  utilizador: { select: { nome: true, apelido: true, codigo_username: true } },
-                },
+        docente_modalidade: {
+          include: {
+            docente: {
+              include: {
+                utilizador: { select: { nome: true, apelido: true, codigo_username: true } },
               },
             },
           },
-        }
+        },
+      }
       : undefined,
     orderBy: { nome: 'asc' },
   });
