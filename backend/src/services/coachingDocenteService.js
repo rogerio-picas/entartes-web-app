@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const ESTADO_MARCACAO = {
-  AGENDADA: 1,
+  PENDENTE: 1,
   EM_VALIDACAO: 2,
   CONFIRMADA: 3,
   CONCLUIDA: 4,

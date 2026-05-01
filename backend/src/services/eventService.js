@@ -231,7 +231,7 @@ const adicionarParticipante = async (id_evento, codigo_username) => {
           data: {
             id_user: id_utilizador,
             titulo: "Novo Evento",
-            mensagem: `Foste adicionado ao evento "${evento.nome}" como docente.`,
+            mensagem: `Foste adicionado ao evento "${evento.nome}"`,
           },
         });
         return ed;
@@ -426,7 +426,7 @@ const cancelarEvento = async (id_evento, id_coordenadora) => {
 
   // 6. Tudo numa transação atómica
   await prisma.$transaction(async (tx) => {
-    
+
     // Atualizar estado do evento para Cancelado
     await tx.evento.update({
       where: { id_evento: eventoId },
@@ -535,7 +535,7 @@ const editarEvento = async (id_evento, dados) => {
 
   // 2. Preparar dados para atualização (apenas campos fornecidos)
   const dataAtualizar = {};
-  
+
   if (nome !== undefined && nome.trim() !== "") {
     dataAtualizar.nome = nome.trim();
   }
