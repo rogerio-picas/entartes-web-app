@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     CalendarCheck, BookOpen, Clock, Coins
@@ -25,9 +25,9 @@ export default function Escola() {
             <div className="font-['Sora']">
                 {/* Header */}
                 <div className="mb-8">
-                    <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Serviços & Documentação</p>
-                    <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight flex items-center gap-3">
-                        <span className="w-10 h-10 bg-[#006A68] rounded-xl flex items-center justify-center shrink-0">
+                    <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">Serviços & Documentação</p>
+                    <h1 className="text-neutral-800 font-normal text-4xl leading-tight tracking-tight flex items-center gap-3">
+                        <span className="w-10 h-10 bg-brand-800 rounded-xl flex items-center justify-center shrink-0">
                             <BookOpen size={20} className="text-white" />
                         </span>
                         <span>Escola</span>
@@ -55,3 +55,4 @@ export default function Escola() {
         </>
     )
 }
+

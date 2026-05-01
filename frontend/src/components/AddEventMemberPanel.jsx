@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { X, Search, UserPlus, RefreshCw, AlertCircle, CheckCircle2, Check } from 'lucide-react'
 import { api } from '../services/api'
 
@@ -84,16 +84,16 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
     }
 
     return (
-        <div className="fixed top-0 right-0 h-full z-[60] w-[483px] max-w-[95vw] bg-[#F4FBF9] shadow-2xl flex flex-col border-l border-[#006A68]/20">
+        <div className="fixed top-0 right-0 h-full z-[60] w-[483px] max-w-[95vw] bg-brand-50 shadow-2xl flex flex-col border-l border-brand-800/20">
             {/* Header */}
-            <div className="px-9 pt-10 pb-4 border-b border-[#006A68] shrink-0">
+            <div className="px-9 pt-10 pb-4 border-b border-brand-800 shrink-0">
                 <div className="flex items-center justify-between mb-1">
-                    <h2 className="text-2xl font-bold text-[#006A68] font-['Sora']">Adicionar Membro</h2>
-                    <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-[#CCE8E6] flex items-center justify-center text-[#4A6362]">
+                    <h2 className="text-2xl font-bold text-brand-800 font-['Sora']">Adicionar Membro</h2>
+                    <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-brand-200 flex items-center justify-center text-neutral-600">
                         <X size={17} />
                     </button>
                 </div>
-                <p className="text-sm text-[#4A6362] mt-1 font-['Sora']">Pesquisa e seleciona os utilizadores a inscrever neste evento.</p>
+                <p className="text-sm text-neutral-600 mt-1 font-['Sora']">Pesquisa e seleciona os utilizadores a inscrever neste evento.</p>
             </div>
 
             <div className="flex-1 overflow-y-auto px-9 py-5 space-y-4 font-['Sora']">
@@ -109,13 +109,13 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
                 )}
 
                 {/* Search box */}
-                <div className="flex items-center gap-2 bg-[#E3E9E8] rounded-full px-4 py-2.5">
-                    <Search size={16} className="text-[#49454F] shrink-0" />
+                <div className="flex items-center gap-2 bg-neutral-200 rounded-full px-4 py-2.5">
+                    <Search size={16} className="text-neutral-600 shrink-0" />
                     <input
                         value={search}
                         onChange={e => { setSearch(e.target.value); setErro(''); setSucesso('') }}
                         placeholder="Pesquise por nome ou código..."
-                        className="flex-1 bg-transparent text-sm text-[#49454F] focus:outline-none"
+                        className="flex-1 bg-transparent text-sm text-neutral-600 focus:outline-none"
                         autoFocus
                     />
                 </div>
@@ -123,19 +123,19 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
                 {/* Selected chips */}
                 {selected.length > 0 && (
                     <div>
-                        <p className="text-xs font-semibold text-[#4A6362] mb-2 uppercase tracking-wider">Selecionados ({selected.length})</p>
+                        <p className="text-xs font-semibold text-neutral-600 mb-2 uppercase tracking-wider">Selecionados ({selected.length})</p>
                         <div className="grid grid-cols-2 gap-2">
                             {selected.map(u => (
-                                <div key={u.id_utilizador} className="flex items-center gap-2 bg-[#CCE8E6] rounded-xl px-3 py-2 border border-[#006A68]/20">
-                                    <div className="w-8 h-8 rounded-full bg-[#006A68] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                                <div key={u.id_utilizador} className="flex items-center gap-2 bg-brand-200 rounded-xl px-3 py-2 border border-brand-800/20">
+                                    <div className="w-8 h-8 rounded-full bg-brand-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
                                         {getInitials(`${u.nome ?? ''} ${u.apelido ?? ''}`)}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-semibold text-[#161D1C] truncate">{u.nome} {u.apelido}</p>
-                                        <p className="text-[10px] text-[#4A6362] truncate">{u.tipo_utilizador?.id_tipo === 2 ? 'Docente' : 'Aluno'}</p>
+                                        <p className="text-xs font-semibold text-neutral-900 truncate">{u.nome} {u.apelido}</p>
+                                        <p className="text-[10px] text-neutral-600 truncate">{u.tipo_utilizador?.id_tipo === 2 ? 'Docente' : 'Aluno'}</p>
                                     </div>
                                     <button onClick={() => toggle(u)} className="w-5 h-5 rounded-full bg-white/60 flex items-center justify-center shrink-0 hover:bg-red-100">
-                                        <X size={11} className="text-[#4A6362]" />
+                                        <X size={11} className="text-neutral-600" />
                                     </button>
                                 </div>
                             ))}
@@ -145,9 +145,9 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
 
                 {/* Results list */}
                 {loadingUsers ? (
-                    <p className="text-sm text-center text-[#4A6362] py-4">A carregar utilizadores...</p>
+                    <p className="text-sm text-center text-neutral-600 py-4">A carregar utilizadores...</p>
                 ) : search.length > 0 && filtered.length === 0 ? (
-                    <p className="text-sm text-center text-[#4A6362] italic py-4">Nenhum utilizador encontrado.</p>
+                    <p className="text-sm text-center text-neutral-600 italic py-4">Nenhum utilizador encontrado.</p>
                 ) : search.length > 0 ? (
                     <div className="space-y-1.5">
                         {filtered.slice(0, 10).map(u => {
@@ -157,38 +157,40 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
                                 <button
                                     key={u.id_utilizador}
                                     onClick={() => toggle(u)}
-                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left ${isSel ? 'border-[#006A68] bg-[#EFF5F4]' : 'border-[#BEC9C7] bg-white hover:border-[#006A68]'}`}
+                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left ${isSel ? 'border-brand-800 bg-neutral-50' : 'border-neutral-400 bg-white hover:border-brand-800'}`}
                                 >
-                                    <div className="w-9 h-9 rounded-full bg-[#CCE8E6] flex items-center justify-center text-xs font-bold text-[#006A68] shrink-0">
+                                    <div className="w-9 h-9 rounded-full bg-brand-200 flex items-center justify-center text-xs font-bold text-brand-800 shrink-0">
                                         {getInitials(`${u.nome ?? ''} ${u.apelido ?? ''}`)}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold text-[#161D1C] truncate">{u.nome} {u.apelido}</p>
-                                        <p className="text-[10px] text-[#4A6362]">{isDocente ? 'Docente' : 'Aluno'} · {u.codigo_username}</p>
+                                        <p className="text-sm font-semibold text-neutral-900 truncate">{u.nome} {u.apelido}</p>
+                                        <p className="text-[10px] text-neutral-600">{isDocente ? 'Docente' : 'Aluno'} · {u.codigo_username}</p>
                                     </div>
-                                    {isSel && <Check size={15} className="text-[#006A68] shrink-0" />}
+                                    {isSel && <Check size={15} className="text-brand-800 shrink-0" />}
                                 </button>
                             )
                         })}
                     </div>
                 ) : (
-                    <p className="text-xs text-center text-[#6F7978] italic pt-2">Começa a escrever para pesquisar utilizadores...</p>
+                    <p className="text-xs text-center text-neutral-500 italic pt-2">Começa a escrever para pesquisar utilizadores...</p>
                 )}
             </div>
 
-            <div className="px-9 py-5 border-t border-[#BEC9C7] shrink-0 flex gap-3">
+            <div className="px-9 py-5 border-t border-neutral-400 shrink-0 flex gap-3">
                 <button
                     onClick={handleAdd}
                     disabled={loading || selected.length === 0}
-                    className="flex-1 py-3.5 bg-[#006A68] text-white font-semibold rounded-2xl hover:bg-[#00504E] transition-colors disabled:opacity-60 flex items-center justify-center gap-2 font-['Sora']"
+                    className="flex-1 py-3.5 bg-brand-800 text-white font-semibold rounded-2xl hover:bg-brand-900 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 font-['Sora']"
                 >
                     {loading ? <RefreshCw size={17} className="animate-spin" /> : <UserPlus size={17} />}
                     Adicionar {selected.length > 0 ? `(${selected.length})` : ''}
                 </button>
-                <button onClick={onClose} className="px-5 py-3.5 bg-white border border-[#BEC9C7] text-[#4A6362] font-semibold rounded-2xl hover:bg-gray-50 transition-colors text-sm font-['Sora']">
+                <button onClick={onClose} className="px-5 py-3.5 bg-white border border-neutral-400 text-neutral-600 font-semibold rounded-2xl hover:bg-gray-50 transition-colors text-sm font-['Sora']">
                     Fechar
                 </button>
             </div>
         </div>
     )
 }
+
+

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { X, Bell, CheckCheck, RefreshCw, Inbox, AlertCircle } from 'lucide-react'
 import { notificacaoService } from '../services/notificacaoService'
 
@@ -82,15 +82,15 @@ export default function NotificationPanel({ isOpen, onClose, onUnreadChange }) {
                 aria-label="Painel de notificações"
             >
                 {/* Header */}
-                <div className="bg-[#EFF5F4] border-b-[3px] border-[#006A68] px-5 py-4 flex items-center justify-between shrink-0">
+                <div className="bg-neutral-50 border-b-[3px] border-brand-800 px-5 py-4 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#006A68] flex items-center justify-center">
-                            <Bell size={17} className="text-[#9CF1EE]" />
+                        <div className="w-9 h-9 rounded-full bg-brand-800 flex items-center justify-center">
+                            <Bell size={17} className="text-brand-500" />
                         </div>
                         <div>
-                            <h2 className="font-bold text-[#006A68] text-base font-['Sora'] leading-tight">Notificações</h2>
+                            <h2 className="font-bold text-brand-800 text-base font-['Sora'] leading-tight">Notificações</h2>
                             {unreadCount > 0 && (
-                                <p className="text-[11px] text-[#4A6362] font-medium">
+                                <p className="text-[11px] text-neutral-600 font-medium">
                                     {unreadCount} por ler
                                 </p>
                             )}
@@ -100,7 +100,7 @@ export default function NotificationPanel({ isOpen, onClose, onUnreadChange }) {
                         {unreadCount > 0 && (
                             <button
                                 onClick={handleMarkAllRead}
-                                className="flex items-center gap-1.5 text-[11px] font-semibold text-[#006A68] bg-[#CCE8E6] px-2.5 py-1.5 rounded-lg hover:bg-[#B8E0DE] transition-colors"
+                                className="flex items-center gap-1.5 text-[11px] font-semibold text-brand-800 bg-brand-200 px-2.5 py-1.5 rounded-lg hover:bg-brand-500 transition-colors"
                                 title="Marcar todas como lidas"
                             >
                                 <CheckCheck size={13} />
@@ -109,7 +109,7 @@ export default function NotificationPanel({ isOpen, onClose, onUnreadChange }) {
                         )}
                         <button
                             onClick={onClose}
-                            className="w-8 h-8 rounded-full hover:bg-[#CCE8E6] flex items-center justify-center text-[#4A6362] transition-colors"
+                            className="w-8 h-8 rounded-full hover:bg-brand-200 flex items-center justify-center text-neutral-600 transition-colors"
                             aria-label="Fechar"
                         >
                             <X size={17} />
@@ -120,35 +120,35 @@ export default function NotificationPanel({ isOpen, onClose, onUnreadChange }) {
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto">
                     {loading ? (
-                        <div className="flex items-center justify-center py-16 text-[#006A68]">
+                        <div className="flex items-center justify-center py-16 text-brand-800">
                             <RefreshCw size={24} className="animate-spin" />
                         </div>
                     ) : notificacoes.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-                            <div className="w-16 h-16 rounded-full bg-[#CCE8E6] flex items-center justify-center mb-4">
-                                <Inbox size={28} className="text-[#006A68]" />
+                            <div className="w-16 h-16 rounded-full bg-brand-200 flex items-center justify-center mb-4">
+                                <Inbox size={28} className="text-brand-800" />
                             </div>
-                            <p className="font-semibold text-[#324B4A] text-sm">Sem notificações</p>
-                            <p className="text-xs text-[#4A6362] mt-1 opacity-70">Estás em dia com tudo!</p>
+                            <p className="font-semibold text-neutral-800 text-sm">Sem notificações</p>
+                            <p className="text-xs text-neutral-600 mt-1 opacity-70">Estás em dia com tudo!</p>
                         </div>
                     ) : (
-                        <ul className="divide-y divide-[#4a6362]/10">
+                        <ul className="divide-y divide-neutral-600/10">
                             {notificacoes.map(n => (
                                 <li
                                     key={n.id}
-                                    className={`px-5 py-4 flex gap-3 transition-colors ${!n.lida ? 'bg-[#F4FBF9]' : 'bg-white hover:bg-gray-50'}`}
+                                    className={`px-5 py-4 flex gap-3 transition-colors ${!n.lida ? 'bg-brand-50' : 'bg-white hover:bg-gray-50'}`}
                                 >
                                     {/* Dot indicator */}
                                     <div className="mt-1.5 shrink-0">
-                                        <div className={`w-2 h-2 rounded-full ${!n.lida ? 'bg-[#006A68]' : 'bg-transparent border border-gray-300'}`} />
+                                        <div className={`w-2 h-2 rounded-full ${!n.lida ? 'bg-brand-800' : 'bg-transparent border border-gray-300'}`} />
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                        <p className={`text-sm leading-snug mb-0.5 font-['Sora'] ${!n.lida ? 'font-semibold text-[#324B4A]' : 'font-medium text-gray-600'}`}>
+                                        <p className={`text-sm leading-snug mb-0.5 font-['Sora'] ${!n.lida ? 'font-semibold text-neutral-800' : 'font-medium text-gray-600'}`}>
                                             {n.titulo}
                                         </p>
                                         {n.mensagem && (
-                                            <p className="text-xs text-[#4A6362] leading-relaxed line-clamp-2 mb-1.5">
+                                            <p className="text-xs text-neutral-600 leading-relaxed line-clamp-2 mb-1.5">
                                                 {n.mensagem}
                                             </p>
                                         )}
@@ -159,7 +159,7 @@ export default function NotificationPanel({ isOpen, onClose, onUnreadChange }) {
                                         <button
                                             onClick={() => handleMarkRead(n.id)}
                                             disabled={marking === n.id}
-                                            className="shrink-0 mt-1 w-7 h-7 rounded-lg bg-[#CCE8E6] flex items-center justify-center hover:bg-[#006A68] hover:text-white text-[#006A68] transition-colors"
+                                            className="shrink-0 mt-1 w-7 h-7 rounded-lg bg-brand-200 flex items-center justify-center hover:bg-brand-800 hover:text-white text-brand-800 transition-colors"
                                             title="Marcar como lida"
                                         >
                                             {marking === n.id
@@ -175,7 +175,7 @@ export default function NotificationPanel({ isOpen, onClose, onUnreadChange }) {
                 </div>
 
                 {/* Footer */}
-                <div className="px-5 py-3 border-t border-[#4a6362]/10 shrink-0">
+                <div className="px-5 py-3 border-t border-neutral-600/10 shrink-0">
                     <p className="text-[10px] text-center text-gray-400">
                         {notificacoes.length} notificação{notificacoes.length !== 1 ? 'ões' : ''} no total
                     </p>
@@ -184,3 +184,4 @@ export default function NotificationPanel({ isOpen, onClose, onUnreadChange }) {
         </>
     )
 }
+

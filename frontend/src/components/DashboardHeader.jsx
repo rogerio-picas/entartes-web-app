@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { authService } from '../services/authService'
-import { Home, CalendarDays, GraduationCap, User, Bell, Calendar, LogOut, LayoutGrid } from 'lucide-react'
+import { Home, GraduationCap, User, Bell, Calendar, LogOut, LayoutGrid, Clock, Star } from 'lucide-react'
 
 export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
     const navigate = useNavigate()
@@ -20,23 +20,23 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
     const navItems = [
         { label: 'Início', path: '/home', icon: Home },
         { label: 'Horário', path: '/horario', icon: Calendar },
-        { label: 'Aulas', path: '/aulas', icon: CalendarDays },
+        { label: 'Coachings', path: '/aulas', icon: Clock },
         ...(isAdmin ? [{ label: 'Painel de Gestão', path: '/gestao', icon: LayoutGrid }] : []),
         { label: 'Escola', path: '/escola', icon: GraduationCap },
-        { label: 'Eventos', path: '/eventos', icon: Calendar },
+        { label: 'Eventos', path: '/eventos', icon: Star },
         { label: 'Perfil', path: '/profile', icon: User },
     ]
 
     return (
-        <nav className="bg-[#EFF5F4] border-b-[3px] border-brand-dark px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+        <nav className="bg-neutral-50 border-b-[3px] border-brand-800 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
 
             {/* Left: Greeting */}
             <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-brand-dark flex items-center justify-center shrink-0">
-                    <span className="text-[#9CF1EE] text-lg font-medium">{firstName?.[0] ?? 'A'}</span>
+                <div className="w-12 h-12 rounded-full bg-brand-800 flex items-center justify-center shrink-0">
+                    <span className="text-brand-500 text-lg font-medium">{firstName?.[0] ?? 'A'}</span>
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-[#4A6362] text-sm tracking-wide">Olá,</span>
+                    <span className="text-neutral-600 text-sm tracking-wide">Olá,</span>
                     <span className="text-black font-semibold text-xl leading-tight">
                         {firstName} {lastName}
                     </span>
@@ -53,13 +53,15 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                         <button
                             key={item.label}
                             onClick={() => navigate(item.path)}
-                            className="relative flex flex-col items-center justify-center min-w-[88px] px-2 h-16 group outline-none"
+                            className="relative flex flex-col items-center justify-center min-w-[150px] px-2 h-16 group outline-none"
                         >
                             <div className={`flex items-center justify-center w-16 h-8 rounded-full mb-1 transition-colors
-                                ${isActive ? 'bg-brand-light' : 'bg-transparent group-hover:bg-brand-light/50'}`}>
-                                <Icon size={20} className={isActive ? 'text-[#324B4A]' : 'text-brand-darkest group-hover:text-[#324B4A]'} />
+                                ${isActive ? 'bg-brand-200' : 'bg-transparent group-hover:bg-brand-200/50'}`}>
+                                <Icon size={24} className={
+                                    `transition-colors ${isActive ? 'text-neutral-800 fill-brand-800/20' :
+                                        'text-brand-900 fill-transparent group-hover:text-brand-900 group-hover:fill-brand-800/50'}`} />
                             </div>
-                            <span className={`text-xs font-medium tracking-wide text-center leading-tight ${isActive ? 'text-[#324B4A]' : 'text-brand-darkest'}`}>
+                            <span className={`text-sm font-semibold tracking-wide text-center leading-tight ${isActive ? 'text-neutral-800' : 'text-brand-900'}`}>
                                 {item.label}
                             </span>
                         </button>
@@ -72,13 +74,13 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
                 {/* Bell with unread badge */}
                 <button
                     onClick={onBellClick}
-                    className="relative flex items-center justify-center w-10 h-10 bg-[#4A6362] rounded-full hover:bg-[#3A504F] transition-colors"
+                    className="relative flex items-center justify-center w-10 h-10 bg-neutral-600 rounded-full hover:bg-brand-900 transition-colors"
                     title="Notificações"
                     aria-label={`Notificações${unreadCount > 0 ? ` — ${unreadCount} por ler` : ''}`}
                 >
                     <Bell size={20} className="text-white" />
                     {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#B3261E] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-[#EFF5F4]">
+                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-feedback-error text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-neutral-50">
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                     )}
@@ -86,12 +88,13 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
 
                 <button
                     onClick={handleLogout}
-                    className="flex items-center justify-center w-10 h-10 bg-brand-bg border border-brand-dark rounded-full hover:bg-red-50 hover:border-red-300 transition-colors group"
+                    className="flex items-center justify-center w-10 h-10 bg-brand-50 border border-brand-800 rounded-full hover:bg-red-50 hover:border-red-300 transition-colors group"
                     title="Terminar Sessão"
                 >
-                    <LogOut size={18} className="text-brand-dark group-hover:text-red-600 transition-colors" />
+                    <LogOut size={18} className="text-brand-800 group-hover:text-red-600 transition-colors" />
                 </button>
             </div>
         </nav>
     )
 }
+

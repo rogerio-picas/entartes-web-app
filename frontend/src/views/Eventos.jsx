@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { eventService } from '../services/eventService'
 import { Calendar as CalendarIcon, AlertCircle, Loader2, Plus } from 'lucide-react'
 import { EventCard } from '../components/Cards'
@@ -42,16 +42,16 @@ export default function Events() {
       {/* Header */}
       <div className="mb-8 flex items-end justify-between">
         <div>
-          <p className="text-[#4A6362] text-sm mb-1">Agenda Cultural & Académica</p>
-          <h1 className="text-[#324B4A] text-4xl">
-            Próximos <span className="text-[#006A68] font-semibold">Eventos</span>
+          <p className="text-neutral-600 text-sm mb-1">Agenda Cultural & Académica</p>
+          <h1 className="text-neutral-800 text-4xl">
+            Próximos <span className="text-brand-800 font-semibold">Eventos</span>
           </h1>
         </div>
 
         {isAdmin && (
           <button
             onClick={() => setShowNovo(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#006A68] text-white rounded-xl hover:bg-[#00504E]"
+            className="flex items-center gap-2 px-5 py-2.5 bg-brand-800 text-white rounded-xl hover:bg-brand-900"
           >
             <Plus size={16} /> Criar Evento
           </button>
@@ -60,7 +60,7 @@ export default function Events() {
 
       {/* Loading */}
       {loading && (
-        <div className="flex flex-col items-center py-24 gap-3 text-[#006A68]">
+        <div className="flex flex-col items-center py-24 gap-3 text-brand-800">
           <Loader2 className="animate-spin" size={32} />
           <p>A carregar eventos...</p>
         </div>
@@ -104,8 +104,8 @@ export default function Events() {
       {/* Eventos Concluídos */}
       {!loading && concluidos.length > 0 && (
         <div className="mt-12">
-          <h2 className="text-[#324B4A] text-2xl mb-4">
-            Eventos <span className="text-[#006A68] font-semibold">Concluídos</span>
+          <h2 className="text-neutral-800 text-2xl mb-4">
+            Eventos <span className="text-brand-800 font-semibold">Concluídos</span>
           </h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 opacity-70">
             {concluidos.map((event) => (
@@ -122,7 +122,7 @@ export default function Events() {
       {/* Eventos Cancelados */}
       {!loading && cancelados.length > 0 && (
         <div className="mt-12">
-          <h2 className="text-[#324B4A] text-2xl mb-4">
+          <h2 className="text-neutral-800 text-2xl mb-4">
             Eventos <span className="text-red-500 font-semibold">Cancelados</span>
           </h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 opacity-60">
