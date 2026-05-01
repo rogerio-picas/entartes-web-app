@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const coachingController = require('../controllers/coachingController');
 const coachingAlunoController = require('../controllers/coachingAlunoController');
 const coachingCoordenacaoController = require('../controllers/coachingCoordenacaoController');
 const coachingDocenteController = require('../controllers/coachingDocenteController');
