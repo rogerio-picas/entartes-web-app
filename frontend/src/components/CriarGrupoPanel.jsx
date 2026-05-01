@@ -115,7 +115,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                 }
             } else {
                 // Create Group
-                grupo = await api.post(`/evento/${eventId}/`, { nome: nome.trim(), descricao })
+                grupo = await api.post(`/evento/${eventId}/grupos`, { nome: nome.trim(), descricao })
                 groupId = grupo.id_grupo
 
                 const errors = []
