@@ -48,6 +48,7 @@ const mockTx = {
 
 const mockPrisma = {
     utilizador: {
+        findMany: jest.fn(),
         findUnique: jest.fn(),
     },
     $transaction: jest.fn(),
@@ -60,7 +61,7 @@ jest.mock('@prisma/client', () => ({
 // ─── Importações ─────────────────────────────────────────────────────────────
 
 const bcrypt = require('bcrypt');
-const { criarUtilizador, atualizarUtilizador } = require('../../services/userService');
+const { criarUtilizador, atualizarUtilizador, getUsers, getUser, deleteUser } = require('../../services/userService');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -677,5 +678,79 @@ describe('userService › atualizarUtilizador [cobertura branch linha 170]', () 
         });
         expect(txLocal.aluno.delete).toHaveBeenCalledWith({ where: { id_utilizador: 99 } });
         expect(txLocal.docente.create).not.toHaveBeenCalled();
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUITE: getUsers
+// ─────────────────────────────────────────────────────────────────────────────
+describe('userService › getUsers', () => {
+    it('deve chamar prisma.utilizador.findMany com opções', async () => {
+        const options = { where: { id_tipo: 3 } };
+        mockPrisma.utilizador.findMany.mockResolvedValue([{ id: 1 }]);
+        const result = await getUsers(options);
+        expect(mockPrisma.utilizador.findMany).toHaveBeenCalledWith(options);
+        expect(result).toEqual([{ id: 1 }]);
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUITE: getUser
+// ─────────────────────────────────────────────────────────────────────────────
+describe('userService › getUser', () => {
+    it('deve chamar prisma.utilizador.findUnique com opções', async () => {
+        const options = { where: { id_utilizador: 1 } };
+        mockPrisma.utilizador.findUnique.mockResolvedValue({ id: 1 });
+        const result = await getUser(options);
+        expect(mockPrisma.utilizador.findUnique).toHaveBeenCalledWith(options);
+        expect(result).toEqual({ id: 1 });
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUITE: deleteUser
+// ─────────────────────────────────────────────────────────────────────────────
+describe('userService › deleteUser', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        setupTransaction();
+    });
+
+    it('deve lançar erro se utilizador não for encontrado', async () => {
+        mockPrisma.utilizador.findUnique.mockResolvedValue(null);
+        await expect(deleteUser('1')).rejects.toThrow('Utilizador não encontrado');
+    });
+
+    it('deve eliminar utilizador e as respetivas sub-tabelas (aluno, docente, coordenadora)', async () => {
+        mockPrisma.utilizador.findUnique.mockResolvedValue({
+            id_utilizador: 1,
+            aluno: true,
+            docente: true,
+            coordenadora: true,
+        });
+        await deleteUser('1');
+        
+        expect(mockPrisma.utilizador.findUnique).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { id_utilizador: 1 } })
+        );
+        expect(mockTx.aluno.delete).toHaveBeenCalledWith({ where: { id_utilizador: 1 } });
+        expect(mockTx.docente.delete).toHaveBeenCalledWith({ where: { id_utilizador: 1 } });
+        expect(mockTx.coordenadora.delete).toHaveBeenCalledWith({ where: { id_utilizador: 1 } });
+        expect(mockTx.utilizador.delete).toHaveBeenCalledWith({ where: { id_utilizador: 1 } });
+    });
+
+    it('não deve tentar eliminar sub-tabelas se não existirem no utilizador', async () => {
+        mockPrisma.utilizador.findUnique.mockResolvedValue({
+            id_utilizador: 2,
+            aluno: null,
+            docente: null,
+            coordenadora: null,
+        });
+        await deleteUser('2');
+        
+        expect(mockTx.aluno.delete).not.toHaveBeenCalled();
+        expect(mockTx.docente.delete).not.toHaveBeenCalled();
+        expect(mockTx.coordenadora.delete).not.toHaveBeenCalled();
+        expect(mockTx.utilizador.delete).toHaveBeenCalledWith({ where: { id_utilizador: 2 } });
     });
 });
