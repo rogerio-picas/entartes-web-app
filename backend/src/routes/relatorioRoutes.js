@@ -61,11 +61,11 @@ const relController = require('../controllers/relatorioController');
  *               type: string
  */
 
-router.use(tokenValidation, authorize([1]));
-router.get('/sessoes',   tokenValidation, authorize([1]), relController.getSessoesRelatorio);
+// CORREÇÃO: middleware duplicado — router.use aplicava tokenValidation+authorize e cada rota repetia-os
+router.get('/sessoes',       tokenValidation, authorize([1]), relController.getSessoesRelatorio);
 router.get('/horas-docente', tokenValidation, authorize([1]), relController.getHorasDocente);
-router.get('/alunos',   tokenValidation, authorize([1]), relController.getAlunosRelatorio);
-router.get('/docentes', tokenValidation, authorize([1]), relController.getDocentesRelatorio);
-router.get('/exportar', tokenValidation, authorize([1]), relController.exportCSV);
+router.get('/alunos',        tokenValidation, authorize([1]), relController.getAlunosRelatorio);
+router.get('/docentes',      tokenValidation, authorize([1]), relController.getDocentesRelatorio);
+router.get('/exportar',      tokenValidation, authorize([1]), relController.exportCSV);
 
 module.exports = router;

@@ -2,6 +2,11 @@ const notificacaoService = require('../services/notificacaoService');
 
 const listNotificacoes = async (req, res) => {
     try {
+        // CORREÇÃO: ausência de id do utilizador não era validada, caindo diretamente num erro 500
+        if (!req.user?.id) {
+            return res.status(400).json({ error: 'ID do utilizador em falta no token.' });
+        }
+
         const list = await notificacaoService.listNotificacoes(req.user.id);
         res.json(list);
     } catch (error) {

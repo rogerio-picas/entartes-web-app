@@ -6,6 +6,11 @@ const getSessoesRelatorio = async (req, res) => {
         const { from, to } = req.query
         if (!from || !to) return res.status(400).json({ error: 'Parameters "from" and "to" are required' })
 
+        // CORREÇÃO: datas não eram validadas quanto ao formato nem à ordem (to >= from)
+        if (isNaN(new Date(from).getTime())) return res.status(400).json({ error: '"from" tem formato de data inválido' })
+        if (isNaN(new Date(to).getTime()))   return res.status(400).json({ error: '"to" tem formato de data inválido' })
+        if (new Date(to) <= new Date(from))  return res.status(400).json({ error: '"to" deve ser posterior a "from"' })
+
         const sessoes = await prisma.marcacao.findMany({
             where: {
                 id_estado: 4,
@@ -22,6 +27,12 @@ const getSessoesRelatorio = async (req, res) => {
 const getHorasDocente = async (req, res) => {
     try {
         const { data_inicio, data_fim } = req.query
+
+        // CORREÇÃO: datas não eram validadas quanto ao formato nem à ordem (fim >= início)
+        if (data_inicio && isNaN(new Date(data_inicio).getTime())) return res.status(400).json({ error: 'data_inicio tem formato de data inválido' })
+        if (data_fim    && isNaN(new Date(data_fim).getTime()))    return res.status(400).json({ error: 'data_fim tem formato de data inválido' })
+        if (data_inicio && data_fim && new Date(data_fim) <= new Date(data_inicio)) return res.status(400).json({ error: 'data_fim deve ser posterior a data_inicio' })
+
         const dateFilter = {}
         if (data_inicio) dateFilter.gte = new Date(data_inicio)
         if (data_fim)    dateFilter.lte = new Date(data_fim)
@@ -51,6 +62,12 @@ const getHorasDocente = async (req, res) => {
 const getAlunosRelatorio = async (req, res) => {
     try {
         const { data_inicio, data_fim } = req.query
+
+        // CORREÇÃO: datas não eram validadas quanto ao formato nem à ordem (fim >= início)
+        if (data_inicio && isNaN(new Date(data_inicio).getTime())) return res.status(400).json({ error: 'data_inicio tem formato de data inválido' })
+        if (data_fim    && isNaN(new Date(data_fim).getTime()))    return res.status(400).json({ error: 'data_fim tem formato de data inválido' })
+        if (data_inicio && data_fim && new Date(data_fim) <= new Date(data_inicio)) return res.status(400).json({ error: 'data_fim deve ser posterior a data_inicio' })
+
         const dateFilter = {}
         if (data_inicio) dateFilter.gte = new Date(data_inicio)
         if (data_fim)    dateFilter.lte = new Date(data_fim)
@@ -112,6 +129,11 @@ const exportCSV = async (req, res) => {
     try {
         const { from, to } = req.query
         if (!from || !to) return res.status(400).json({ error: 'Parameters "from" and "to" are required' })
+
+        // CORREÇÃO: datas não eram validadas quanto ao formato nem à ordem (to >= from)
+        if (isNaN(new Date(from).getTime())) return res.status(400).json({ error: '"from" tem formato de data inválido' })
+        if (isNaN(new Date(to).getTime()))   return res.status(400).json({ error: '"to" tem formato de data inválido' })
+        if (new Date(to) <= new Date(from))  return res.status(400).json({ error: '"to" deve ser posterior a "from"' })
 
         const sessoes = await prisma.marcacao.findMany({
             where: { id_estado: 4, data_a_realizar: { gte: new Date(from), lte: new Date(to) } },

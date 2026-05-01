@@ -236,13 +236,20 @@ const associarDocente = async (id_modalidade, id_docente) => {
   if (!modalidade) throw new Error('Modalidade não encontrada.');
 
   // Verifica que o docente existe
-  const docente = await prisma.docente.findUnique({ 
+  const docente = await prisma.docente.findUnique({
     where: { id_utilizador: idDocente },
     include: {
       utilizador: { select: { nome: true, apelido: true, codigo_username: true } }
     }
   });
-  if (!docente) throw new Error('Docente não encontrado.');
+  if (!docente) {
+    // Fallback: check if the utilizador exists but is missing the docente profile row
+    const utilizador = await prisma.utilizador.findUnique({ where: { id_utilizador: idDocente } });
+    if (utilizador && utilizador.id_tipo === 2) {
+      throw new Error('Utilizador é docente mas o perfil de docente está em falta na base de dados. Contacte o administrador.');
+    }
+    throw new Error('Docente não encontrado.');
+  }
 
   // Verifica se já está associado
   const jaAssociado = await prisma.docente_modalidade.findUnique({

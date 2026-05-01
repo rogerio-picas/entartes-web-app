@@ -7,12 +7,15 @@ function _handleError(res, error) {
   if (mensagemMinuscula.includes('não encontrado') || mensagemMinuscula.includes('não pertence')) {
     return res.status(404).json({ message: mensagemOriginal });
   }
+  // CORREÇÃO: 'não tem permissão' era mapeado para 400 em vez de 403
+  if (mensagemMinuscula.includes('não tem permissão')) {
+    return res.status(403).json({ message: mensagemOriginal });
+  }
   if (
     mensagemMinuscula.includes('obrigatório') ||
     mensagemMinuscula.includes('inválido') ||
     mensagemMinuscula.includes('já existe') ||
     mensagemMinuscula.includes('já tem') ||
-    mensagemMinuscula.includes('não tem permissão') ||
     mensagemMinuscula.includes('coincide') ||
     mensagemMinuscula.includes('expirou') ||
     mensagemMinuscula.includes('não cabe') ||
@@ -28,6 +31,12 @@ function _handleError(res, error) {
 const consultarDisponibilidades = async (req, res) => {
   try {
     const { id_modalidade, data } = req.query;
+
+    // CORREÇÃO: data não era validada quanto ao formato
+    if (data && isNaN(new Date(data).getTime())) {
+      return res.status(400).json({ message: 'data tem formato inválido.' });
+    }
+
     const filtros = {};
     if (id_modalidade) filtros.id_modalidade = Number(id_modalidade);
     if (data) filtros.data = data;
@@ -46,6 +55,15 @@ const solicitarMarcacao = async (req, res) => {
 
     if (!dados.id_docente || !dados.id_modalidade || !dados.data_a_realizar || !dados.hora_inicio || !dados.duracao_minutos) {
       return res.status(400).json({ message: 'id_docente, id_modalidade, data_a_realizar, hora_inicio e duracao_minutos são obrigatórios.' });
+    }
+
+    // CORREÇÃO: data_a_realizar não era validada quanto ao formato
+    if (isNaN(new Date(dados.data_a_realizar).getTime())) {
+      return res.status(400).json({ message: 'data_a_realizar tem formato inválido.' });
+    }
+    const today = new Date().toISOString().split('T')[0];
+    if (new Date(dados.data_a_realizar).toISOString().split('T')[0] < today) {
+      return res.status(400).json({ message: 'data_a_realizar não pode ser no passado.' });
     }
 
     const marcacao = await coachingAlunoService.solicitarMarcacao(id_aluno, dados);
