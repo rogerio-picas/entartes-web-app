@@ -1,4 +1,4 @@
-const { criarModalidade, listarModalidades } = require('../../services/modalidadeService');
+const { criarModalidade, listarModalidades } = require('../../services/modalidadeservice');
 const { PrismaClient } = require('@prisma/client');
 
 // Mock Prisma
