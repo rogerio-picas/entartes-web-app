@@ -51,7 +51,7 @@ describe('tokenValidation middleware', () => {
 
     expect(res.status).toHaveBeenCalledWith(401)
     expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Token inválido ou sessão expirada.' })
+      expect.objectContaining({ message: 'Token inválido ou sessão expirada.' })
     )
     expect(next).not.toHaveBeenCalled()
   })
@@ -60,15 +60,14 @@ describe('tokenValidation middleware', () => {
     const req = { headers: { authorization: `token-valido-mas-sem-bearer` } }
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() }
     const next = jest.fn()
-
     tokenValidation(req, res, next)
-
     expect(res.status).toHaveBeenCalledWith(401)
     expect(res.json).toHaveBeenCalledWith({ message: 'Acesso negado. É necessária autenticação.' })
     expect(next).not.toHaveBeenCalled()
   })
 
   it('retorna erro 401 quando o cabeçalho só tem a palavra "Bearer " mas o token está vazio', () => {
+    // Exemplo: O frontend enviou "Bearer " e esqueceu-se de concatenar o token JWT
     const req = { headers: { authorization: `Bearer ` } }
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() }
     const next = jest.fn()
