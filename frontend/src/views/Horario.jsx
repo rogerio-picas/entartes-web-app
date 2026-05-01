@@ -59,7 +59,7 @@ const STATUS_COLOR = {
     1: 'bg-amber-100 border-amber-300 text-amber-700',
     2: 'bg-blue-100 border-blue-300 text-blue-700',
     3: 'bg-emerald-100 border-emerald-300 text-emerald-700',
-    4: 'bg-brand-200 border-brand-800 text-brand-800',
+    4: 'bg-[#CCE8E6] border-[#006A68] text-[#006A68]',
     5: 'bg-red-100 border-red-300 text-red-700'
 }
 
@@ -117,8 +117,8 @@ function EditSalaModal({ item, salas, onClose, onSuccess }) {
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={onClose}>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
-                <div className="px-6 py-5 bg-brand-50 border-b-2 border-brand-500 flex items-center justify-between">
-                    <h3 className="font-bold text-lg text-brand-800">Mudar Sala</h3>
+                <div className="px-6 py-5 bg-[#F4FBF9] border-b-2 border-[#80D5D2] flex items-center justify-between">
+                    <h3 className="font-bold text-lg text-[#006A68]">Mudar Sala</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
                 </div>
                 <div className="p-6 space-y-4">
@@ -128,7 +128,7 @@ function EditSalaModal({ item, salas, onClose, onSuccess }) {
                         <select
                             value={idSala}
                             onChange={e => setIdSala(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-800"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#006A68]"
                         >
                             <option value="">Selecionar nova sala...</option>
                             {salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
@@ -137,7 +137,7 @@ function EditSalaModal({ item, salas, onClose, onSuccess }) {
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="w-full py-2.5 bg-brand-800 text-white font-bold rounded-xl hover:bg-brand-900 disabled:opacity-50 transition-colors"
+                        className="w-full py-2.5 bg-[#006A68] text-white font-bold rounded-xl hover:bg-[#00504E] disabled:opacity-50 transition-colors"
                     >
                         {loading ? 'A guardar...' : 'Confirmar Alteração'}
                     </button>
@@ -172,25 +172,25 @@ function CustomToolbar({ label, onNavigate, onView, view }) {
     return (
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5 px-8 pt-8">
             <div className="flex items-center gap-4">
-                <h2 className="text-2xl font-bold text-neutral-800 min-w-[200px]">{label}</h2>
+                <h2 className="text-2xl font-bold text-[#324B4A] min-w-[200px]">{label}</h2>
                 <div className="flex items-center gap-2 ml-2">
-                    <button onClick={() => onNavigate('PREV')} className="w-9 h-9 rounded-full border border-neutral-600/25 flex items-center justify-center hover:bg-neutral-50 transition-colors">
-                        <ChevronLeft size={17} className="text-neutral-600" />
+                    <button onClick={() => onNavigate('PREV')} className="w-9 h-9 rounded-full border border-[#4a6362]/25 flex items-center justify-center hover:bg-[#EFF5F4] transition-colors">
+                        <ChevronLeft size={17} className="text-[#4A6362]" />
                     </button>
-                    <button onClick={() => onNavigate('TODAY')} className="px-4 py-1.5 rounded-lg border border-neutral-600/25 text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition-colors">
+                    <button onClick={() => onNavigate('TODAY')} className="px-4 py-1.5 rounded-lg border border-[#4a6362]/25 text-sm font-semibold text-[#4A6362] hover:bg-[#EFF5F4] transition-colors">
                         Hoje
                     </button>
-                    <button onClick={() => onNavigate('NEXT')} className="w-9 h-9 rounded-full border border-neutral-600/25 flex items-center justify-center hover:bg-neutral-50 transition-colors">
-                        <ChevronRight size={17} className="text-neutral-600" />
+                    <button onClick={() => onNavigate('NEXT')} className="w-9 h-9 rounded-full border border-[#4a6362]/25 flex items-center justify-center hover:bg-[#EFF5F4] transition-colors">
+                        <ChevronRight size={17} className="text-[#4A6362]" />
                     </button>
                 </div>
             </div>
             <div className="flex items-center gap-2">
-                <div className="flex items-center border border-neutral-600/25 rounded-xl overflow-hidden">
+                <div className="flex items-center border border-[#4a6362]/25 rounded-xl overflow-hidden">
                     {['month', 'week'].map(mode => (
                         <button key={mode} onClick={() => onView(mode)}
                             className={`px-4 py-2 text-sm font-semibold capitalize transition-colors
-                                ${view === mode ? 'bg-brand-800 text-white' : 'text-neutral-600 hover:bg-neutral-50'}`}>
+                                ${view === mode ? 'bg-[#006A68] text-white' : 'text-[#4A6362] hover:bg-[#EFF5F4]'}`}>
                             {mode === 'month' ? 'Mensal' : 'Semanal'}
                         </button>
                     ))}
@@ -204,11 +204,11 @@ function CustomToolbar({ label, onNavigate, onView, view }) {
 function InfoItem({ icon: Icon, label, value }) {
     return (
         <div className="flex items-start gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-brand-200 flex items-center justify-center shrink-0 mt-0.5">
-                {Icon && <Icon size={14} className="text-brand-800" />}
+            <div className="w-7 h-7 rounded-lg bg-[#CCE8E6] flex items-center justify-center shrink-0 mt-0.5">
+                {Icon && <Icon size={14} className="text-[#006A68]" />}
             </div>
             <div>
-                <p className="text-[10px] uppercase tracking-wider text-neutral-600 font-semibold">{label}</p>
+                <p className="text-[10px] uppercase tracking-wider text-[#4A6362] font-semibold">{label}</p>
                 <p className="text-sm font-medium text-gray-800">{String(value || '—')}</p>
             </div>
         </div>
@@ -262,13 +262,13 @@ function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-            <div className="relative bg-brand-50 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={e => e.stopPropagation()}>
-                <div className="bg-neutral-50 border-b-2 border-brand-800 px-6 py-5 flex items-center justify-between">
+            <div className="relative bg-[#F4FBF9] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="bg-[#EFF5F4] border-b-2 border-[#006A68] px-6 py-5 flex items-center justify-between">
                     <div>
-                        <p className="text-xs text-neutral-600 font-medium uppercase tracking-wider mb-0.5">Novo</p>
-                        <h3 className="text-brand-800 font-bold text-xl font-['Sora']">Novo Coaching</h3>
+                        <p className="text-xs text-[#4A6362] font-medium uppercase tracking-wider mb-0.5">Novo</p>
+                        <h3 className="text-[#006A68] font-bold text-xl font-['Sora']">Novo Coaching</h3>
                     </div>
-                    <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-brand-200 flex items-center justify-center text-neutral-600">
+                    <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-[#CCE8E6] flex items-center justify-center text-[#4A6362]">
                         <X size={16} />
                     </button>
                 </div>
@@ -280,54 +280,54 @@ function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
                     )}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider mb-1.5 block">Data</label>
+                            <label className="text-[11px] font-bold text-[#4A6362] uppercase tracking-wider mb-1.5 block">Data</label>
                             <input type="date" value={form.data} onChange={e => set('data', e.target.value)}
-                                className="w-full bg-white border border-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-800" />
+                                className="w-full bg-white border border-[#6F7978] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#006A68]" />
                         </div>
                         <div>
-                            <label className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider mb-1.5 block">Hora</label>
+                            <label className="text-[11px] font-bold text-[#4A6362] uppercase tracking-wider mb-1.5 block">Hora</label>
                             <input type="time" value={form.hora} onChange={e => set('hora', e.target.value)}
-                                className="w-full bg-white border border-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-800" />
+                                className="w-full bg-white border border-[#6F7978] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#006A68]" />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider mb-1.5 block">Duração (min)</label>
+                            <label className="text-[11px] font-bold text-[#4A6362] uppercase tracking-wider mb-1.5 block">Duração (min)</label>
                             <input type="number" value={form.duracao} onChange={e => set('duracao', e.target.value)} min={15} step={15}
-                                className="w-full bg-white border border-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-800" />
+                                className="w-full bg-white border border-[#6F7978] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#006A68]" />
                         </div>
                         <div>
-                            <label className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider mb-1.5 block">Nº alunos</label>
+                            <label className="text-[11px] font-bold text-[#4A6362] uppercase tracking-wider mb-1.5 block">Nº alunos</label>
                             <input type="number" value={form.num_alunos} onChange={e => set('num_alunos', e.target.value)} min={1}
-                                className="w-full bg-white border border-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-800" />
+                                className="w-full bg-white border border-[#6F7978] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#006A68]" />
                         </div>
                     </div>
                     <div>
-                        <label className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider mb-1.5 block">Modalidade</label>
+                        <label className="text-[11px] font-bold text-[#4A6362] uppercase tracking-wider mb-1.5 block">Modalidade</label>
                         <div className="relative">
                             <select value={form.id_modalidade} onChange={e => set('id_modalidade', e.target.value)}
-                                className="w-full appearance-none bg-white border border-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-800 pr-8">
+                                className="w-full appearance-none bg-white border border-[#6F7978] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#006A68] pr-8">
                                 <option value="">Selecionar modalidade...</option>
                                 {modalidades.map(m => <option key={m.id_modalidade} value={m.id_modalidade}>{m.nome}</option>)}
                             </select>
-                            <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 pointer-events-none" />
+                            <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6362] pointer-events-none" />
                         </div>
                     </div>
                     <div>
-                        <label className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider mb-1.5 block">Sala</label>
+                        <label className="text-[11px] font-bold text-[#4A6362] uppercase tracking-wider mb-1.5 block">Sala</label>
                         <div className="relative">
                             <select value={form.id_sala} onChange={e => set('id_sala', e.target.value)}
-                                className="w-full appearance-none bg-white border border-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-800 pr-8">
+                                className="w-full appearance-none bg-white border border-[#6F7978] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#006A68] pr-8">
                                 <option value="">Selecionar sala...</option>
                                 {Array.isArray(salas) && salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
                             </select>
-                            <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 pointer-events-none" />
+                            <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6362] pointer-events-none" />
                         </div>
                     </div>
                 </div>
                 <div className="px-6 pb-6">
                     <button onClick={handleSubmit} disabled={loading}
-                        className="w-full py-3.5 bg-brand-800 text-white font-bold rounded-2xl hover:bg-brand-900 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 text-sm">
+                        className="w-full py-3.5 bg-[#006A68] text-white font-bold rounded-2xl hover:bg-[#00504E] transition-colors disabled:opacity-60 flex items-center justify-center gap-2 text-sm">
                         {loading ? <RefreshCw size={16} className="animate-spin" /> : <Check size={16} />}
                         Criar Coaching
                     </button>
@@ -355,7 +355,7 @@ function FilterDropdown({ value, onChange, options, placeholder }) {
     return (
         <div className="relative">
             <select value={value} onChange={e => onChange(e.target.value)}
-                className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-neutral-600/25 text-xs font-medium text-neutral-800 bg-white focus:outline-none focus:border-brand-800 cursor-pointer">
+                className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-[#4a6362]/25 text-xs font-medium text-[#324B4A] bg-white focus:outline-none focus:border-[#006A68] cursor-pointer">
                 <option value="">{placeholder}</option>
                 {options.map(o => (
                     <option key={o.id || o} value={o.id !== undefined ? o.id : o}>
@@ -363,7 +363,7 @@ function FilterDropdown({ value, onChange, options, placeholder }) {
                     </option>
                 ))}
             </select>
-            <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-600 pointer-events-none" />
+            <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#4A6362] pointer-events-none" />
         </div>
     )
 }
@@ -826,11 +826,11 @@ export default function Horario() {
                 {/* Header */}
                 <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
                     <div>
-                        <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">
-                            {role === 1 ? 'Gestão de Horários' : role === 2 ? 'As minhas sessões' : 'O meu calendário'}
+                        <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">
+                            {role === 1 ? 'Gestão de Horários' : role === 2 ? 'As minhas sessões' : 'O meu plano de aulas'}
                         </p>
-                        <h1 className="text-neutral-800 font-normal text-4xl leading-tight tracking-tight">
-                            Horário <span className="text-brand-800 font-semibold">
+                        <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
+                            Horário <span className="text-[#006A68] font-semibold">
                                 {role === 1 ? 'Geral' : role === 2 ? 'do Docente' : 'do Aluno'}
                             </span>
                         </h1>
@@ -839,14 +839,14 @@ export default function Horario() {
                     {/* Actions */}
                     <div className="flex items-center gap-2 flex-wrap">
                         <button onClick={fetchAll} disabled={loading} title="Atualizar"
-                            className="w-9 h-9 rounded-full border border-neutral-600/30 flex items-center justify-center hover:bg-neutral-50 disabled:opacity-40">
-                            <RefreshCw size={15} className={`text-neutral-600 ${loading ? 'animate-spin' : ''}`} />
+                            className="w-9 h-9 rounded-full border border-[#4a6362]/30 flex items-center justify-center hover:bg-[#EFF5F4] disabled:opacity-40">
+                            <RefreshCw size={15} className={`text-[#4A6362] ${loading ? 'animate-spin' : ''}`} />
                         </button>
 
                         {/* Docente: Nova Disponibilidade */}
                         {role === 2 && (
                             <button onClick={() => setShowNovaDisponibilidade(true)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-brand-800 text-white rounded-xl text-sm font-bold hover:bg-brand-900 transition-colors">
+                                className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors">
                                 <Plus size={15} /> Nova Disponibilidade
                             </button>
                         )}
@@ -854,7 +854,7 @@ export default function Horario() {
                         {/* Admin: Novo evento */}
                         {role === 1 && (
                             <button onClick={() => setShowNovoEvento(true)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-brand-800 text-white rounded-xl text-sm font-bold hover:bg-brand-900 transition-colors">
+                                className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors">
                                 <Plus size={15} /> Novo evento
                             </button>
                         )}
@@ -896,7 +896,7 @@ export default function Horario() {
                 )}
 
                 {/* Calendar */}
-                <div className="rounded-2xl border border-neutral-600/20 overflow-hidden bg-white shadow-lg">
+                <div className="rounded-2xl border border-[#4a6362]/20 overflow-hidden bg-white shadow-lg">
                     <Calendar
                         className="!pt-2"
                         localizer={localizer}
@@ -942,7 +942,7 @@ export default function Horario() {
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); handleAdd(date); }}
-                                                className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 bg-brand-800 text-white rounded-[5px] flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition-opacity hover:bg-brand-900 shadow-sm cursor-pointer z-50"
+                                                className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#006A68] text-white rounded-[5px] flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition-opacity hover:bg-[#00504E] shadow-sm cursor-pointer z-50"
                                                 title="Adicionar"
                                             >
                                                 <Plus size={15} strokeWidth={3} />
@@ -1116,4 +1116,3 @@ export default function Horario() {
         </>
     )
 }
-
