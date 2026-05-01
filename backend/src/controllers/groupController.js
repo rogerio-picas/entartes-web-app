@@ -1,7 +1,4 @@
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-
 const groupService = require("../services/groupService");
 
 const listarTodosOsGrupos = async (req, res) => {
@@ -14,7 +11,7 @@ const listarTodosOsGrupos = async (req, res) => {
 };
 
 const criarGrupo = async (req, res) => {
-      console.log("--- DEBUG CONTROLLER ---");
+  console.log("--- DEBUG CONTROLLER ---");
   console.log("Params:", req.params);
   console.log("Body:", req.body);
   try {

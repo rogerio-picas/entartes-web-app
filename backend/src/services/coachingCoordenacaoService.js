@@ -1,15 +1,15 @@
 // src/services/coordenacao.marcacao.service.js
 // Módulo da Coordenação — Gestão de Marcações de Coaching
 // Toda a lógica de negócio do lado da coordenadora no ciclo de vida das marcações
- 
+
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
- 
+
 // ─────────────────────────────────────────────────────────────
 // CONSTANTES DE DOMÍNIO
 // Espelham as mesmas do marcacao.service.js para consistência
 // ─────────────────────────────────────────────────────────────
- 
+
 const ESTADO_MARCACAO = {
   PENDENTE: 1,
   EM_VALIDACAO: 2,
@@ -17,12 +17,12 @@ const ESTADO_MARCACAO = {
   CONCLUIDA: 4,
   CANCELADA: 5,
 };
- 
+
 // ─────────────────────────────────────────────────────────────
 // FUNÇÃO AUXILIAR — Enviar notificação interna
 // Reutilizável em todas as funções deste service
 // ─────────────────────────────────────────────────────────────
- 
+
 /**
  * Cria uma notificação na tabela `notificacao` para um utilizador.
  * Usa a transação ativa se fornecida, senão usa o prisma global.
@@ -38,27 +38,27 @@ async function _notificar(id_user, titulo, mensagem, tx = null) {
     data: { id_user, titulo, mensagem },
   });
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // FUNÇÃO AUXILIAR — Registar transição de estado no histórico
 // ─────────────────────────────────────────────────────────────
- 
+
 async function _registarHistorico(id_marcacoes, id_estado, tx = null) {
   const db = tx || prisma;
   await db.marcacao_estado_historico.create({
     data: { id_marcacoes, id_estado },
   });
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // FUNÇÃO AUXILIAR — Verificar conflito de sala
 // Verifica se uma sala está livre num dado intervalo de tempo
 // ─────────────────────────────────────────────────────────────
- 
+
 async function _verificarSalaLivre(id_sala, data_a_realizar, hora_inicio, duracao_minutos, excluir_id_marcacao = null) {
-  const horaInicioDate = new Date(`1970-01-01T${hora_inicio}`);
+  const horaInicioDate = new Date(`1970-01-01T${hora_inicio}Z`);
   const horaFimDate = new Date(horaInicioDate.getTime() + duracao_minutos * 60 * 1000);
- 
+
   const conflito = await prisma.marcacao.findFirst({
     where: {
       id_sala,
@@ -70,10 +70,10 @@ async function _verificarSalaLivre(id_sala, data_a_realizar, hora_inicio, duraca
       hora_inicio: { lt: horaFimDate },
     },
   });
- 
+
   return !conflito; // true = livre
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // 1. listarPedidosPendentes
 // ─────────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ async function _verificarSalaLivre(id_sala, data_a_realizar, hora_inicio, duraca
  */
 async function listarPedidosPendentes({ estados = null, data_inicio = null, data_fim = null } = {}) {
   const estadosFiltro = estados || [ESTADO_MARCACAO.PENDENTE, ESTADO_MARCACAO.EM_VALIDACAO];
- 
+
   const marcacoes = await prisma.marcacao.findMany({
     where: {
       id_estado: { in: estadosFiltro },
@@ -148,7 +148,7 @@ async function listarPedidosPendentes({ estados = null, data_inicio = null, data
     };
   });
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // 2. atribuirSalaEConfirmar
 // ─────────────────────────────────────────────────────────────
@@ -177,19 +177,19 @@ async function atribuirSalaEConfirmar(id_coordenadora, id_marcacao, id_sala) {
       sala: { select: { nome: true } },
     },
   });
- 
+
   if (!marcacao) throw new Error('Marcação não encontrada.');
- 
+
   // Só confirma marcações PENDENTES ou EM_VALIDACAO (RF-COA-03 CA3)
   const estadosPermitidos = [ESTADO_MARCACAO.PENDENTE, ESTADO_MARCACAO.EM_VALIDACAO];
   if (!estadosPermitidos.includes(marcacao.id_estado)) {
     throw new Error('Só é possível confirmar marcações no estado Pendente ou Em Validação.');
   }
- 
+
   // Verifica que a sala existe
   const sala = await prisma.sala.findUnique({ where: { id_sala } });
   if (!sala) throw new Error('Sala não encontrada.');
- 
+
   // Verifica conflito de sala (RF-COA-02 CA5 + RF-COA-05 CA2)
   const salaLivre = await _verificarSalaLivre(
     id_sala,
@@ -202,7 +202,7 @@ async function atribuirSalaEConfirmar(id_coordenadora, id_marcacao, id_sala) {
   if (!salaLivre) {
     throw new Error(`A sala "${sala.nome}" já está ocupada neste horário. Escolhe outra sala.`);
   }
- 
+
   // Tudo válido — executa dentro de transação
   const marcacaoConfirmada = await prisma.$transaction(async (tx) => {
     const atualizada = await tx.marcacao.update({
@@ -212,10 +212,10 @@ async function atribuirSalaEConfirmar(id_coordenadora, id_marcacao, id_sala) {
         id_estado: ESTADO_MARCACAO.CONFIRMADA,
       },
     });
- 
+
     // Regista histórico com referência à coordenadora (RF-COA-03 CA4)
     await _registarHistorico(id_marcacao, ESTADO_MARCACAO.CONFIRMADA, tx);
- 
+
     // Notifica o docente
     await _notificar(
       marcacao.docente.id_utilizador,
@@ -223,7 +223,7 @@ async function atribuirSalaEConfirmar(id_coordenadora, id_marcacao, id_sala) {
       `A tua sessão de coaching em ${sala.nome} foi confirmada para ${marcacao.data_a_realizar.toLocaleDateString('pt-PT')}.`,
       tx
     );
- 
+
     // Notifica cada aluno inscrito
     for (const { id_aluno } of marcacao.aluno_marcacao) {
       await _notificar(
@@ -233,13 +233,13 @@ async function atribuirSalaEConfirmar(id_coordenadora, id_marcacao, id_sala) {
         tx
       );
     }
- 
+
     return atualizada;
   });
- 
+
   return marcacaoConfirmada;
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // 3. rejeitarMarcacao
 // ─────────────────────────────────────────────────────────────
@@ -256,7 +256,7 @@ async function rejeitarMarcacao(id_coordenadora, id_marcacao, motivo) {
   if (!motivo || motivo.trim().length === 0) {
     throw new Error('O motivo da rejeição é obrigatório.');
   }
- 
+
   const marcacao = await prisma.marcacao.findUnique({
     where: { id_marcacoes: id_marcacao },
     include: {
@@ -264,9 +264,9 @@ async function rejeitarMarcacao(id_coordenadora, id_marcacao, motivo) {
       docente: { select: { id_utilizador: true } },
     },
   });
- 
+
   if (!marcacao) throw new Error('Marcação não encontrada.');
- 
+
   // Só pode rejeitar marcações ainda não confirmadas
   if (marcacao.id_estado === ESTADO_MARCACAO.CONFIRMADA) {
     throw new Error('Marcação já confirmada. Usa a função de cancelamento para sessões confirmadas.');
@@ -274,15 +274,15 @@ async function rejeitarMarcacao(id_coordenadora, id_marcacao, motivo) {
   if (marcacao.id_estado === ESTADO_MARCACAO.CANCELADA) {
     throw new Error('Esta marcação já foi cancelada.');
   }
- 
+
   const marcacaoRejeitada = await prisma.$transaction(async (tx) => {
     const atualizada = await tx.marcacao.update({
       where: { id_marcacoes: id_marcacao },
       data: { id_estado: ESTADO_MARCACAO.CANCELADA },
     });
- 
+
     await _registarHistorico(id_marcacao, ESTADO_MARCACAO.CANCELADA, tx);
- 
+
     // Notifica docente com motivo
     await _notificar(
       marcacao.docente.id_utilizador,
@@ -290,7 +290,7 @@ async function rejeitarMarcacao(id_coordenadora, id_marcacao, motivo) {
       `O pedido de coaching foi rejeitado. Motivo: ${motivo}`,
       tx
     );
- 
+
     // Notifica cada aluno com motivo
     for (const { id_aluno } of marcacao.aluno_marcacao) {
       await _notificar(
@@ -300,13 +300,13 @@ async function rejeitarMarcacao(id_coordenadora, id_marcacao, motivo) {
         tx
       );
     }
- 
+
     return atualizada;
   });
- 
+
   return marcacaoRejeitada;
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // 4. cancelarMarcacaoConfirmada
 // ─────────────────────────────────────────────────────────────
@@ -324,7 +324,7 @@ async function cancelarMarcacaoConfirmada(id_coordenadora, id_marcacao, motivo) 
   if (!motivo || motivo.trim().length === 0) {
     throw new Error('O motivo do cancelamento é obrigatório para auditoria.');
   }
- 
+
   const marcacao = await prisma.marcacao.findUnique({
     where: { id_marcacoes: id_marcacao },
     include: {
@@ -333,12 +333,12 @@ async function cancelarMarcacaoConfirmada(id_coordenadora, id_marcacao, motivo) 
       sala: { select: { nome: true } },
     },
   });
- 
+
   if (!marcacao) throw new Error('Marcação não encontrada.');
   if (marcacao.id_estado !== ESTADO_MARCACAO.CONFIRMADA) {
     throw new Error('Só é possível cancelar sessões no estado Confirmada através desta função.');
   }
- 
+
   const marcacaoCancelada = await prisma.$transaction(async (tx) => {
     // Cancela e liberta a sala (id_sala = null)
     const atualizada = await tx.marcacao.update({
@@ -348,12 +348,12 @@ async function cancelarMarcacaoConfirmada(id_coordenadora, id_marcacao, motivo) 
         id_sala: null, // liberta a sala (RF-COA-02 CA4)
       },
     });
- 
+
     await _registarHistorico(id_marcacao, ESTADO_MARCACAO.CANCELADA, tx);
- 
+
     const nomeSala = marcacao.sala?.nome ?? 'sala';
     const dataFormatada = marcacao.data_a_realizar.toLocaleDateString('pt-PT');
- 
+
     // Notifica docente
     await _notificar(
       marcacao.docente.id_utilizador,
@@ -361,7 +361,7 @@ async function cancelarMarcacaoConfirmada(id_coordenadora, id_marcacao, motivo) 
       `A sessão de coaching de ${dataFormatada} em ${nomeSala} foi cancelada. Motivo: ${motivo}`,
       tx
     );
- 
+
     // Notifica alunos
     for (const { id_aluno } of marcacao.aluno_marcacao) {
       await _notificar(
@@ -371,13 +371,13 @@ async function cancelarMarcacaoConfirmada(id_coordenadora, id_marcacao, motivo) 
         tx
       );
     }
- 
+
     return atualizada;
   });
- 
+
   return marcacaoCancelada;
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // 5. reatribuirSala
 // ─────────────────────────────────────────────────────────────
@@ -399,15 +399,15 @@ async function reatribuirSala(id_coordenadora, id_marcacao, nova_id_sala) {
       docente: { select: { id_utilizador: true } },
     },
   });
- 
+
   if (!marcacao) throw new Error('Marcação não encontrada.');
   if (marcacao.id_estado !== ESTADO_MARCACAO.CONFIRMADA) {
     throw new Error('Só é possível reatribuir sala a marcações Confirmadas.');
   }
- 
+
   const novaSala = await prisma.sala.findUnique({ where: { id_sala: nova_id_sala } });
   if (!novaSala) throw new Error('Nova sala não encontrada.');
- 
+
   // Verifica conflito na nova sala, excluindo a própria marcação
   const salaLivre = await _verificarSalaLivre(
     nova_id_sala,
@@ -419,15 +419,15 @@ async function reatribuirSala(id_coordenadora, id_marcacao, nova_id_sala) {
   if (!salaLivre) {
     throw new Error(`A sala "${novaSala.nome}" já está ocupada neste horário.`);
   }
- 
+
   const atualizada = await prisma.$transaction(async (tx) => {
     const marcacaoAtualizada = await tx.marcacao.update({
       where: { id_marcacoes: id_marcacao },
       data: { id_sala: nova_id_sala },
     });
- 
+
     const dataFormatada = marcacao.data_a_realizar.toLocaleDateString('pt-PT');
- 
+
     // Notifica docente e alunos sobre a mudança de sala
     await _notificar(
       marcacao.docente.id_utilizador,
@@ -435,7 +435,7 @@ async function reatribuirSala(id_coordenadora, id_marcacao, nova_id_sala) {
       `A sala da sessão de ${dataFormatada} foi alterada para "${novaSala.nome}".`,
       tx
     );
- 
+
     for (const { id_aluno } of marcacao.aluno_marcacao) {
       await _notificar(
         id_aluno,
@@ -444,13 +444,13 @@ async function reatribuirSala(id_coordenadora, id_marcacao, nova_id_sala) {
         tx
       );
     }
- 
+
     return marcacaoAtualizada;
   });
- 
+
   return atualizada;
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // 6. consultarSalasDisponiveis
 // ─────────────────────────────────────────────────────────────
@@ -467,7 +467,7 @@ async function consultarSalasDisponiveis(data_a_realizar, hora_inicio, duracao_m
   const todasAsSalas = await prisma.sala.findMany({
     orderBy: { nome: 'asc' },
   });
- 
+
   const salasComDisponibilidade = await Promise.all(
     todasAsSalas.map(async (sala) => {
       const livre = await _verificarSalaLivre(
@@ -484,10 +484,10 @@ async function consultarSalasDisponiveis(data_a_realizar, hora_inicio, duracao_m
       };
     })
   );
- 
+
   return salasComDisponibilidade;
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // 7. concluirMarcacao
 // ─────────────────────────────────────────────────────────────
@@ -582,9 +582,9 @@ async function consultarHistoricoMarcacao(id_marcacao) {
       },
     },
   });
- 
+
   if (!marcacao) throw new Error('Marcação não encontrada.');
- 
+
   return {
     id_marcacao: marcacao.id_marcacoes,
     estado_atual: marcacao.estado_marcacao?.nome,
@@ -608,14 +608,14 @@ async function consultarHistoricoMarcacao(id_marcacao) {
       interveniente: p.aluno
         ? `${p.aluno.utilizador.nome} ${p.aluno.utilizador.apelido} (Aluno)`
         : p.docente
-        ? `${p.docente.utilizador.nome} ${p.docente.utilizador.apelido} (Docente)`
-        : 'Desconhecido',
+          ? `${p.docente.utilizador.nome} ${p.docente.utilizador.apelido} (Docente)`
+          : 'Desconhecido',
       confirmou: p.confirmou_conclusao,
       data_confirmacao: p.data_confirmacao,
     })),
   };
 }
- 
+
 // ─────────────────────────────────────────────────────────────
 // EXPORTAÇÕES
 // ─────────────────────────────────────────────────────────────

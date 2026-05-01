@@ -60,3 +60,69 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npm test
+
+  e2e:
+    name: E2E Tests (Robot Framework)
+    needs: test
+    runs-on: ubuntu-latest
+    if: false
+    defaults:
+      run:
+        working-directory: .
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Start backend server
+        working-directory: backend
+        run: npm start &
+
+      - name: Wait for backend to be ready
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/api-docs > /dev/null && echo "Backend ready" && break
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Robot Framework
+        run: pip install -r tests/robot/requirements.txt
+
+      - name: Run E2E tests
+        run: python -m robot --outputdir tests/robot/results --xunit xunit.xml tests/robot/tests/evento_crud.robot
+        continue-on-error: true
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Robot Framework Results
+          path: tests/robot/results/xunit.xml
+          reporter: java-junit
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: robot-report
+          path: tests/robot/results/

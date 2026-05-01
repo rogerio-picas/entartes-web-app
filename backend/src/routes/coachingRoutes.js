@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const coachingController = require('../controllers/coachingController');
 const coachingAlunoController = require('../controllers/coachingAlunoController');
 const coachingCoordenacaoController = require('../controllers/coachingCoordenacaoController');
 const coachingDocenteController = require('../controllers/coachingDocenteController');
@@ -373,13 +372,6 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *       200:
  *         description: Lista de colegas (alunos com coaching ativo)
  */
-
-// ========== ROTAS GENÉRICAS (coordenador) ==========
-// router.post('/', tokenValidation, authorize([1]), coachingController.createNewCoaching);
-// router.get('/', tokenValidation, authorize([1]), coachingController.getAllCoachings);
-// router.get('/:id_utilizador', tokenValidation, authorize([1,2,3]), coachingController.getCoachingById);
-// router.put('/:id_utilizador', tokenValidation, authorize([1]), coachingController.updateCoaching);
-// router.delete('/:id_utilizador', tokenValidation, authorize([1]), coachingController.deleteCoaching);
 
 // ========== ROTAS DO ALUNO ==========
 router.get('/disponibilidades/consultar', tokenValidation, authorize([3]), coachingAlunoController.consultarDisponibilidades);

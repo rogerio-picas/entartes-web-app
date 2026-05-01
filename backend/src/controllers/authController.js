@@ -1,6 +1,5 @@
 const authService = require('../services/authService');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const userService = require('../services/userService');
 
 const login = async (req, res) => {
     try {
@@ -37,7 +36,7 @@ const getMe = async (req, res) => {
     try {
         const id = req.user.id;
 
-        const user = await prisma.utilizador.findUnique({
+        const user = await userService.getUser({
             where: { id_utilizador: id },
             select: {
                 id_utilizador: true,

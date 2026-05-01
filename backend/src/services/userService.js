@@ -2,6 +2,48 @@ const bcrypt = require('bcrypt');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+const getUsers = async (options) => {
+    return await prisma.utilizador.findMany(options);
+};
+
+const getUser = async (options) => {
+    return await prisma.utilizador.findUnique(options);
+};
+
+const deleteUser = async (id_utilizador) => {
+    const userId = parseInt(id_utilizador);
+
+    // Buscar o utilizador para verificar em quais tabelas está
+    const utilizador = await prisma.utilizador.findUnique({
+        where: { id_utilizador: userId },
+        include: {
+            aluno: true,
+            docente: true,
+            coordenadora: true,
+        },
+    });
+
+    if (!utilizador) {
+        throw new Error('Utilizador não encontrado');
+    }
+
+    // Remover das tabelas específicas primeiro
+    return await prisma.$transaction(async (tx) => {
+        if (utilizador.aluno) {
+            await tx.aluno.delete({ where: { id_utilizador: userId } });
+        }
+        if (utilizador.docente) {
+            await tx.docente.delete({ where: { id_utilizador: userId } });
+        }
+        if (utilizador.coordenadora) {
+            await tx.coordenadora.delete({ where: { id_utilizador: userId } });
+        }
+
+        // Remover da tabela principal
+        await tx.utilizador.delete({ where: { id_utilizador: userId } });
+    });
+};
+
 const criarUtilizador = async (dados) => {
     const {
         codigo_username,
@@ -24,7 +66,7 @@ const criarUtilizador = async (dados) => {
     // 3. Iniciar Transação Atómica
     // Garantimos que o utilizador só é criado se o perfil (aluno/docente/coord) também for.
     return await prisma.$transaction(async (tx) => {
-        
+
         const novoUtilizador = await tx.utilizador.create({
             data: {
                 codigo_username: codigo_username,
@@ -50,15 +92,15 @@ const criarUtilizador = async (dados) => {
                     coaching: coaching ?? false,
                 }
             });
-        } 
+        }
         else if (tipoInt === 2) { // DOCENTE
             await tx.docente.create({
                 data: {
                     id_utilizador: novoUtilizador.id_utilizador,
-                    estado_atividade: true 
+                    estado_atividade: true
                 }
             });
-        } 
+        }
         else if (tipoInt === 1) {
             await tx.coordenadora.create({
                 data: {
@@ -156,21 +198,28 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
             }
 
             // Adicionar na nova tabela
-            if (novoTipo === 3) { // Novo aluno
-                await tx.aluno.create({
-                    data: { id_utilizador: userId },
-                });
-            } else if (novoTipo === 2) { // Novo docente
-                await tx.docente.create({
-                    data: {
-                        id_utilizador: userId,
-                        estado_atividade: true,
-                    },
-                });
-            } else if (novoTipo === 1) { // Nova coordenadora
-                await tx.coordenadora.create({
-                    data: { id_utilizador: userId },
-                });
+            switch (novoTipo) {
+                case 3: // Novo aluno
+                    await tx.aluno.create({
+                        data: { id_utilizador: userId },
+                    });
+                    break;
+                case 2: // Novo docente
+                    await tx.docente.create({
+                        data: {
+                            id_utilizador: userId,
+                            estado_atividade: true,
+                        },
+                    });
+                    break;
+                case 1: // Nova coordenadora
+                    await tx.coordenadora.create({
+                        data: { id_utilizador: userId },
+                    });
+                    break;
+                default:
+                    // Outros tipos não têm tabelas específicas
+                    break;
             }
         }
 
@@ -178,4 +227,4 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
     });
 };
 
-module.exports = { criarUtilizador, atualizarUtilizador };
+module.exports = { criarUtilizador, atualizarUtilizador, getUsers, getUser, deleteUser };

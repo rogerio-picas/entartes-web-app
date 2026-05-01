@@ -50,7 +50,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                 const toSelect = all.filter(a => preSelectedIds.includes(a.id_utilizador))
                 setSelected(toSelect)
             }
-        }).catch(() => {})
+        }).catch(() => { })
     }, [initialGroup, eventId])
 
     const filtered = alunos.filter(u => {
@@ -80,14 +80,14 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                 // Edit Group
                 grupo = await api.put(`/evento/${eventId}/grupos/${initialGroup.id_grupo}`, { nome: nome.trim(), descricao })
                 groupId = initialGroup.id_grupo
-                
+
                 // Sync Members
                 const currentIds = [
                     ...(initialGroup.aluno_grupo || []).map(ag => ag.id_aluno),
                     ...(initialGroup.docente_grupo || []).map(dg => dg.id_docente)
                 ]
                 const selectedIds = selected.map(s => s.id_utilizador)
-                
+
                 const added = selected.filter(s => !currentIds.includes(s.id_utilizador))
                 const removedIds = currentIds.filter(id => !selectedIds.includes(id))
 
@@ -111,7 +111,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                         const wasDocente = initialGroup.docente_grupo?.some(dg => dg.id_docente === id)
                         if (wasDocente) await api.delete(`/evento/${eventId}/grupos/${groupId}/docentes/${id}`)
                         else await api.delete(`/evento/${eventId}/grupos/${groupId}/alunos/${id}`)
-                    } catch {}
+                    } catch { }
                 }
             } else {
                 // Create Group
@@ -122,12 +122,12 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                 for (const membro of selected) {
                     const typeId = membro.tipo_utilizador?.id_tipo === 2 ? 2 : 3
                     try {
-                        if (typeId === 2){
-                            await api.post(`/evento/${eventId}/grupos/${groupId}/docentes/${membro.id_utilizador}`,{})
-                        }else{
-                            await api.post(`/evento/${eventId}/grupos/${groupId}/alunos/${membro.id_utilizador}`,{})
+                        if (typeId === 2) {
+                            await api.post(`/evento/${eventId}/grupos/${groupId}/docentes/${membro.id_utilizador}`, {})
+                        } else {
+                            await api.post(`/evento/${eventId}/grupos/${groupId}/alunos/${membro.id_utilizador}`, {})
                         }
-                    } catch (e){
+                    } catch (e) {
                         errors.push(`Membro ${membro.nome}: ${e.response?.data?.error || e.message}`)
                     }
                 }

@@ -29,16 +29,16 @@ const listarModalidades = async (id_docente = null, comDocentes = false) => {
     where,
     include: comDocentes
       ? {
-          docente_modalidade: {
-            include: {
-              docente: {
-                include: {
-                  utilizador: { select: { nome: true, apelido: true, codigo_username: true } },
-                },
+        docente_modalidade: {
+          include: {
+            docente: {
+              include: {
+                utilizador: { select: { nome: true, apelido: true, codigo_username: true } },
               },
             },
           },
-        }
+        },
+      }
       : undefined,
     orderBy: { nome: 'asc' },
   });
@@ -236,7 +236,7 @@ const associarDocente = async (id_modalidade, id_docente) => {
   if (!modalidade) throw new Error('Modalidade não encontrada.');
 
   // Verifica que o docente existe
-  const docente = await prisma.docente.findUnique({ 
+  const docente = await prisma.docente.findUnique({
     where: { id_utilizador: idDocente },
     include: {
       utilizador: { select: { nome: true, apelido: true, codigo_username: true } }
