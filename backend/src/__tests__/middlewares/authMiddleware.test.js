@@ -26,4 +26,30 @@ describe('tokenValidation middleware', () => {
     expect(next).toHaveBeenCalledTimes(1)
     expect(req.user).toMatchObject({ id: 1, role: 2 })
   })
+
+  it('responds with 401 when token is invalid or tampered', () => {
+    const req = { headers: { authorization: 'Bearer token.invalido.assinatura' } }
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() }
+    const next = jest.fn()
+
+    tokenValidation(req, res, next)
+
+    expect(res.status).toHaveBeenCalledWith(401)
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Token inválido ou sessão expirada.' })
+    )
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('responds with 401 when token is signed with wrong secret', () => {
+    const token = jwt.sign({ id: 1, role: 1 }, 'wrong-secret')
+    const req = { headers: { authorization: `Bearer ${token}` } }
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() }
+    const next = jest.fn()
+
+    tokenValidation(req, res, next)
+
+    expect(res.status).toHaveBeenCalledWith(401)
+    expect(next).not.toHaveBeenCalled()
+  })
 })

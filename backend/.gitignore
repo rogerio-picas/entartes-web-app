@@ -4,3 +4,10 @@
 .env
 
 /src/generated/prisma
+
+# Testing and coverage
+/coverage
+/coverage-detail
+/coverage-detail2
+.jest
+
