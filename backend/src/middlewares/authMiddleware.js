@@ -13,7 +13,7 @@ const tokenValidation = async (req, res, next) => {
 
         //busca e compara na BD a role atual do utilizador com o id do token
         const userReal = await prisma.utilizador.findUnique({
-            where: { id_utilizador: verfied.id },
+            where: { id_utilizador: verified.id },
             select: { id_tipo: true }
         });
         //se o utilizador nao existir na BD:
