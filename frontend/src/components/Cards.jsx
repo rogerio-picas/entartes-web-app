@@ -11,7 +11,7 @@ export function EventCard({ event, onOpen }) {
         <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-800 bg-brand-200 px-2.5 py-1 rounded-full">
           <CalendarIcon size={12} />
           {formatDate(event.data_de_realizacao)}
-          {event.data_de_realizacao && <span className="opacity-80">às {new Date(event.data_de_realizacao).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</span>}
+          {event.data_de_realizacao && <span className="opacity-80">às {String(event.data_de_realizacao).substring(11, 16)}</span>}
         </span>
       </div>
 
@@ -159,7 +159,7 @@ export function EventDashCard({ item }) {
         <div className="flex flex-col gap-2 mb-4">
           <p className="text-brand-800 font-semibold text-sm">
             {item.dataLonga || formatDate(item.data_de_realizacao)}
-            {item.data_de_realizacao && <span className="opacity-80 ml-1">às {new Date(item.data_de_realizacao).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</span>}
+            {item.data_de_realizacao && <span className="opacity-80 ml-1">às {String(item.data_de_realizacao).substring(11, 16)}</span>}
           </p>
           <p className="text-sm">
             <span className="text-brand-900 font-medium">Duração: </span>
