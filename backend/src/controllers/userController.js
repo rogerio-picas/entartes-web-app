@@ -1,4 +1,4 @@
-const bcrypt = require('bcryptjs');
+// CORREÇÃO: importação de bcrypt não era usada neste controlador (a lógica de hash está no serviço)
 const userService = require('../services/userService');
 const userProfileService = require('../services/userProfileService');
 
@@ -40,7 +40,7 @@ const getUser = async (req, res) => {
     const id_utilizador_int = parseInt(id_utilizador);
 
     if (isNaN(id_utilizador_int)) {
-      return res.status(400).json({ message: 'O ID fornecido não possui um formato válido.' });
+      return res.status(400).json({ message: 'ID do utilizador inválido.' });
     }
 
     const user = await userService.getUser({
@@ -98,13 +98,27 @@ const createUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Erro no Controller [createUser]:", error);
+    // Logging de erros é responsabilidade do middleware de erros global, não do controller.
 
-    // 5. Tratamento de erros específicos do Prisma
+    // 5. Duplicados detetados pelo pré-check do serviço (verifica todos os campos em paralelo
+    //    antes do insert, para que a mensagem liste todos os conflitos de uma só vez).
+    //    O P2002 serve de fallback para a janela de corrida entre o pré-check e o insert.
+    if (error.code === 'DUPLICATE') {
+      return res.status(409).json({ error: error.message });
+    }
     if (error.code === 'P2002') {
-      return res.status(400).json({
-        error: "Erro de duplicação: O nome de utilizador, email ou NIF já existe."
-      });
+      const campoLabels = {
+        nif:             'NIF',
+        email:           'endereço de e-mail',
+        codigo_username: 'nome de utilizador',
+        telemovel:       'número de telemóvel',
+      };
+      const campo = error.meta?.target?.[0];
+      const label = campoLabels[campo];
+      const mensagem = label
+        ? `Já existe um utilizador registado com este ${label}.`
+        : 'Erro de duplicação: o nome de utilizador, e-mail ou NIF já existe.';
+      return res.status(409).json({ error: mensagem });
     }
 
     // Erro genérico (ex: falha na base de dados ou erro de lógica no Service)
@@ -120,13 +134,21 @@ const updateUser = async (req, res) => {
     const { id_utilizador } = req.params;
     const dataToUpdate = req.body;
 
-    const updatedUser = await userService.atualizarUtilizador(parseInt(id_utilizador), dataToUpdate);
+    // CORREÇÃO: ID do parâmetro não era validado antes de chamar o serviço
+    const id = parseInt(id_utilizador);
+    if (isNaN(id)) return res.status(400).json({ message: 'ID do utilizador inválido.' });
+
+    const updatedUser = await userService.atualizarUtilizador(id, dataToUpdate);
 
     res.status(200).json({
       message: 'Utilizador atualizado com sucesso',
       user: updatedUser
     });
   } catch (error) {
+    // Unique constraint violation (e.g. NIF duplicado) — o serviço já traduz o P2002 numa mensagem legível
+    if (error.message.includes('Já existe')) {
+      return res.status(409).json({ message: error.message });
+    }
     res.status(500).json({ message: 'Erro ao atualizar', error: error.message });
   }
 };
@@ -135,7 +157,11 @@ const deleteUser = async (req, res) => {
   try {
     const { id_utilizador } = req.params;
 
-    await userService.deleteUser(id_utilizador);
+    // CORREÇÃO: ID do parâmetro não era validado antes de chamar o serviço
+    const id = parseInt(id_utilizador);
+    if (isNaN(id)) return res.status(400).json({ message: 'ID do utilizador inválido.' });
+
+    await userService.deleteUser(id);
 
     res.status(200).json({ message: 'Utilizador removido com sucesso' });
   } catch (error) {
@@ -151,7 +177,17 @@ const atualizarPassword = async (req, res) => {
     const { id_utilizador } = req.params;
     const { oldPassword, newPassword } = req.body;
 
-    // Validação básica
+    // CORREÇÃO: ID do parâmetro não era validado antes de chamar o serviço
+    const id = parseInt(id_utilizador);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID do utilizador inválido.' });
+
+    // CORREÇÃO: rota permite roles [1,2,3] mas não havia verificação de ownership —
+    // a Coordenadora (role 1) pode alterar a password de qualquer utilizador;
+    // os restantes roles só podem alterar a sua própria
+    if (id !== req.user.id && req.user.role !== 1) {
+      return res.status(403).json({ error: 'Sem permissão para alterar a password deste utilizador.' });
+    }
+
     if (!oldPassword || !newPassword) {
       return res.status(400).json({
         error: 'Password antiga e nova password são obrigatórias.'
@@ -159,7 +195,7 @@ const atualizarPassword = async (req, res) => {
     }
 
     const resultado = await userProfileService.atualizarPassword(
-      parseInt(id_utilizador),
+      id,
       oldPassword,
       newPassword
     );
@@ -175,11 +211,23 @@ const atualizarPassword = async (req, res) => {
 const atualizarDadosPessoais = async (req, res) => {
   try {
     const { id_utilizador } = req.params;
+
+    // CORREÇÃO: ID do parâmetro não era validado antes de chamar o serviço
+    const id = parseInt(id_utilizador);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID do utilizador inválido.' });
+
+    // CORREÇÃO: rota permite roles [1,2,3] mas não havia verificação de ownership —
+    // a Coordenadora (role 1) pode alterar os dados de qualquer utilizador;
+    // os restantes roles só podem alterar os seus próprios
+    if (id !== req.user.id && req.user.role !== 1) {
+      return res.status(403).json({ error: 'Sem permissão para alterar os dados deste utilizador.' });
+    }
+
     if (!req.body.email && !req.body.telemovel) {
       return res.status(400).json({ error: 'Forneça pelo menos o email ou telemóvel.' });
     }
 
-    const resultado = await userProfileService.atualizarDadosPessoais(parseInt(id_utilizador), req.body);
+    const resultado = await userProfileService.atualizarDadosPessoais(id, req.body);
     res.status(200).json(resultado);
   } catch (error) {
     res.status(400).json({ error: error.message });

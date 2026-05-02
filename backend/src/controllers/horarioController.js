@@ -25,7 +25,10 @@ const getMinhasAulas = async (req, res) => {
  */
 const getAulaDetalhe = async (req, res) => {
     try {
-        const { id } = req.params;
+        // CORREÇÃO: ID do parâmetro não era validado antes de chamar o serviço
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(400).json({ message: 'ID da aula inválido.' });
+
         const { id: id_utilizador, role } = req.user;
         const marcacao = await horarioService.getAulaDetalhe(id, id_utilizador, role);
         res.status(200).json(marcacao);

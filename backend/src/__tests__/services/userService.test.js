@@ -50,6 +50,7 @@ const mockPrisma = {
     utilizador: {
         findMany: jest.fn(),
         findUnique: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
     },
     $transaction: jest.fn(),
 };
@@ -255,6 +256,67 @@ describe('userService › criarUtilizador', () => {
             expect(createCall.data.telemovel).toBeNull();
             expect(createCall.data.nif).toBeNull();
             expect(createCall.data.data_nascimento).toBeNull();
+        });
+
+        it('deve aceitar criação quando codigo_username, email e nif estão ausentes (branch nulo)', async () => {
+            const dadosSemCamposUnicos = {
+                password: 'abc123',
+                id_tipo: 3,
+            };
+            mockTx.utilizador.create.mockResolvedValue({ id_utilizador: 51 });
+            mockTx.aluno.create.mockResolvedValue({});
+
+            // This covers the falsy branches of the ternaries:
+            // codigo_username ? ... : null
+            // email ? ... : null
+            // nif ? ... : null
+            await criarUtilizador(dadosSemCamposUnicos);
+
+            expect(mockPrisma.utilizador.findFirst).not.toHaveBeenCalled();
+            
+            const createCall = mockTx.utilizador.create.mock.calls[0][0];
+            expect(createCall.data.codigo_username).toBeUndefined(); // or whatever was passed
+        });
+    });
+
+    // ── Pré-check de duplicados (linha 79) ───────────────────────────────────
+
+    describe('pré-check de duplicados', () => {
+        it('deve lançar erro DUPLICATE quando username já existe', async () => {
+            mockPrisma.utilizador.findFirst
+                .mockResolvedValueOnce({ id_utilizador: 99 })  // username encontrado
+                .mockResolvedValueOnce(null)                     // email ok
+                .mockResolvedValueOnce(null);                    // nif ok
+
+            await expect(criarUtilizador(dadosAluno())).rejects.toMatchObject({
+                code: 'DUPLICATE',
+                message: expect.stringContaining('nome de utilizador'),
+            });
+            expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+        });
+
+        it('deve lançar erro DUPLICATE listando todos os campos duplicados', async () => {
+            mockPrisma.utilizador.findFirst
+                .mockResolvedValueOnce({ id_utilizador: 1 })   // username duplicado
+                .mockResolvedValueOnce({ id_utilizador: 2 })   // email duplicado
+                .mockResolvedValueOnce({ id_utilizador: 3 });  // nif duplicado
+
+            await expect(criarUtilizador(dadosAluno())).rejects.toMatchObject({
+                code: 'DUPLICATE',
+                fields: ['nome de utilizador', 'e-mail', 'NIF'],
+            });
+        });
+
+        it('deve lançar erro DUPLICATE apenas para email quando é o único duplicado', async () => {
+            mockPrisma.utilizador.findFirst
+                .mockResolvedValueOnce(null)                     // username ok
+                .mockResolvedValueOnce({ id_utilizador: 2 })    // email duplicado
+                .mockResolvedValueOnce(null);                    // nif ok
+
+            await expect(criarUtilizador(dadosAluno())).rejects.toMatchObject({
+                code: 'DUPLICATE',
+                fields: ['e-mail'],
+            });
         });
     });
 
@@ -638,6 +700,58 @@ describe('userService › atualizarUtilizador', () => {
             mockPrisma.$transaction.mockRejectedValue(new Error('Transaction failed'));
 
             await expect(atualizarUtilizador(1, { nome: 'X' })).rejects.toThrow('Transaction failed');
+        });
+
+        it('deve traduzir P2002 com campo "nif" para mensagem legível', async () => {
+            const erroP2002 = new Error('Unique constraint');
+            erroP2002.code = 'P2002';
+            erroP2002.meta = { target: ['nif'] };
+
+            mockPrisma.utilizador.findUnique.mockResolvedValue(utilizadorExistenteAluno);
+            mockPrisma.$transaction.mockRejectedValue(erroP2002);
+
+            await expect(atualizarUtilizador(1, { nif: '111222333' })).rejects.toThrow(
+                'Já existe um utilizador registado com este NIF.'
+            );
+        });
+
+        it('deve traduzir P2002 com campo "email" para mensagem legível', async () => {
+            const erroP2002 = new Error('Unique');
+            erroP2002.code = 'P2002';
+            erroP2002.meta = { target: ['email'] };
+
+            mockPrisma.utilizador.findUnique.mockResolvedValue(utilizadorExistenteAluno);
+            mockPrisma.$transaction.mockRejectedValue(erroP2002);
+
+            await expect(atualizarUtilizador(1, { email: 'dup@email.pt' })).rejects.toThrow(
+                'Já existe um utilizador registado com este endereço de e-mail.'
+            );
+        });
+
+        it('deve usar o nome do campo quando não tem label conhecida', async () => {
+            const erroP2002 = new Error('Unique');
+            erroP2002.code = 'P2002';
+            erroP2002.meta = { target: ['campo_desconhecido'] };
+
+            mockPrisma.utilizador.findUnique.mockResolvedValue(utilizadorExistenteAluno);
+            mockPrisma.$transaction.mockRejectedValue(erroP2002);
+
+            await expect(atualizarUtilizador(1, { nome: 'X' })).rejects.toThrow(
+                'Já existe um utilizador registado com este campo_desconhecido.'
+            );
+        });
+
+        it('deve usar "campo" quando P2002 não tem meta.target', async () => {
+            const erroP2002 = new Error('Unique');
+            erroP2002.code = 'P2002';
+            // Sem meta
+
+            mockPrisma.utilizador.findUnique.mockResolvedValue(utilizadorExistenteAluno);
+            mockPrisma.$transaction.mockRejectedValue(erroP2002);
+
+            await expect(atualizarUtilizador(1, { nome: 'X' })).rejects.toThrow(
+                'Já existe um utilizador registado com este campo.'
+            );
         });
     });
 });

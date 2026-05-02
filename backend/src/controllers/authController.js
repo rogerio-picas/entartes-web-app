@@ -5,6 +5,11 @@ const login = async (req, res) => {
     try {
         const { codigo_username, password } = req.body;
 
+        // CORREÇÃO: campos obrigatórios não eram validados antes de chamar o serviço
+        if (!codigo_username || !password) {
+            return res.status(400).json({ message: "codigo_username e password são obrigatórios." });
+        }
+
         const result = await authService.login(codigo_username, password);
 
         res.status(200).json({

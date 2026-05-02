@@ -26,6 +26,13 @@ const validarParametrosCreate = (dia_semana, data_especifica, hora_inicio, hora_
     throw new Error("Horários de início e fim são obrigatórios.");
   }
 
+  if (data_especifica) {
+    const today = new Date().toISOString().split('T')[0];
+    if (new Date(data_especifica).toISOString().split('T')[0] < today) {
+      throw new Error("A Data de realização não pode ser no passado.");
+    }
+  }
+
   if (parseHoraTime(hora_fim) <= parseHoraTime(hora_inicio)) {
     throw new Error("A hora de fim tem de ser posterior à hora de início.");
   }
@@ -190,6 +197,13 @@ const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) =
   const dataEspecifica = data_especifica !== undefined
     ? (data_especifica === null ? null : new Date(data_especifica))
     : existente.data_especifica;
+
+  if (data_especifica !== undefined && data_especifica !== null) {
+    const today = new Date().toISOString().split('T')[0];
+    if (new Date(data_especifica).toISOString().split('T')[0] < today) {
+      throw new Error("A Data não pode ser no passado.");
+    }
+  }
 
   // 3. Verificar sobreposição
   await verificarSobreposicao(id_docente, diaSemana, dataEspecifica, novaHoraInicio, novaHoraFim, id_disponibilidade);

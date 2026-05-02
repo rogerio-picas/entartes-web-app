@@ -29,6 +29,7 @@ const mockReqRes = (overrides = {}) => {
         query: {},
         params: {},
         body: {},
+        user: { id: 1, role: 1 },
         ...overrides,
     };
     const res = {
@@ -124,7 +125,7 @@ describe('userController › getUser', () => {
 
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({ message: expect.stringContaining('formato válido') })
+            expect.objectContaining({ message: expect.stringContaining('inválido') })
         );
         expect(userService.getUser).not.toHaveBeenCalled();
     });
@@ -181,7 +182,21 @@ describe('userController › createUser', () => {
         expect(userService.criarUtilizador).not.toHaveBeenCalled();
     });
 
-    it('deve retornar 400 em caso de erro P2002 (Unique constraint)', async () => {
+    it('deve retornar 409 em caso de erro DUPLICATE (pré-check do service)', async () => {
+        const erroDuplicate = new Error('Já existe um utilizador registado com este(s) campo(s): e-mail.');
+        erroDuplicate.code = 'DUPLICATE';
+        userService.criarUtilizador.mockRejectedValue(erroDuplicate);
+
+        const { req, res } = mockReqRes({ body: corpoValido });
+        await userController.createUser(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(409);
+        expect(res.json).toHaveBeenCalledWith({
+            error: 'Já existe um utilizador registado com este(s) campo(s): e-mail.',
+        });
+    });
+
+    it('deve retornar 409 em caso de erro P2002 sem meta.target (fallback genérico)', async () => {
         const erroP2002 = new Error('Unique constraint');
         erroP2002.code = 'P2002';
         userService.criarUtilizador.mockRejectedValue(erroP2002);
@@ -189,10 +204,40 @@ describe('userController › createUser', () => {
         const { req, res } = mockReqRes({ body: corpoValido });
         await userController.createUser(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({ error: expect.stringContaining('já existe') })
-        );
+        expect(res.status).toHaveBeenCalledWith(409);
+        expect(res.json).toHaveBeenCalledWith({
+            error: 'Erro de duplicação: o nome de utilizador, e-mail ou NIF já existe.',
+        });
+    });
+
+    it('deve retornar 409 com label específica quando P2002 identifica o campo (nif)', async () => {
+        const erroP2002 = new Error('Unique constraint');
+        erroP2002.code = 'P2002';
+        erroP2002.meta = { target: ['nif'] };
+        userService.criarUtilizador.mockRejectedValue(erroP2002);
+
+        const { req, res } = mockReqRes({ body: corpoValido });
+        await userController.createUser(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(409);
+        expect(res.json).toHaveBeenCalledWith({
+            error: 'Já existe um utilizador registado com este NIF.',
+        });
+    });
+
+    it('deve retornar 409 com mensagem genérica quando P2002 tem campo desconhecido', async () => {
+        const erroP2002 = new Error('Unique constraint');
+        erroP2002.code = 'P2002';
+        erroP2002.meta = { target: ['campo_desconhecido'] };
+        userService.criarUtilizador.mockRejectedValue(erroP2002);
+
+        const { req, res } = mockReqRes({ body: corpoValido });
+        await userController.createUser(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(409);
+        expect(res.json).toHaveBeenCalledWith({
+            error: 'Erro de duplicação: o nome de utilizador, e-mail ou NIF já existe.',
+        });
     });
 
     it('deve retornar 400 (Erro genérico) para outros erros do Service', async () => {
@@ -243,6 +288,33 @@ describe('userController › updateUser', () => {
             expect.objectContaining({ message: 'Erro ao atualizar' })
         );
     });
+
+    it('deve retornar 409 quando o service detecta duplicação (mensagem "Já existe")', async () => {
+        const erroDuplicacao = new Error('Já existe um utilizador registado com este NIF.');
+        userService.atualizarUtilizador.mockRejectedValue(erroDuplicacao);
+
+        const { req, res } = mockReqRes({
+            params: { id_utilizador: '1' },
+            body: { nif: '123456789' },
+        });
+        await userController.updateUser(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(409);
+        expect(res.json).toHaveBeenCalledWith({
+            message: 'Já existe um utilizador registado com este NIF.',
+        });
+    });
+
+    it('deve retornar 400 quando o id não é um número válido', async () => {
+        const { req, res } = mockReqRes({ params: { id_utilizador: 'abc' } });
+        await userController.updateUser(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ message: expect.stringContaining('inválido') })
+        );
+        expect(userService.atualizarUtilizador).not.toHaveBeenCalled();
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -258,7 +330,7 @@ describe('userController › deleteUser', () => {
         const { req, res } = mockReqRes({ params: { id_utilizador: '1' } });
         await userController.deleteUser(req, res);
 
-        expect(userService.deleteUser).toHaveBeenCalledWith('1');
+        expect(userService.deleteUser).toHaveBeenCalledWith(1);
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({ message: 'Utilizador removido com sucesso' });
     });
@@ -283,6 +355,17 @@ describe('userController › deleteUser', () => {
         expect(res.json).toHaveBeenCalledWith(
              expect.objectContaining({ message: 'Erro ao eliminar utilizador' })
         );
+    });
+
+    it('deve retornar 400 quando o id não é um número válido', async () => {
+        const { req, res } = mockReqRes({ params: { id_utilizador: 'abc' } });
+        await userController.deleteUser(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ message: expect.stringContaining('inválido') })
+        );
+        expect(userService.deleteUser).not.toHaveBeenCalled();
     });
 });
 
@@ -350,6 +433,35 @@ describe('userController › atualizarPassword', () => {
             expect.objectContaining({ error: 'A password atual está incorreta.' })
         );
     });
+
+    it('deve retornar 403 quando um não-coordenador tenta alterar a password de outro utilizador', async () => {
+        const { req, res } = mockReqRes({
+            params: { id_utilizador: '5' },
+            body: { oldPassword: 'antiga', newPassword: 'nova123' },
+            user: { id: 2, role: 3 },
+        });
+        await userController.atualizarPassword(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ error: expect.stringContaining('Sem permissão') })
+        );
+        expect(userProfileService.atualizarPassword).not.toHaveBeenCalled();
+    });
+
+    it('deve retornar 400 quando o id não é um número válido', async () => {
+        const { req, res } = mockReqRes({
+            params: { id_utilizador: 'abc' },
+            body: { oldPassword: 'antiga', newPassword: 'nova123' },
+        });
+        await userController.atualizarPassword(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ error: expect.stringContaining('inválido') })
+        );
+        expect(userProfileService.atualizarPassword).not.toHaveBeenCalled();
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -414,5 +526,34 @@ describe('userController › atualizarDadosPessoais', () => {
 
         expect(userProfileService.atualizarDadosPessoais).toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('deve retornar 403 quando um não-coordenador tenta alterar dados de outro utilizador', async () => {
+        const { req, res } = mockReqRes({
+            params: { id_utilizador: '5' },
+            body: { email: 'novo@email.pt' },
+            user: { id: 2, role: 2 },
+        });
+        await userController.atualizarDadosPessoais(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ error: expect.stringContaining('Sem permissão') })
+        );
+        expect(userProfileService.atualizarDadosPessoais).not.toHaveBeenCalled();
+    });
+
+    it('deve retornar 400 quando o id não é um número válido', async () => {
+        const { req, res } = mockReqRes({
+            params: { id_utilizador: 'abc' },
+            body: { email: 'novo@email.pt' },
+        });
+        await userController.atualizarDadosPessoais(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ error: expect.stringContaining('inválido') })
+        );
+        expect(userProfileService.atualizarDadosPessoais).not.toHaveBeenCalled();
     });
 });

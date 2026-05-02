@@ -5,17 +5,20 @@ const listSalas = async (req, res) => {
         const rooms = await salaService.listSalas();
         res.json(rooms);
     } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Erro interno do servidor.' });
     }
 };
 
 const deleteSala = async (req, res) => {
     try {
+        // CORREÇÃO: ID do parâmetro não era validado antes de chamar o serviço
         const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(400).json({ error: 'ID da sala inválido' });
+
         await salaService.deleteSala(id);
-        res.json({ message: 'Room removed' });
+        res.json({ message: 'Sala removida com sucesso.' });
     } catch (error) {
-        res.status(500).json({ error: 'Conflict: Room might be linked to existing bookings' });
+        res.status(500).json({ error: 'Conflito: a sala pode estar associada a marcações existentes.' });
     }
 };
 
@@ -30,14 +33,19 @@ const createSala = async (req, res) => {
             error.message === 'Já existe uma sala com esse nome') {
             return res.status(400).json({ error: error.message });
         }
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Erro interno do servidor.' });
     }
 };
 
 const updateSala = async (req, res) => {
     try {
+        // CORREÇÃO: ID do parâmetro não era validado e não se verificava se havia campos para atualizar
         const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(400).json({ error: 'ID da sala inválido' });
+
         const { nome, descricao } = req.body;
+        if (!nome && !descricao) return res.status(400).json({ error: 'Forneça pelo menos o nome ou a descrição para atualizar' });
+
         const updatedRoom = await salaService.updateSala(id, nome, descricao);
         res.json(updatedRoom);
     } catch (error) {
@@ -45,7 +53,7 @@ const updateSala = async (req, res) => {
         if (error.message === 'Já existe uma outra sala com esse nome') {
             return res.status(400).json({ error: error.message });
         }
-        res.status(500).json({ error: 'Room not found or update failed' });
+        res.status(500).json({ error: 'Sala não encontrada ou atualização falhou.' });
     }
 };
 
