@@ -656,6 +656,5 @@ module.exports = {
   reatribuirSala,
   consultarSalasDisponiveis,
   consultarHistoricoMarcacao,
-  // Exporta constantes para uso nos controllers
   ESTADO_MARCACAO,
 };
