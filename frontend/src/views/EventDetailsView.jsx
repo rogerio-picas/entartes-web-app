@@ -1,7 +1,7 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
-import { ArrowLeft, Loader2, AlertCircle, Plus, Megaphone, Send, Users, User, Clock, Trash2, Calendar, MapPin, Edit2, X, RefreshCw, UserPlus } from 'lucide-react'
+import { ArrowLeft, Loader2, AlertCircle, Plus, Megaphone, Send, Users, User, Clock, Trash2, Calendar, MapPin, Edit2, X, RefreshCw, UserPlus, MessageCircle, ChevronRight } from 'lucide-react'
 import CriarGrupoPanel from '../components/CriarGrupoPanel'
 import EditEventPanel from '../components/EditEventPanel'
 import AddEventMemberPanel from '../components/AddEventMemberPanel'
@@ -192,17 +192,31 @@ export default function EventDetailsView() {
     if (error && !event) {
         return (
             <div className="p-10 font-['Sora']">
-               <div className="flex flex-col items-center gap-3 bg-red-50 text-red-700 text-sm px-5 py-6 rounded-xl border border-red-200">
+               <div className="flex flex-col items-center gap-3 bg-feedback-error-light/30 text-feedback-error-dark text-sm px-5 py-6 rounded-xl border border-feedback-error-light">
                     <AlertCircle size={32} />
                     <p className="font-semibold text-lg">Ocorreu um problema</p>
                     <p className="opacity-80">{error}</p>
-                    <button onClick={() => navigate('/eventos')} className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Voltar aos eventos</button>
+                    <button onClick={() => navigate('/eventos')} className="mt-4 px-4 py-2 bg-feedback-error text-white rounded hover:bg-feedback-error-dark transition">Voltar aos eventos</button>
                </div>
             </div>
         )
     }
 
     const unassignedAlunosCount = event?.evento_aluno?.length || 0
+    const isPastOrCancelled = event?.id_evento_estado === 4 || event?.id_evento_estado === 5 || (event?.data_de_realizacao && new Date(event.data_de_realizacao) < new Date());
+
+    let cleanDescricao = event?.descricao || ''
+    let faqsList = []
+    
+    if (cleanDescricao.includes('---FAQS---')) {
+        const parts = cleanDescricao.split('---FAQS---')
+        cleanDescricao = parts[0].trim()
+        try {
+            faqsList = JSON.parse(parts[1].trim())
+        } catch (e) {
+            console.error("Erro ao fazer parse dos FAQs:", e)
+        }
+    }
 
     return (
         <div className="font-['Sora'] bg-brand-50 min-h-screen flex flex-col">
@@ -241,7 +255,7 @@ export default function EventDetailsView() {
                         </button>
                     </div>
 
-                    {isAdmin && (
+                    {isAdmin && !isPastOrCancelled && (
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => setShowAddMember(true)}
@@ -257,7 +271,7 @@ export default function EventDetailsView() {
                             </button>
                             <button
                                 onClick={handleDeleteEvent}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl text-sm font-semibold transition-colors border border-red-200"
+                                className="flex items-center gap-2 px-4 py-2.5 bg-feedback-error-light/30 text-feedback-error-dark hover:bg-feedback-error-light/60 rounded-xl text-sm font-semibold transition-colors border border-feedback-error-light"
                             >
                                 <Trash2 size={16} /> Eliminar
                             </button>
@@ -272,6 +286,53 @@ export default function EventDetailsView() {
                 {/* 70% Mural Principal */}
                 <div className="flex-1 flex flex-col gap-6">
 
+                    {/* === INFORMAÇÕES DO EVENTO === */}
+                    {(cleanDescricao || event?.link_whatsapp || faqsList.length > 0) && (
+                        <div className="bg-white rounded-2xl border border-brand-800/20 p-6 flex flex-col gap-4 shadow-sm">
+                            {cleanDescricao && (
+                                <div>
+                                    <h3 className="text-lg font-bold text-neutral-800 mb-2">Sobre o Evento</h3>
+                                    <p className="text-sm text-neutral-600 whitespace-pre-wrap leading-relaxed">{cleanDescricao}</p>
+                                </div>
+                            )}
+                            
+                            {event?.link_whatsapp && (
+                                <div className="mt-2">
+                                    <a 
+                                        href={event.link_whatsapp} 
+                                        target="_blank" 
+                                        rel="noreferrer" 
+                                        className="inline-flex items-center gap-2 bg-[#25D366] text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-[#1DA851] transition-colors shadow-sm"
+                                    >
+                                        <MessageCircle size={18} /> Entrar no Grupo de WhatsApp
+                                    </a>
+                                </div>
+                            )}
+
+                            {faqsList.length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-brand-800/10">
+                                    <h3 className="text-lg font-bold text-neutral-800 mb-4">Perguntas Frequentes</h3>
+                                    <div className="flex flex-col gap-2">
+                                        {faqsList.map((faq, idx) => (
+                                            <details key={faq.id || idx} className="group bg-neutral-50 border border-neutral-200 rounded-xl overflow-hidden cursor-pointer open:bg-brand-50 transition-colors">
+                                                <summary className="flex items-center justify-between p-4 font-semibold text-neutral-800 select-none group-open:text-brand-800">
+                                                    <span className="flex items-center gap-2">
+                                                        {faq.pergunta}
+                                                        {faq.geral && <span className="text-[10px] bg-brand-200 text-brand-800 px-1.5 py-0.5 rounded ml-2">Geral</span>}
+                                                    </span>
+                                                    <ChevronRight size={18} className="text-brand-800 transition-transform group-open:rotate-90" />
+                                                </summary>
+                                                <div className="px-4 pb-4 text-sm text-neutral-600 leading-relaxed border-t border-brand-800/10 pt-3">
+                                                    {faq.resposta || <span className="italic opacity-50">Sem resposta...</span>}
+                                                </div>
+                                            </details>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* === MURAL DE ANÚNCIOS === */}
                     <div className="bg-white rounded-2xl border border-brand-800/20 p-6 flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
@@ -285,7 +346,7 @@ export default function EventDetailsView() {
                     </div>
 
                     {/* Caixa de Criação de Anúncios — apenas Admin */}
-                    {isAdmin && (
+                    {isAdmin && !isPastOrCancelled && (
                     <div className="bg-white rounded-2xl border border-brand-800/20 p-5 shadow-sm">
                         <input 
                             type="text"
@@ -332,10 +393,10 @@ export default function EventDetailsView() {
                                                <span className="text-[10px] text-gray-400">{formatDate(anuncio.data_envio)}</span>
                                            </div>
                                         </div>
-                                        {isAdmin && !isEditing && (
+                                        {isAdmin && !isEditing && !isPastOrCancelled && (
                                             <div className="flex items-center gap-2 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity" style={{ opacity: 1 }}> {/* Forced opacity to be visible right away for discoverability or keep on hover */}
                                                 <button onClick={() => setEditingAnuncio({ ...anuncio, isGroupContext: false })} className="text-brand-800 hover:text-brand-900 p-1"><Edit2 size={14}/></button>
-                                                <button onClick={() => handleDeleteAnuncio(anuncio.id_anuncio, false)} className="text-red-500 hover:text-red-700 p-1"><Trash2 size={14}/></button>
+                                                <button onClick={() => handleDeleteAnuncio(anuncio.id_anuncio, false)} className="text-feedback-error hover:text-feedback-error-dark p-1"><Trash2 size={14}/></button>
                                             </div>
                                         )}
                                     </div>
@@ -366,7 +427,7 @@ export default function EventDetailsView() {
                 <div className="w-full lg:w-[320px] flex flex-col gap-4 shrink-0">
                     <div className="flex items-center justify-between pb-2 border-b border-brand-800/20">
                         <h3 className="font-bold text-neutral-800 text-lg flex items-center gap-2"><Users size={18}/> Grupos</h3>
-                        {isAdmin && (
+                        {isAdmin && !isPastOrCancelled && (
                             <button 
                                 onClick={() => setShowCreateGroup(true)}
                                 className="w-8 h-8 rounded-full bg-brand-800 flex items-center justify-center text-white hover:bg-brand-900 transition-colors shadow-sm"
@@ -422,10 +483,10 @@ export default function EventDetailsView() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                {isAdmin && (
+                                {isAdmin && !isPastOrCancelled && (
                                     <>
                                         <button onClick={() => { setEditGroupData(selectedGroup); setShowCreateGroup(true); }} className="px-3 py-1.5 text-sm bg-white border border-neutral-400 rounded-lg font-bold text-brand-800 hover:bg-neutral-50 transition">Editar Grupo</button>
-                                        <button onClick={() => handleDeleteGroup(selectedGroup.id_grupo)} className="p-2 text-red-500 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition"><Trash2 size={16}/></button>
+                                        <button onClick={() => handleDeleteGroup(selectedGroup.id_grupo)} className="p-2 text-feedback-error bg-white border border-feedback-error-light rounded-lg hover:bg-feedback-error-light/30 transition"><Trash2 size={16}/></button>
                                     </>
                                 )}
                                 <button onClick={() => setSelectedGroup(null)} className="w-10 h-10 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-600 hover:bg-black hover:text-white transition">
@@ -435,7 +496,7 @@ export default function EventDetailsView() {
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
-                            {isAdmin && (
+                            {isAdmin && !isPastOrCancelled && (
                             <div className="bg-white rounded-2xl border border-brand-800/20 p-5 shadow-sm mb-6">
                                 <input 
                                     type="text"
@@ -479,10 +540,10 @@ export default function EventDetailsView() {
                                                     <span className="text-[10px] text-gray-400">{formatDate(anuncio.data_envio)}</span>
                                                 </div>
                                                 </div>
-                                                {isAdmin && !isEditing && (
+                                                {isAdmin && !isEditing && !isPastOrCancelled && (
                                                     <div className="flex items-center gap-2">
                                                         <button onClick={() => setEditingAnuncio({ ...anuncio, isGroupContext: true })} className="text-brand-800 hover:text-brand-900 p-1"><Edit2 size={14}/></button>
-                                                        <button onClick={() => handleDeleteAnuncio(anuncio.id_anuncio, true)} className="text-red-500 hover:text-red-700 p-1"><Trash2 size={14}/></button>
+                                                        <button onClick={() => handleDeleteAnuncio(anuncio.id_anuncio, true)} className="text-feedback-error hover:text-feedback-error-dark p-1"><Trash2 size={14}/></button>
                                                     </div>
                                                 )}
                                             </div>

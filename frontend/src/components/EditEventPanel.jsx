@@ -1,11 +1,19 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { X, Check, RefreshCw, AlertCircle } from 'lucide-react'
 import { api } from '../services/api'
 import { formatTime, toWallClockISO } from '../utils/dateUtils'
 
 export default function EditEventPanel({ onClose, onSuccess, initialEvent }) {
+    let initialDescricao = initialEvent?.descricao || ''
+    let embeddedFaqs = ''
+    if (initialDescricao.includes('---FAQS---')) {
+        const parts = initialDescricao.split('---FAQS---')
+        initialDescricao = parts[0].trim()
+        embeddedFaqs = '\n\n---FAQS---\n' + parts[1].trim()
+    }
+
     const [nome, setNome] = useState(initialEvent ? initialEvent.nome : '')
-    const [descricao, setDescricao] = useState(initialEvent ? (initialEvent.descricao || '') : '')
+    const [descricao, setDescricao] = useState(initialDescricao)
     const [local, setLocal] = useState(initialEvent ? (initialEvent.local || '') : '')
 
     // Format date string for input type="date"
@@ -35,9 +43,11 @@ export default function EditEventPanel({ onClose, onSuccess, initialEvent }) {
         try {
             const totalMinutos = (Number(duracaoHoras) * 60) + Number(duracaoMinutos)
 
+            const finalDescricao = (descricao.trim() + embeddedFaqs).trim() || undefined
+
             const payload = {
                 nome: nome.trim(),
-                descricao: descricao.trim() || undefined,
+                descricao: finalDescricao,
                 local: local.trim() || undefined,
                 data_de_realizacao: toWallClockISO(dataRealizacao, hora) || undefined,
                 duracao_minutos: totalMinutos,
