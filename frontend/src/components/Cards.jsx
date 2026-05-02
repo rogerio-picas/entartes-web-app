@@ -1,4 +1,4 @@
-﻿import { Clock, CalendarCheck, CalendarDays, X, Check, Megaphone, User, Calendar as CalendarIcon, MapPin } from 'lucide-react'
+import { Clock, CalendarCheck, CalendarDays, X, Check, Megaphone, User, Calendar as CalendarIcon, MapPin } from 'lucide-react'
 import { formatDate } from '../utils/dateUtils'
 
 export function EventCard({ event, onOpen }) {
@@ -11,6 +11,7 @@ export function EventCard({ event, onOpen }) {
         <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-800 bg-brand-200 px-2.5 py-1 rounded-full">
           <CalendarIcon size={12} />
           {formatDate(event.data_de_realizacao)}
+          {event.data_de_realizacao && <span className="opacity-80">às {String(event.data_de_realizacao).substring(11, 16)}</span>}
         </span>
       </div>
 
@@ -21,7 +22,7 @@ export function EventCard({ event, onOpen }) {
 
       {event.descricao && (
         <p className="text-neutral-600 text-sm leading-relaxed line-clamp-3 font-['Sora']">
-          {event.descricao}
+          {event.descricao.split('---FAQS---')[0].trim()}
         </p>
       )}
 
@@ -158,6 +159,7 @@ export function EventDashCard({ item }) {
         <div className="flex flex-col gap-2 mb-4">
           <p className="text-brand-800 font-semibold text-sm">
             {item.dataLonga || formatDate(item.data_de_realizacao)}
+            {item.data_de_realizacao && <span className="opacity-80 ml-1">às {String(item.data_de_realizacao).substring(11, 16)}</span>}
           </p>
           <p className="text-sm">
             <span className="text-brand-900 font-medium">Duração: </span>
@@ -168,8 +170,8 @@ export function EventDashCard({ item }) {
             <span className="text-brand-900">{item.local || 'Lugar a anunciar'}</span>
           </p>
         </div>
-        <p className="text-xs text-neutral-500 leading-relaxed mb-6">
-          {item.descricao || 'Nenhuma descrição detalhada disponível para este evento.'}
+        <p className="text-xs text-neutral-500 leading-relaxed mb-6 line-clamp-3">
+          {item.descricao ? item.descricao.split('---FAQS---')[0].trim() : 'Nenhuma descrição detalhada disponível para este evento.'}
         </p>
       </div>
 
