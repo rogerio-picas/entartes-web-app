@@ -135,12 +135,12 @@ const dadosMarcacao = {
   outros_alunos: [],
 };
 
-// Uma marcação criada (estado AGENDADA)
+// Uma marcação criada (estado PENDENTE)
 const marcacaoFixture = {
   id_marcacoes: 100,
   id_docente: 10,
   id_modalidade: 5,
-  id_estado: ESTADO_MARCACAO.AGENDADA,
+  id_estado: ESTADO_MARCACAO.PENDENTE,
   data_a_realizar: new Date('2025-06-10T00:00:00.000Z'),
   hora_inicio: new Date('1970-01-01T10:00:00Z'),
   duracao_minutos: 60,
@@ -375,7 +375,7 @@ describe('adicionarParticipantesGrupo', () => {
     ...marcacaoFixture,
     numero_alunos_pretendidos: 3,
     id_user_criador: 1,
-    id_estado: ESTADO_MARCACAO.AGENDADA,
+    id_estado: ESTADO_MARCACAO.PENDENTE,
     aluno_marcacao: [{ id_aluno: 1 }], // apenas o criador por agora
   };
 
@@ -408,14 +408,14 @@ describe('adicionarParticipantesGrupo', () => {
       .rejects.toThrow('Só o criador da marcação pode adicionar participantes.');
   });
 
-  test('lança erro se a marcação não estiver no estado AGENDADA', async () => {
+  test('lança erro se a marcação não estiver no estado PENDENTE', async () => {
     prisma.marcacao.findUnique.mockResolvedValue({
       ...marcacaoGrupoFixture,
       id_estado: ESTADO_MARCACAO.CONFIRMADA, // estado inválido para esta operação
     });
 
     await expect(adicionarParticipantesGrupo(100, 1, [2]))
-      .rejects.toThrow('Só é possível adicionar participantes a marcações no estado Agendada.');
+      .rejects.toThrow('Só é possível adicionar participantes a marcações no estado PENDENTE.');
   });
 
   test('lança erro se a marcação não for de grupo', async () => {
@@ -581,11 +581,11 @@ describe('listarMeusPedidos', () => {
 // ═════════════════════════════════════════════════════════════
 describe('cancelarPedidoPendente', () => {
 
-  test('cancela marcação AGENDADA com sucesso', async () => {
+  test('cancela marcação PENDENTE com sucesso', async () => {
     prisma.aluno_marcacao.findFirst.mockResolvedValue({
       id_aluno: 1,
       id_marcacoes: 100,
-      marcacao: { ...marcacaoFixture, id_estado: ESTADO_MARCACAO.AGENDADA },
+      marcacao: { ...marcacaoFixture, id_estado: ESTADO_MARCACAO.PENDENTE },
     });
     prisma.marcacao.update.mockResolvedValue({ ...marcacaoFixture, id_estado: ESTADO_MARCACAO.CANCELADA });
     prisma.marcacao_estado_historico.create.mockResolvedValue({});
@@ -647,7 +647,7 @@ describe('cancelarPedidoPendente', () => {
     prisma.aluno_marcacao.findFirst.mockResolvedValue({
       id_aluno: 1,
       id_marcacoes: 100,
-      marcacao: { ...marcacaoFixture, id_estado: ESTADO_MARCACAO.AGENDADA },
+      marcacao: { ...marcacaoFixture, id_estado: ESTADO_MARCACAO.PENDENTE },
     });
     prisma.marcacao.update.mockResolvedValue({});
     prisma.marcacao_estado_historico.create.mockResolvedValue({});
@@ -700,7 +700,7 @@ describe('confirmarPresencaGrupo', () => {
       .rejects.toThrow('Convite não encontrado para este aluno.');
   });
 
-  test('lança erro se a marcação não estiver AGENDADA', async () => {
+  test('lança erro se a marcação não estiver PENDENTE', async () => {
     prisma.aluno_marcacao.findFirst.mockResolvedValue({
       ...associacaoGrupoFixture,
       marcacao: { ...marcacaoFixture, id_estado: ESTADO_MARCACAO.CANCELADA },
@@ -837,7 +837,7 @@ describe('validarConclusaoSessao', () => {
     prisma.participacao_conclusao.findFirst.mockResolvedValue(null);
     prisma.marcacao.findUnique.mockResolvedValue({
       ...marcacaoConfirmadaFixture,
-      id_estado: ESTADO_MARCACAO.AGENDADA, // estado errado!
+      id_estado: ESTADO_MARCACAO.PENDENTE, // estado errado!
     });
 
     await expect(validarConclusaoSessao(1, 100))
@@ -917,7 +917,7 @@ describe('listarColegas', () => {
 describe('Constantes de domínio exportadas', () => {
 
   test('ESTADO_MARCACAO tem os IDs correctos', () => {
-    expect(ESTADO_MARCACAO.AGENDADA).toBe(1);
+    expect(ESTADO_MARCACAO.PENDENTE).toBe(1);
     expect(ESTADO_MARCACAO.EM_VALIDACAO).toBe(2);
     expect(ESTADO_MARCACAO.CONFIRMADA).toBe(3);
     expect(ESTADO_MARCACAO.CONCLUIDA).toBe(4);
