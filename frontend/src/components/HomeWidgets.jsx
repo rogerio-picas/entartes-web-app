@@ -249,15 +249,15 @@ export function RequisicaoCard({ item, onAccept, onReject, loading, onVerPerfil 
   return (
     <div className="bg-brand-50 border border-brand-800 rounded-xl p-4 flex relative min-w-[340px]">
       <div className="flex-1 flex flex-col gap-1.5">
-        <p className="text-sm"><span className="text-brand-900 font-medium">Modalidade: </span>
+        <p className="text-sm"><span className="text-brand-900 font-medium">Modalidade - </span>
           <span className="text-brand-800">{item.modalidade}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Data: </span>
+        <p className="text-sm"><span className="text-brand-900 font-medium">Data - </span>
           <span className="text-brand-800">{item.data}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Duração: </span>
+        <p className="text-sm"><span className="text-brand-900 font-medium">Duração - </span>
           <span className="text-brand-800">{item.duracao}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Hora início: </span>
+        <p className="text-sm"><span className="text-brand-900 font-medium">Hora início - </span>
           <span className="text-brand-800">{item.hora}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Tipo: </span>
+        <p className="text-sm"><span className="text-brand-900 font-medium">Tipo - </span>
           <span className="text-brand-800">Individual</span></p>
         {item.alunos?.length > 0 && (
           <button onClick={() => onVerPerfil(item.alunos[0])}
@@ -298,15 +298,15 @@ export function PresencaDocenteCard({ item, onConfirm, onReject, loading }) {
   return (
     <div className="bg-brand-50 border border-brand-800 rounded-xl p-4 flex relative min-w-[340px]">
       <div className="flex-1 flex flex-col gap-1.5">
-        <p className="text-sm"><span className="text-brand-900 font-semibold">Modalidade: </span>
+        <p className="text-sm"><span className="text-brand-900 font-semibold">Modalidade - </span>
           <span className="text-brand-800">{item.modalidade}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-semibold">Data: </span>
+        <p className="text-sm"><span className="text-brand-900 font-semibold">Data - </span>
           <span className="text-brand-800">{item.data}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-semibold">Hora: </span>
+        <p className="text-sm"><span className="text-brand-900 font-semibold">Hora - </span>
           <span className="text-brand-800">{item.hora}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-semibold">Duração: </span>
+        <p className="text-sm"><span className="text-brand-900 font-semibold">Duração - </span>
           <span className="text-brand-800">{item.duracao}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-semibold">Tipo: </span>
+        <p className="text-sm"><span className="text-brand-900 font-semibold">Tipo - </span>
           <span className="text-brand-800">Individual</span></p>
         <div className="flex items-center gap-1.5 mt-1">
           <Clock size={25} className="text-brand-800" />

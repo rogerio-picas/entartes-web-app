@@ -223,9 +223,11 @@ export default function Home() {
 
         // Aulas que o docente tem de "concluir" (validar presença pós-aula)
         // Só marcacoes CONFIRMADA mas no passado (aulas dadas recentement). Ou seja, < now
+        // Apenas mostramos se for nas últimas 48h
+        const limit48h = new Date(now.getTime() - 48 * 60 * 60 * 1000)
         setPresencasDocente(minhasAulas.filter(a => {
           const d = new Date(a._data_raw)
-          return a.id_estado === 3 && d < now
+          return a.id_estado === 3 && d < now && d >= limit48h
         }))
 
       } else if (isAluno) {
@@ -244,9 +246,11 @@ export default function Home() {
         }).sort(sortAsc))
 
         // Aulas dadas, à espera da validação dupla (CONFIRMADAS no passado)
+        // Apenas mostramos se for nas últimas 48h
+        const limit48h = new Date(now.getTime() - 48 * 60 * 60 * 1000)
         setPresencasAluno(meusPedidos.filter(a => {
           const d = new Date(a._data_raw)
-          return a.id_estado === 3 && d < now
+          return a.id_estado === 3 && d < now && d >= limit48h
         }))
       }
 
@@ -298,6 +302,17 @@ export default function Home() {
       showToast('Sessão validada com sucesso!', 'success')
       loadData()
     } catch (err) { showToast(err.response?.data?.message || 'Erro ao validar a sessão.', 'error') }
+    finally { setLoadingAction(null) }
+  }
+
+  async function handleRejectDocente(id_marcacao) {
+    setLoadingAction(id_marcacao)
+    try {
+      await api.post(`/coaching/cancelar-marcacao/${id_marcacao}`, { motivo: 'Cancelado via Dashboard (Docente)' })
+      setPresencasDocente(prev => prev.filter(a => a.id !== id_marcacao))
+      showToast('Presença rejeitada.', 'success')
+      loadData()
+    } catch (err) { showToast(err.response?.data?.message || 'Erro ao rejeitar.', 'error') }
     finally { setLoadingAction(null) }
   }
 
@@ -408,7 +423,7 @@ export default function Home() {
             ) : (
               <ScrollRow>
                 {presencasDocente.slice(0, 3).map(item => (
-                  <PresencaDocenteCard key={item.id} item={item} onConfirm={handleConfirmPresencaDocente} onReject={handleRejectAdminDocente} loading={loadingAction} />
+                  <PresencaDocenteCard key={item.id} item={item} onConfirm={handleConfirmPresencaDocente} onReject={handleRejectDocente} loading={loadingAction} />
                 ))}
               </ScrollRow>
             )}
