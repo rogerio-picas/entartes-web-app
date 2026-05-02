@@ -8,15 +8,21 @@ const prisma = new PrismaClient();
 const createAnuncio = async (req, res) => {
     try {
         const { id_evento, id_grupo, titulo, mensagem } = req.body;
-        
+
         if (!titulo || !mensagem) {
             return res.status(400).json({ error: 'Título e mensagem são obrigatórios' });
         }
 
+        // CORREÇÃO: parseInt sem verificação de isNaN podia passar NaN silenciosamente ao Prisma
+        const eventoId = id_evento ? parseInt(id_evento) : null;
+        const grupoId  = id_grupo  ? parseInt(id_grupo)  : null;
+        if (id_evento && isNaN(eventoId)) return res.status(400).json({ error: 'id_evento inválido' });
+        if (id_grupo  && isNaN(grupoId))  return res.status(400).json({ error: 'id_grupo inválido' });
+
         const novo = await prisma.anuncio.create({
             data: {
-                id_evento:       id_evento  ? parseInt(id_evento)  : null,
-                id_grupo:        id_grupo   ? parseInt(id_grupo)   : null,
+                id_evento:       eventoId,
+                id_grupo:        grupoId,
                 id_coordenadora: req.user.id,
                 titulo,
                 mensagem,
@@ -55,8 +61,12 @@ const getAnuncioById = async (req, res) => {
     try {
         const { id_anuncio } = req.params;
 
+        // CORREÇÃO: ID do parâmetro não era validado antes de consultar a base de dados
+        const id = parseInt(id_anuncio);
+        if (isNaN(id)) return res.status(400).json({ error: 'id_anuncio inválido' });
+
         const anuncio = await prisma.anuncio.findUnique({
-            where: { id_anuncio: parseInt(id_anuncio) },
+            where: { id_anuncio: id },
             include: {
                 coordenadora: {
                     select: { utilizador: { select: { nome: true } } }
@@ -82,8 +92,13 @@ const updateAnuncio = async (req, res) => {
         const { id_anuncio } = req.params;
         const { titulo, mensagem } = req.body;
 
+        // CORREÇÃO: ID não era validado e não se verificava se havia pelo menos um campo para atualizar
+        const id = parseInt(id_anuncio);
+        if (isNaN(id)) return res.status(400).json({ error: 'id_anuncio inválido' });
+        if (!titulo && !mensagem) return res.status(400).json({ error: 'Forneça pelo menos título ou mensagem para atualizar' });
+
         const anuncio = await prisma.anuncio.findUnique({
-            where: { id_anuncio: parseInt(id_anuncio) }
+            where: { id_anuncio: id }
         });
 
         if (!anuncio) {
@@ -95,7 +110,7 @@ const updateAnuncio = async (req, res) => {
         }
 
         const atualizado = await prisma.anuncio.update({
-            where: { id_anuncio: parseInt(id_anuncio) },
+            where: { id_anuncio: id },
             data: {
                 titulo: titulo || anuncio.titulo,
                 mensagem: mensagem || anuncio.mensagem
@@ -113,8 +128,12 @@ const removeAnuncio = async (req, res) => {
     try {
         const { id_anuncio } = req.params;
 
+        // CORREÇÃO: ID do parâmetro não era validado antes de consultar a base de dados
+        const id = parseInt(id_anuncio);
+        if (isNaN(id)) return res.status(400).json({ error: 'id_anuncio inválido' });
+
         const anuncio = await prisma.anuncio.findUnique({
-            where: { id_anuncio: parseInt(id_anuncio) }
+            where: { id_anuncio: id }
         });
 
         if (!anuncio) {
@@ -126,7 +145,7 @@ const removeAnuncio = async (req, res) => {
         }
 
         await prisma.anuncio.delete({
-            where: { id_anuncio: parseInt(id_anuncio) }
+            where: { id_anuncio: id }
         });
 
         res.status(200).json({ mensagem: 'Anúncio eliminado com sucesso' });
@@ -140,8 +159,12 @@ const getAnunciosByEvento = async (req, res) => {
     try {
         const { id_evento } = req.params;
 
+        // CORREÇÃO: ID do parâmetro não era validado antes de consultar a base de dados
+        const id = parseInt(id_evento);
+        if (isNaN(id)) return res.status(400).json({ error: 'id_evento inválido' });
+
         const anuncios = await prisma.anuncio.findMany({
-            where: { id_evento: parseInt(id_evento) },
+            where: { id_evento: id },
             include: {
                 coordenadora: {
                     select: { utilizador: { select: { nome: true } } }
@@ -161,8 +184,12 @@ const getAnunciosByGrupo = async (req, res) => {
     try {
         const { id_grupo } = req.params;
 
+        // CORREÇÃO: ID do parâmetro não era validado antes de consultar a base de dados
+        const id = parseInt(id_grupo);
+        if (isNaN(id)) return res.status(400).json({ error: 'id_grupo inválido' });
+
         const anuncios = await prisma.anuncio.findMany({
-            where: { id_grupo: parseInt(id_grupo) },
+            where: { id_grupo: id },
             include: {
                 coordenadora: {
                     select: { utilizador: { select: { nome: true } } }

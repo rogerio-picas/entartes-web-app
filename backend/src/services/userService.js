@@ -63,6 +63,25 @@ const criarUtilizador = async (dados) => {
 
     const tipoInt = id_tipo ? parseInt(id_tipo) : null;
 
+    // Verificar duplicados em paralelo antes de tentar inserir, para que a mensagem de erro
+    // liste todos os campos em conflito de uma vez (o P2002 do Prisma só reporta um de cada vez)
+    const [usernameTaken, emailTaken, nifTaken] = await Promise.all([
+        codigo_username ? prisma.utilizador.findFirst({ where: { codigo_username } }) : null,
+        email           ? prisma.utilizador.findFirst({ where: { email } })           : null,
+        nif             ? prisma.utilizador.findFirst({ where: { nif } })             : null,
+    ]);
+    const duplicados = [
+        usernameTaken && 'nome de utilizador',
+        emailTaken    && 'e-mail',
+        nifTaken      && 'NIF',
+    ].filter(Boolean);
+    if (duplicados.length > 0) {
+        throw Object.assign(
+            new Error(`Já existe um utilizador registado com este(s) campo(s): ${duplicados.join(', ')}.`),
+            { code: 'DUPLICATE', fields: duplicados }
+        );
+    }
+
     // 3. Iniciar Transação Atómica
     // Garantimos que o utilizador só é criado se o perfil (aluno/docente/coord) também for.
     return await prisma.$transaction(async (tx) => {
@@ -165,66 +184,61 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
     const novoTipo = id_tipo !== undefined ? parseInt(id_tipo) : utilizadorAtual.id_tipo;
     const tipoAtual = utilizadorAtual.id_tipo;
 
-    return await prisma.$transaction(async (tx) => {
-        // Atualizar a tabela principal
-        const utilizadorAtualizado = await tx.utilizador.update({
-            where: { id_utilizador: userId },
-            data: dataToUpdate,
-        });
-
-        // Atualizar coaching no aluno se o tipo é/continua a ser aluno
-        if (novoTipo === 3 && coaching !== undefined && novoTipo === tipoAtual) {
-            await tx.aluno.update({
+    try {
+        return await prisma.$transaction(async (tx) => {
+            // Atualizar a tabela principal
+            const utilizadorAtualizado = await tx.utilizador.update({
                 where: { id_utilizador: userId },
-                data: { coaching },
+                data: dataToUpdate,
             });
-        }
 
-        // Se o tipo mudou, gerenciar as tabelas específicas
-        if (novoTipo !== tipoAtual) {
-            // Remover da tabela antiga
-            if (tipoAtual === 3 && utilizadorAtual.aluno) { // Era aluno
-                await tx.aluno.delete({
+            // Atualizar coaching no aluno se o tipo é/continua a ser aluno
+            if (novoTipo === 3 && coaching !== undefined && novoTipo === tipoAtual) {
+                await tx.aluno.update({
                     where: { id_utilizador: userId },
-                });
-            } else if (tipoAtual === 2 && utilizadorAtual.docente) { // Era docente
-                await tx.docente.delete({
-                    where: { id_utilizador: userId },
-                });
-            } else if (tipoAtual === 1 && utilizadorAtual.coordenadora) { // Era coordenadora
-                await tx.coordenadora.delete({
-                    where: { id_utilizador: userId },
+                    data: { coaching },
                 });
             }
 
-            // Adicionar na nova tabela
-            switch (novoTipo) {
-                case 3: // Novo aluno
-                    await tx.aluno.create({
-                        data: { id_utilizador: userId },
-                    });
-                    break;
-                case 2: // Novo docente
-                    await tx.docente.create({
-                        data: {
-                            id_utilizador: userId,
-                            estado_atividade: true,
-                        },
-                    });
-                    break;
-                case 1: // Nova coordenadora
-                    await tx.coordenadora.create({
-                        data: { id_utilizador: userId },
-                    });
-                    break;
-                default:
-                    // Outros tipos não têm tabelas específicas
-                    break;
-            }
-        }
+            // Se o tipo mudou, gerenciar as tabelas específicas
+            if (novoTipo !== tipoAtual) {
+                // Remover da tabela antiga
+                if (tipoAtual === 3 && utilizadorAtual.aluno) {
+                    await tx.aluno.delete({ where: { id_utilizador: userId } });
+                } else if (tipoAtual === 2 && utilizadorAtual.docente) {
+                    await tx.docente.delete({ where: { id_utilizador: userId } });
+                } else if (tipoAtual === 1 && utilizadorAtual.coordenadora) {
+                    await tx.coordenadora.delete({ where: { id_utilizador: userId } });
+                }
 
-        return utilizadorAtualizado;
-    });
+                // Adicionar na nova tabela
+                if (novoTipo === 3) {
+                    await tx.aluno.create({ data: { id_utilizador: userId } });
+                } else if (novoTipo === 2) {
+                    await tx.docente.create({ data: { id_utilizador: userId, estado_atividade: true } });
+                } else if (novoTipo === 1) {
+                    await tx.coordenadora.create({ data: { id_utilizador: userId } });
+                }
+            }
+            // CORREÇÃO: switch duplicado removido — o if/else if acima já trata a criação na nova tabela;
+            // o switch ficou por engano após refactor e deixava o bloco if sem fechar, causando SyntaxError.
+
+            return utilizadorAtualizado;
+        });
+    } catch (error) {
+        if (error.code === 'P2002') {
+            const campoLabels = {
+                nif:              'NIF',
+                email:            'endereço de e-mail',
+                codigo_username:  'nome de utilizador',
+                telemovel:        'número de telemóvel',
+            };
+            const campo = error.meta?.target?.[0];
+            const label = campoLabels[campo] ?? campo ?? 'campo';
+            throw new Error(`Já existe um utilizador registado com este ${label}. Por favor, verifique os dados introduzidos.`);
+        }
+        throw error;
+    }
 };
 
 module.exports = { criarUtilizador, atualizarUtilizador, getUsers, getUser, deleteUser };

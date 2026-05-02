@@ -81,7 +81,7 @@ const salaController = require('../controllers/salaController');
  *         description: Sala não encontrada
  */
 
-router.use(tokenValidation, authorize([1]));
+// CORREÇÃO: middleware duplicado — router.use aplicava tokenValidation+authorize e cada rota repetia-os
 router.get('/', tokenValidation, authorize([1]), salaController.listSalas);
 router.post('/', tokenValidation, authorize([1]), salaController.createSala);
 router.put('/:id', tokenValidation, authorize([1]), salaController.updateSala);
