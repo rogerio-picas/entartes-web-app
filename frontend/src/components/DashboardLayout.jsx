@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+﻿import { useState, useEffect, createContext, useContext } from 'react'
 import { Outlet } from 'react-router-dom'
 import DashboardHeader from './DashboardHeader'
 import NotificationPanel from './NotificationPanel'
@@ -48,7 +48,7 @@ export default function DashboardLayout() {
 
     return (
         <NotificationContext.Provider value={ctx}>
-            <div className="min-h-screen flex flex-col bg-[#F8FAFA]">
+            <div className="min-h-screen flex flex-col bg-neutral-50">
                 <DashboardHeader
                     unreadCount={unreadCount}
                     onBellClick={() => setNotifOpen(true)}

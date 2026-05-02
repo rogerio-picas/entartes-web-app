@@ -159,4 +159,68 @@ const exportCSV = async (req, res) => {
     }
 }
 
-module.exports = { getSessoesRelatorio, getHorasDocente, getAlunosRelatorio, getDocentesRelatorio, exportCSV };
+const getOcupacaoSalas = async (req, res) => {
+    try {
+        const { data } = req.query;
+        const targetDate = data ? new Date(data) : new Date();
+        targetDate.setHours(0, 0, 0, 0);
+
+        const nextDay = new Date(targetDate);
+        nextDay.setDate(targetDate.getDate() + 1);
+
+        const salas = await prisma.sala.findMany({
+            include: {
+                marcacao: {
+                    where: {
+                        id_estado: { in: [3, 4] }, // CONFIRMADA (3) ou CONCLUIDA (4)
+                        data_a_realizar: {
+                            gte: targetDate,
+                            lt: nextDay
+                        }
+                    },
+                    orderBy: { hora_inicio: 'asc' },
+                    include: {
+                        docente: {
+                            include: { utilizador: { select: { nome: true, apelido: true } } }
+                        }
+                    }
+                }
+            },
+            orderBy: { nome: 'asc' }
+        });
+
+        const result = salas.map(sala => {
+            const ocupacoes = sala.marcacao.map(m => {
+                const hInicio = new Date(m.hora_inicio);
+                const hFim = new Date(hInicio.getTime() + (m.duracao_minutos || 0) * 60000);
+
+                return {
+                    id_marcacao: m.id_marcacoes,
+                    inicio: hInicio.getUTCHours().toString().padStart(2, '0') + ':' + hInicio.getUTCMinutes().toString().padStart(2, '0'),
+                    fim: hFim.getUTCHours().toString().padStart(2, '0') + ':' + hFim.getUTCMinutes().toString().padStart(2, '0'),
+                    duracao: m.duracao_minutos,
+                    docente: `${m.docente?.utilizador?.nome ?? ''} ${m.docente?.utilizador?.apelido ?? ''}`.trim()
+                };
+            });
+
+            const totalMinutosOcupados = sala.marcacao.reduce((acc, m) => acc + (m.duracao_minutos || 0), 0);
+            // Assumindo 12h de operação (08:00 - 20:00) = 720 minutos
+            const percentagem = Math.min(100, Math.round((totalMinutosOcupados / 720) * 100));
+
+            return {
+                id_sala: sala.id_sala,
+                nome: sala.nome,
+                ocupacoes,
+                totalMinutos: totalMinutosOcupados,
+                percentagemOcupacao: percentagem
+            };
+        });
+
+        res.json(result);
+    } catch (error) {
+        console.error('getOcupacaoSalas:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+module.exports = { getSessoesRelatorio, getHorasDocente, getAlunosRelatorio, getDocentesRelatorio, exportCSV, getOcupacaoSalas };

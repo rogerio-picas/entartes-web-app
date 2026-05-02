@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { X, Check, AlertCircle, RefreshCw, Plus, UserMinus } from 'lucide-react'
 import { modalidadeService } from '../services/modalidadeService'
 
 function Field({ label, value, onChange, placeholder }) {
     return (
         <div className="relative">
-            <label className="absolute -top-2.5 left-3 bg-[#F4FBF9] text-[11px] text-[#3F4948] font-medium px-1 z-10">
+            <label className="absolute -top-2.5 left-3 bg-brand-50 text-[11px] text-neutral-700 font-medium px-1 z-10">
                 {label}
             </label>
             <input
@@ -13,7 +13,7 @@ function Field({ label, value, onChange, placeholder }) {
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 placeholder={placeholder}
-                className="w-full bg-white border border-[#6F7978] rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] transition-colors"
+                className="w-full bg-white border border-neutral-500 rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-brand-800 transition-colors"
             />
         </div>
     )
@@ -94,21 +94,21 @@ export default function NovaModalidadeModal({ onClose, onSuccess, modalidade }) 
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
             <div
-                className="relative bg-[#F4FBF9] rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden"
+                className="relative bg-brand-50 rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="px-8 pt-8 pb-0 shrink-0">
                     <div className="flex items-center justify-between mb-1">
                         <span />
-                        <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-[#CCE8E6] flex items-center justify-center text-[#4A6362]">
+                        <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-brand-200 flex items-center justify-center text-neutral-600">
                             <X size={17} />
                         </button>
                     </div>
-                    <h2 className="text-4xl font-bold text-[#00504E] text-center font-['Sora'] mb-4">
+                    <h2 className="text-4xl font-bold text-brand-900 text-center font-['Sora'] mb-4">
                         {isEdit ? 'Editar modalidade' : 'Nova modalidade'}
                     </h2>
-                    <div className="border-t border-[#006A68]" />
+                    <div className="border-t border-brand-800" />
                 </div>
 
                 {/* Body */}
@@ -123,14 +123,14 @@ export default function NovaModalidadeModal({ onClose, onSuccess, modalidade }) 
 
                     {/* Docentes */}
                     <div>
-                        <p className="text-sm font-medium text-[#000] mb-3">Docentes</p>
+                        <p className="text-sm font-medium text-black mb-3">Docentes</p>
 
                         {selectedDocentes.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-3">
                                 {selectedDocentes.map(d => (
                                     <span
                                         key={d.id_docente}
-                                        className="inline-flex items-center gap-1.5 text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full font-medium"
+                                        className="inline-flex items-center gap-1.5 text-xs bg-brand-200 text-brand-800 px-2.5 py-1 rounded-full font-medium"
                                     >
                                         {[d.nome, d.apelido].filter(Boolean).join(' ') || d.codigo_username}
                                         <button
@@ -147,13 +147,13 @@ export default function NovaModalidadeModal({ onClose, onSuccess, modalidade }) 
                         {availableDocentes.length > 0 && (
                             <div className="flex gap-2">
                                 <div className="relative flex-1">
-                                    <label className="absolute -top-2.5 left-3 bg-[#F4FBF9] text-[11px] text-[#3F4948] font-medium px-1 z-10">
+                                    <label className="absolute -top-2.5 left-3 bg-brand-50 text-[11px] text-neutral-700 font-medium px-1 z-10">
                                         Adicionar docente
                                     </label>
                                     <select
                                         value={addingId}
                                         onChange={e => setAddingId(e.target.value)}
-                                        className="w-full bg-white border border-[#6F7978] rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] transition-colors appearance-none"
+                                        className="w-full bg-white border border-neutral-500 rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-brand-800 transition-colors appearance-none"
                                     >
                                         <option value="">Selecionar...</option>
                                         {availableDocentes.map(d => (
@@ -166,7 +166,7 @@ export default function NovaModalidadeModal({ onClose, onSuccess, modalidade }) 
                                 <button
                                     onClick={addDocente}
                                     disabled={!addingId}
-                                    className="self-end w-11 h-11 rounded-xl bg-[#006A68] text-white flex items-center justify-center hover:bg-[#00504E] transition-colors disabled:opacity-40"
+                                    className="self-end w-11 h-11 rounded-xl bg-brand-800 text-white flex items-center justify-center hover:bg-brand-900 transition-colors disabled:opacity-40"
                                 >
                                     <Plus size={18} />
                                 </button>
@@ -174,7 +174,7 @@ export default function NovaModalidadeModal({ onClose, onSuccess, modalidade }) 
                         )}
 
                         {availableDocentes.length === 0 && selectedDocentes.length === 0 && (
-                            <p className="text-xs text-[#4A6362]">Nenhum docente disponível.</p>
+                            <p className="text-xs text-neutral-600">Nenhum docente disponível.</p>
                         )}
                     </div>
                 </div>
@@ -184,7 +184,7 @@ export default function NovaModalidadeModal({ onClose, onSuccess, modalidade }) 
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="flex items-center gap-2 px-8 py-4 bg-[#006A68] text-white font-semibold rounded-2xl hover:bg-[#00504E] transition-colors disabled:opacity-60 text-base font-['Sora']"
+                        className="flex items-center gap-2 px-8 py-4 bg-brand-800 text-white font-semibold rounded-2xl hover:bg-brand-900 transition-colors disabled:opacity-60 text-base font-['Sora']"
                     >
                         {loading ? <RefreshCw size={18} className="animate-spin" /> : <Check size={18} />}
                         Guardar
@@ -194,3 +194,5 @@ export default function NovaModalidadeModal({ onClose, onSuccess, modalidade }) 
         </div>
     )
 }
+
+

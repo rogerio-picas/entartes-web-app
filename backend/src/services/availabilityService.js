@@ -22,6 +22,27 @@ const validarParametrosCreate = (dia_semana, data_especifica, hora_inicio, hora_
     throw new Error("É obrigatório definir dia_semana ou data_especifica.");
   }
 
+  if (data_especifica) {
+    const selected = new Date(data_especifica);
+    selected.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selected < today) {
+      throw new Error("A data específica não pode ser inferior à data atual.");
+    }
+
+    if (selected.getTime() === today.getTime()) {
+      const now = new Date();
+      const start = parseHoraTime(hora_inicio);
+      // Garantir que comparamos com o dia de hoje
+      start.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
+      if (start < now) {
+        throw new Error("Para o dia de hoje, a hora de início não pode ser inferior à hora atual.");
+      }
+    }
+  }
+
   if (!hora_inicio || !hora_fim) {
     throw new Error("Horários de início e fim são obrigatórios.");
   }
@@ -156,9 +177,9 @@ const listarDisponibilidades = async (id_docente) => {
   const disponibilidades = await prisma.disponibilidade.findMany({
     where: { id_docente },
     orderBy: [
-      { dia_semana: "asc" },
-      { data_especifica: "asc" },
-      { hora_inicio: "asc" },
+      { data_especifica: 'asc' },
+      { dia_semana: 'asc' },
+      { hora_inicio: 'asc' },
     ],
   });
 

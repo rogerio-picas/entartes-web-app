@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import { X, CalendarDays, Clock, MapPin, User, Music, BookOpen, Trash2, Pencil } from 'lucide-react'
 import { parseDate, addMinutesToTime } from '../utils/dateUtils'
 
@@ -7,12 +7,12 @@ const STATUS_COLOR = {
     1: 'bg-amber-100 text-amber-700 border-amber-200',
     2: 'bg-blue-100 text-blue-700 border-blue-200',
     3: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    4: 'bg-[#CCE8E6] text-[#006A68] border-[#006A68]',
+    4: 'bg-brand-200 text-brand-800 border-brand-800',
     5: 'bg-red-100 text-red-700 border-red-200',
 }
 
 const STATUS_LABEL = {
-    1: 'Agendada',
+    1: 'Pendente',
     2: 'Em Validação',
     3: 'Confirmada',
     4: 'Concluída',
@@ -22,32 +22,32 @@ const STATUS_LABEL = {
 function InfoItem({ icon: Icon, label, value }) {
     return (
         <div className="flex items-start gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[#CCE8E6] flex items-center justify-center shrink-0 mt-0.5">
-                {Icon && <Icon size={14} className="text-[#006A68]" />}
+            <div className="w-7 h-7 rounded-lg bg-brand-200 flex items-center justify-center shrink-0 mt-0.5">
+                {Icon && <Icon size={14} className="text-brand-800" />}
             </div>
             <div>
-                <p className="text-[10px] uppercase tracking-wider text-[#4A6362] font-semibold">{label}</p>
+                <p className="text-[10px] uppercase tracking-wider text-neutral-600 font-semibold">{label}</p>
                 <p className="text-sm font-medium text-gray-800">{String(value || '—')}</p>
             </div>
         </div>
     )
 }
 
-export default function ItemDetailModal({ 
-    item, 
-    onClose, 
-    role, 
-    onEdit, 
-    onDelete, 
-    onNavigate, 
-    navigateLabel = "Ver Detalhes" 
+export default function ItemDetailModal({
+    item,
+    onClose,
+    role,
+    onEdit,
+    onDelete,
+    onNavigate,
+    navigateLabel = "Ver Detalhes"
 }) {
     if (!item) return null
 
     // Lógica de cores baseada no tipo
     const isEvent = item._isEvent || item.id_evento
     const isDisponibilidade = item._isDisponibilidade
-    
+
     let color = { bg: '#F4FBF9', border: '#80D5D2', text: '#006A68' }
     if (isEvent) color = { bg: '#EFF1F1', border: '#BEC9C7', text: '#324B4A' }
 
@@ -57,13 +57,13 @@ export default function ItemDetailModal({
     // Permissões de Ação (lógica vinda do Horario.jsx)
     let canEdit = !!onEdit;
     let canDelete = !!onDelete;
-    
+
     // Verificar se o item está no passado (data estritamente anterior a hoje)
     const startValue = item.start || item.data || item.data_de_realizacao || item._data_raw;
     const itemDate = parseDate(startValue);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const isPast = itemDate && itemDate < today;
 
     if (isPast) {
@@ -94,7 +94,7 @@ export default function ItemDetailModal({
                         <X size={16} />
                     </button>
                 </div>
-                
+
                 <div className="px-6 py-6 space-y-5">
                     {!isEvent && !isDisponibilidade && (
                         <span className={`inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-full border ${statusClass}`}>
@@ -113,10 +113,10 @@ export default function ItemDetailModal({
                             <InfoItem icon={Clock} label="Hora" value={item.hora || item.hora_inicio} />
                         )}
                         {(item.duracao || item.duracao_minutos) && (
-                            <InfoItem 
-                                icon={Clock} 
-                                label={isEvent ? "Duração Prevista" : "Duração"} 
-                                value={item.duracao || `${item.duracao_minutos} min`} 
+                            <InfoItem
+                                icon={Clock}
+                                label={isEvent ? "Duração Prevista" : "Duração"}
+                                value={item.duracao || `${item.duracao_minutos} min`}
                             />
                         )}
                         {isEvent && (item.duracao_minutos || item.duracao) && (() => {
@@ -129,10 +129,10 @@ export default function ItemDetailModal({
 
                         {(item.sala || item.estudio) && <InfoItem icon={MapPin} label="Local" value={item.sala || item.estudio} />}
                         {item.docente && (
-                            <InfoItem 
-                                icon={User} 
-                                label={role === 2 && !isEvent && !isDisponibilidade ? "Aluno(s)" : "Professor"} 
-                                value={item.docente} 
+                            <InfoItem
+                                icon={User}
+                                label={role === 2 && !isEvent && !isDisponibilidade ? "Aluno(s)" : "Professor"}
+                                value={item.docente}
                             />
                         )}
                         {item.modalidade && <InfoItem icon={Music} label="Modalidade" value={item.modalidade} />}
@@ -141,19 +141,19 @@ export default function ItemDetailModal({
 
                     {item.descricao && (
                         <div className="pt-2 border-t border-gray-100">
-                            <p className="text-[10px] text-[#4A6362] uppercase font-semibold mb-1">Descrição</p>
+                            <p className="text-[10px] text-neutral-600 uppercase font-semibold mb-1">Descrição</p>
                             <p className="text-sm text-gray-600 leading-relaxed">{item.descricao}</p>
                         </div>
                     )}
 
                     {item.alunos?.length > 0 && (
                         <div className="pt-2">
-                            <p className="text-[10px] text-[#4A6362] uppercase font-semibold mb-2">
+                            <p className="text-[10px] text-neutral-600 uppercase font-semibold mb-2">
                                 Alunos ({item.alunos.length})
                             </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {item.alunos.map((a, i) => (
-                                    <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full font-medium">
+                                    <span key={i} className="text-xs bg-brand-200 text-brand-800 px-2.5 py-1 rounded-full font-medium">
                                         {String(a)}
                                     </span>
                                 ))}
@@ -161,7 +161,7 @@ export default function ItemDetailModal({
                         </div>
                     )}
                 </div>
-                
+
                 <div className="px-6 pb-6 pt-2 flex flex-col gap-2">
                     <div className="flex gap-2 w-full">
                         {canDelete && (
@@ -183,19 +183,19 @@ export default function ItemDetailModal({
                             </button>
                         )}
                     </div>
-                    
+
                     <div className="flex gap-2 w-full">
                         {onNavigate && (
                             <button
                                 onClick={() => { onNavigate(item); onClose(); }}
-                                className="flex-1 py-2.5 rounded-xl bg-[#006A68] text-white font-semibold text-sm hover:bg-[#00504E] transition-colors shadow-sm"
+                                className="flex-1 py-2.5 rounded-xl bg-brand-800 text-white font-semibold text-sm hover:bg-brand-900 transition-colors shadow-sm"
                             >
                                 {navigateLabel}
                             </button>
                         )}
-                        <button 
+                        <button
                             onClick={onClose}
-                            className={`py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm ${onNavigate ? 'flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200' : 'w-full bg-[#006A68] text-white hover:bg-[#00504E]'}`}
+                            className={`py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm ${onNavigate ? 'flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200' : 'w-full bg-brand-800 text-white hover:bg-brand-900'}`}
                         >
                             Fechar
                         </button>
@@ -205,3 +205,4 @@ export default function ItemDetailModal({
         </div>
     )
 }
+

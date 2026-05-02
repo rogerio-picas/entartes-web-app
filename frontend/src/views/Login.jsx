@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 
-const TEAL = '#3d7272'
+const TEAL = '#006A68' // brand-800
 
 function DancerLogo() {
   return (
@@ -14,14 +14,14 @@ function DancerLogo() {
       <div className="text-center leading-tight">
         <div
           className="text-2xl tracking-widest"
-          style={{ fontWeight: 300, color: '#555', letterSpacing: '0.15em' }}
+          style={{ fontWeight: 300, color: '#6F7978', letterSpacing: '0.15em' }}
         >
           ent&apos;artes
           <sup className="text-xs align-super" style={{ fontWeight: 400 }}>®</sup>
         </div>
         <div
           className="text-xs tracking-widest mt-0.5"
-          style={{ color: '#aaa', letterSpacing: '0.25em', fontWeight: 300 }}
+          style={{ color: '#BEC9C7', letterSpacing: '0.25em', fontWeight: 300 }}
         >
           escola de dança
         </div>
@@ -123,7 +123,7 @@ export default function Login() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-6 py-12"
-      style={{ backgroundColor: '#f2f2f2' }}
+      style={{ backgroundColor: '#EFF5F4' }}
     >
       <DancerLogo />
 
@@ -183,7 +183,7 @@ export default function Login() {
         </form>
       </div>
 
-      <p className="mt-12 text-xs text-center" style={{ color: '#bbb' }}>
+      <p className="mt-12 text-xs text-center text-neutral-400">
         © Copyright 2026 En&apos;tartes® – Marca registada Nacional 577041 | Todos os direitos reservados
       </p>
     </div>
