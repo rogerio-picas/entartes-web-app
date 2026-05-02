@@ -115,6 +115,23 @@ const exportCSV = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────
+// 6. getOcupacaoSalas
+// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/relatorio/ocupacao-salas?data=YYYY-MM-DD
+ */
+const getOcupacaoSalas = async (req, res) => {
+  try {
+    const { data } = req.query;
+    const resultado = await relatorioService.obterOcupacaoSalas(data);
+    res.json(resultado);
+  } catch (error) {
+    console.error('getOcupacaoSalas:', error);
+    res.status(500).json({ error: 'Erro interno do servidor.' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
 // EXPORTAÇÕES
 // ─────────────────────────────────────────────────────────────
 module.exports = {
@@ -123,4 +140,5 @@ module.exports = {
   getAlunosRelatorio,
   getDocentesRelatorio,
   exportCSV,
+  getOcupacaoSalas,
 };

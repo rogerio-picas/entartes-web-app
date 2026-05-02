@@ -225,6 +225,52 @@ async function gerarDadosCSV(from, to) {
   return [cabecalho, ...corpo].join('\n');
 }
 
+/**
+ * Devolve a ocupação de todas as salas para uma data específica (hoje por defeito).
+ */
+async function obterOcupacaoSalas(data) {
+  const targetDate = data ? new Date(data) : new Date();
+  targetDate.setHours(0, 0, 0, 0);
+
+  const nextDay = new Date(targetDate);
+  nextDay.setDate(targetDate.getDate() + 1);
+
+  const salas = await prisma.sala.findMany({
+    include: {
+      marcacao: {
+        where: {
+          id_estado: { in: [3, 4] },
+          data_a_realizar: { gte: targetDate, lt: nextDay }
+        },
+        orderBy: { hora_inicio: 'asc' },
+        include: {
+          docente: {
+            include: { utilizador: { select: { nome: true, apelido: true } } }
+          }
+        }
+      }
+    },
+    orderBy: { nome: 'asc' }
+  });
+
+  return salas.map(sala => {
+    const ocupacoes = sala.marcacao.map(m => {
+      const hInicio = new Date(m.hora_inicio);
+      const hFim = new Date(hInicio.getTime() + (m.duracao_minutos || 0) * 60000);
+      return {
+        id_marcacao: m.id_marcacoes,
+        inicio: hInicio.getUTCHours().toString().padStart(2, '0') + ':' + hInicio.getUTCMinutes().toString().padStart(2, '0'),
+        fim: hFim.getUTCHours().toString().padStart(2, '0') + ':' + hFim.getUTCMinutes().toString().padStart(2, '0'),
+        duracao: m.duracao_minutos,
+        docente: `${m.docente?.utilizador?.nome ?? ''} ${m.docente?.utilizador?.apelido ?? ''}`.trim()
+      };
+    });
+    const totalMinutosOcupados = sala.marcacao.reduce((acc, m) => acc + (m.duracao_minutos || 0), 0);
+    const percentagem = Math.min(100, Math.round((totalMinutosOcupados / 720) * 100));
+    return { id_sala: sala.id_sala, nome: sala.nome, ocupacoes, totalMinutos: totalMinutosOcupados, percentagemOcupacao: percentagem };
+  });
+}
+
 // ─────────────────────────────────────────────────────────────
 // EXPORTAÇÕES
 // ─────────────────────────────────────────────────────────────
@@ -233,5 +279,6 @@ module.exports = {
   obterHorasPorDocente,
   obterRelatorioAlunos,
   obterRelatorioDocentes,
+  obterOcupacaoSalas,
   gerarDadosCSV,
 };
