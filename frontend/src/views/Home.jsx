@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
@@ -410,6 +410,7 @@ export default function Home() {
                 {presencasDocente.slice(0, 3).map(item => (
                   <PresencaDocenteCard key={item.id} item={item} onConfirm={handleConfirmPresencaDocente} onReject={handleRejectAdminDocente} loading={loadingAction} />
                 ))}
+                {presencasDocente.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais presenças" />}
               </ScrollRow>
             )}
           </section>
@@ -423,6 +424,7 @@ export default function Home() {
               {presencasAluno.slice(0, 3).map(item => (
                 <PresencaAlunoCard key={item.id} item={item} onConfirm={handleConfirmarPresencaAluno} onReject={handleRecusarPresencaAluno} loading={loadingAction} />
               ))}
+              {presencasAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais presenças" />}
             </ScrollRow>
           </section>
         )}
@@ -439,8 +441,7 @@ export default function Home() {
                   ? <ConfirmedCard key={a.id} aula={a} onOpen={() => setSelectedItem(a)} role={role} />
                   : <ClassCard key={a.id} item={a} statusType="confirmada" onOpen={() => setSelectedItem(a)} />
               ))}
-
-            </ScrollRow>
+              {aulasConfirmadas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas', { state: { filtroEstado: '3' } })} label="Ver mais coachings" />}            </ScrollRow>
           )}
         </section>
 
@@ -452,6 +453,7 @@ export default function Home() {
               {inscricoesAluno.slice(0, 3).map((item, idx) => (
                 <ClassCard key={item.id || idx} item={item} statusType="pendente" onOpen={() => setSelectedItem(item)} />
               ))}
+              {inscricoesAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais inscrições" />}
             </ScrollRow>
           </section>
         )}
@@ -471,6 +473,7 @@ export default function Home() {
               {eventos.slice(0, 3).map(item => (
                 <SimpleEventCard key={item.id_evento} event={item} onOpen={() => setSelectedItem(item)} />
               ))}
+              {eventos.length > 3 && <ViewMoreCard onClick={() => navigate('/eventos')} label="Ver todos os eventos" />}
             </div>
           )}
         </section>
