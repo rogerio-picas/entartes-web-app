@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, Plus, RefreshCw, Pencil, Trash2, X, Check, AlertCircle, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 import { utilizadorService } from '../services/utilizadorService'
@@ -21,7 +21,7 @@ const TABS = [
 
 function SkeletonRow() {
     return (
-        <tr className="animate-pulse border-b border-[#4a6362]/10">
+        <tr className="animate-pulse border-b border-neutral-600/10">
             {[30, 15, 40, 50, 20, 15].map((w, i) => (
                 <td key={i} className="px-4 py-4">
                     <div className="h-4 bg-gray-100 rounded-lg" style={{ width: `${w}%` }} />
@@ -96,10 +96,10 @@ export default function GestaoUtilizadores() {
     function getSortIcon(col) {
         const key = SORT_KEYS[col]
         if (!key) return null
-        if (sortKey !== key) return <ArrowUpDown size={10} className="text-[#006A68]/30" />
+        if (sortKey !== key) return <ArrowUpDown size={10} className="text-brand-800/30" />
         return sortDir === 'asc'
-            ? <ChevronUp size={10} className="text-[#006A68]" />
-            : <ChevronDown size={10} className="text-[#006A68]" />
+            ? <ChevronUp size={10} className="text-brand-800" />
+            : <ChevronDown size={10} className="text-brand-800" />
     }
 
     const baseFiltered = activeTab
@@ -150,17 +150,17 @@ export default function GestaoUtilizadores() {
                 {/* Header */}
                 <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
                     <div>
-                        <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">
+                        <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">
                             Painel de Gestão · Admin
                         </p>
-                        <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
+                        <h1 className="text-neutral-800 font-normal text-4xl leading-tight tracking-tight">
                             Gestão de utilizadores
                         </h1>
                     </div>
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => { setEditTarget(null); setShowModal(true) }}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors shadow-sm"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-brand-800 text-white rounded-xl text-sm font-bold hover:bg-brand-900 transition-colors shadow-sm"
                         >
                             <Plus size={16} />
                             Novo utilizador
@@ -169,9 +169,9 @@ export default function GestaoUtilizadores() {
                             onClick={fetchData}
                             disabled={loading}
                             title="Atualizar"
-                            className="w-9 h-9 rounded-full border border-[#4a6362]/30 flex items-center justify-center hover:bg-[#EFF5F4] transition-colors disabled:opacity-40"
+                            className="w-9 h-9 rounded-full border border-neutral-600/30 flex items-center justify-center hover:bg-neutral-50 transition-colors disabled:opacity-40"
                         >
-                            <RefreshCw size={15} className={`text-[#4A6362] ${loading ? 'animate-spin' : ''}`} />
+                            <RefreshCw size={15} className={`text-neutral-600 ${loading ? 'animate-spin' : ''}`} />
                         </button>
                     </div>
                 </div>
@@ -184,8 +184,8 @@ export default function GestaoUtilizadores() {
                             onClick={() => setActiveTab(activeTab === tab.value ? null : tab.value)}
                             className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors
                                 ${activeTab === tab.value
-                                    ? 'bg-[#006A68] text-white border-[#006A68]'
-                                    : 'bg-white text-[#4A6362] border-[#4a6362]/30 hover:bg-[#EFF5F4]'
+                                    ? 'bg-brand-800 text-white border-brand-800'
+                                    : 'bg-white text-neutral-600 border-neutral-600/30 hover:bg-neutral-50'
                                 }`}
                         >
                             {tab.label}
@@ -203,15 +203,15 @@ export default function GestaoUtilizadores() {
                 )}
 
                 {/* Table */}
-                <div className="rounded-2xl border border-[#4a6362]/20 overflow-hidden shadow-sm bg-white">
+                <div className="rounded-2xl border border-neutral-600/20 overflow-hidden shadow-sm bg-white">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="bg-[#EFF5F4] border-b-2 border-[#4a6362]/20">
+                            <tr className="bg-neutral-50 border-b-2 border-neutral-600/20">
                                 {['Tipo', 'Número', 'Nome', 'Modalidade', 'Coaching', ''].map((col, i) => (
                                     <th
                                         key={i}
                                         onClick={() => toggleSort(col)}
-                                        className={`px-4 py-3.5 text-left text-xs font-bold text-[#006A68] uppercase tracking-wider whitespace-nowrap ${SORT_KEYS[col] ? 'cursor-pointer select-none hover:bg-[#E4F2F0]' : ''}`}
+                                        className={`px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap ${SORT_KEYS[col] ? 'cursor-pointer select-none hover:bg-brand-200' : ''}`}
                                     >
                                         <span className="flex items-center gap-1">
                                             {col}
@@ -227,8 +227,8 @@ export default function GestaoUtilizadores() {
                             ) : filtered.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="py-20 text-center">
-                                        <Users size={40} className="mx-auto text-[#006A68]/15 mb-3" />
-                                        <p className="text-sm text-[#4A6362] font-medium">
+                                        <Users size={40} className="mx-auto text-brand-800/15 mb-3" />
+                                        <p className="text-sm text-neutral-600 font-medium">
                                             Nenhum utilizador encontrado.
                                         </p>
                                     </td>
@@ -241,24 +241,24 @@ export default function GestaoUtilizadores() {
                                     return (
                                         <tr
                                             key={u.id_utilizador}
-                                            className={`border-b border-[#4a6362]/10 hover:bg-[#F4FBF9] transition-colors ${idx % 2 === 0 ? '' : 'bg-[#FAFFFE]'}`}
+                                            className={`border-b border-neutral-600/10 hover:bg-brand-50 transition-colors ${idx % 2 === 0 ? '' : 'bg-brand-50'}`}
                                         >
                                             <td className="px-4 py-3.5">
                                                 <span className={`text-xs px-2.5 py-1 rounded-md border font-medium ${TYPE_BADGE[u.id_tipo] ?? ''}`}>
                                                     {TYPE_LABELS[u.id_tipo] ?? '—'}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3.5 text-[#4A6362] font-mono">
+                                            <td className="px-4 py-3.5 text-neutral-600 font-mono">
                                                 {u.id_utilizador}
                                             </td>
                                             <td className="px-4 py-3.5">
-                                                <span className="font-semibold text-[#324B4A]">
+                                                <span className="font-semibold text-neutral-800">
                                                     {[u.nome, u.apelido].filter(Boolean).join(' ') || u.codigo_username}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3.5">
                                                 {modalidades.length > 0 ? (
-                                                    <span className="text-[#4A6362]">
+                                                    <span className="text-neutral-600">
                                                         {modalidades.join(', ')}
                                                     </span>
                                                 ) : (
@@ -281,7 +281,7 @@ export default function GestaoUtilizadores() {
                                                         <button
                                                             onClick={() => handleDelete(u.id_utilizador)}
                                                             disabled={deletingId === u.id_utilizador}
-                                                            className="w-7 h-7 bg-[#BA1A1A] border border-[#93000A] rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95 disabled:opacity-50"
+                                                            className="w-7 h-7 bg-feedback-error border border-feedback-error-dark rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95 disabled:opacity-50"
                                                         >
                                                             {deletingId === u.id_utilizador
                                                                 ? <RefreshCw size={12} className="text-white animate-spin" />
@@ -300,14 +300,14 @@ export default function GestaoUtilizadores() {
                                                         <button
                                                             onClick={() => { setEditTarget(u); setShowModal(true) }}
                                                             title="Editar"
-                                                            className="w-8 h-8 bg-[#324B4A] text-white rounded-full flex items-center justify-center hover:bg-[#006A68] transition-colors active:scale-95"
+                                                            className="w-8 h-8 bg-neutral-800 text-white rounded-full flex items-center justify-center hover:bg-brand-800 transition-colors active:scale-95"
                                                         >
                                                             <Pencil size={14} />
                                                         </button>
                                                         <button
                                                             onClick={() => setConfirmDeleteId(u.id_utilizador)}
                                                             title="Eliminar"
-                                                            className="w-8 h-8 bg-[#BA1A1A] text-white rounded-full flex items-center justify-center hover:bg-[#93000A] transition-colors active:scale-95"
+                                                            className="w-8 h-8 bg-feedback-error text-white rounded-full flex items-center justify-center hover:bg-feedback-error-dark transition-colors active:scale-95"
                                                         >
                                                             <Trash2 size={14} />
                                                         </button>
@@ -325,7 +325,7 @@ export default function GestaoUtilizadores() {
                 {/* Summary */}
                 {!loading && filtered.length > 0 && (
                     <div className="mt-5">
-                        <span className="text-xs text-[#4A6362]">
+                        <span className="text-xs text-neutral-600">
                             {filtered.length} utilizador{filtered.length !== 1 ? 'es' : ''}
                             {activeTab ? ` · ${TYPE_LABELS[activeTab]}` : ''}
                         </span>
@@ -356,3 +356,4 @@ export default function GestaoUtilizadores() {
         </>
     )
 }
+

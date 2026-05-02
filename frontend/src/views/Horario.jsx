@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+﻿import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns'
 import { pt } from 'date-fns/locale'
@@ -70,7 +70,7 @@ function EventComponent({ event }) {
         : getModalityColor(event.modalidade)
 
     const timeStr = event.hora || event.hora_inicio_str || event.hora_inicio || '—'
-    
+
     // Calcular fim se tiver duração
     let endTimeStr = ''
     if (event.duracao_minutos) {
@@ -125,8 +125,8 @@ function EditSalaModal({ item, salas, onClose, onSuccess }) {
                     {erro && <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100">{erro}</div>}
                     <div>
                         <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Sala Atual: {item.sala || 'Nenhuma'}</label>
-                        <select 
-                            value={idSala} 
+                        <select
+                            value={idSala}
                             onChange={e => setIdSala(e.target.value)}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#006A68]"
                         >
@@ -134,8 +134,8 @@ function EditSalaModal({ item, salas, onClose, onSuccess }) {
                             {salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
                         </select>
                     </div>
-                    <button 
-                        onClick={handleSubmit} 
+                    <button
+                        onClick={handleSubmit}
                         disabled={loading}
                         className="w-full py-2.5 bg-[#006A68] text-white font-bold rounded-xl hover:bg-[#00504E] disabled:opacity-50 transition-colors"
                     >
@@ -637,12 +637,12 @@ export default function Horario() {
     const handleAdd = (date) => {
         // Bloquear datas passadas
         const d = new Date(date)
-        d.setHours(0,0,0,0)
+        d.setHours(0, 0, 0, 0)
         if (d < today) {
             showToast('Não é possível marcar eventos ou disponibilidades em datas passadas.', 'error')
             return
         }
-        
+
         setSelectedDate(date)
         if (role === 1) setShowNovoEvento(true)
         else if (role === 2) setShowNovaDisponibilidade(true)

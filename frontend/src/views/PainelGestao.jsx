@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Network, CheckCircle2, BookOpen, User } from 'lucide-react'
 import { notificacaoService } from '../services/notificacaoService'
@@ -32,7 +32,7 @@ function NotifSkeleton() {
             {[...Array(9)].map((_, i) => (
                 <div
                     key={i}
-                    className="h-7 bg-brand-dark/20 rounded-lg"
+                    className="h-7 bg-brand-800/20 rounded-lg"
                     style={{ width: `${70 + (i % 3) * 10}%` }}
                 />
             ))}
@@ -64,8 +64,8 @@ export default function PainelGestao() {
             <div className="max-w-[1400px] mx-auto font-['Sora']">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-8">
-                    <Network size={36} className="text-brand-dark" />
-                    <h1 className="text-brand-darkest font-normal text-4xl leading-tight tracking-tight">
+                    <Network size={36} className="text-brand-800" />
+                    <h1 className="text-brand-900 font-normal text-4xl leading-tight tracking-tight">
                         Painel de Gestão
                     </h1>
                 </div>
@@ -90,14 +90,14 @@ export default function PainelGestao() {
                     </div>
 
                     {/* Centro de Notificações */}
-                    <div className="bg-brand-light rounded-2xl p-6">
-                        <p className="text-brand-darkest font-medium text-sm mb-4">
+                    <div className="bg-brand-200 rounded-2xl p-6">
+                        <p className="text-brand-900 font-medium text-sm mb-4">
                             Centro de Notificações
                         </p>
                         {loadingNotifs ? (
                             <NotifSkeleton />
                         ) : notifs.length === 0 ? (
-                            <p className="text-sm text-brand-darkest/60">Sem notificações.</p>
+                            <p className="text-sm text-brand-900/60">Sem notificações.</p>
                         ) : (
                             <ul className="space-y-2">
                                 {notifs.map(n => (
@@ -105,12 +105,12 @@ export default function PainelGestao() {
                                         key={n.id}
                                         className={`text-xs px-3 py-2 rounded-lg leading-snug
                                             ${n.lida
-                                                ? 'bg-brand-dark/10 text-brand-darkest'
-                                                : 'bg-white text-brand-darkest font-medium shadow-sm'
+                                                ? 'bg-brand-800/10 text-brand-900'
+                                                : 'bg-white text-brand-900 font-medium shadow-sm'
                                             }`}
                                     >
                                         <span className="block truncate">{n.titulo}</span>
-                                        <span className="text-brand-darkest/50 font-normal">{n.data}</span>
+                                        <span className="text-brand-900/50 font-normal">{n.data}</span>
                                     </li>
                                 ))}
                             </ul>

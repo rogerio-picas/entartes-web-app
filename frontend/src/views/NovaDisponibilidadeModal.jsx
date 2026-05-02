@@ -6,7 +6,7 @@ import { formatDateForInput } from '../utils/dateUtils'
 // Normaliza uma hora para o formato HH:mm que o <input type="time"> espera
 function parseHoraParaInput(raw) {
     if (!raw) return ''
-    // ISO timestamp: "1970-01-01T14:00:00.000Z" → pega os 5 chars da hora em UTC
+    // ISO timestamp: "1970-01-01T14:00:00.000Z" â†’ pega os 5 chars da hora em UTC
     if (String(raw).includes('T')) {
         const d = new Date(raw)
         if (!isNaN(d)) {
@@ -32,7 +32,7 @@ const DIAS_SEMANA = [
 function Field({ label, children }) {
     return (
         <div className="relative">
-            <label className="absolute -top-2.5 left-3 bg-[#F4FBF9] text-[11px] text-[#3F4948] font-medium px-1 z-10 font-['Sora']">
+            <label className="absolute -top-2.5 left-3 bg-brand-50 text-[11px] text-neutral-700 font-medium px-1 z-10 font-['Sora']">
                 {label}
             </label>
             {children}
@@ -40,14 +40,14 @@ function Field({ label, children }) {
     )
 }
 
-const inputCls = "w-full border border-[#6F7978] rounded-lg px-4 py-3.5 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] bg-white transition-colors font['Sora']"
+const inputCls = "w-full border border-neutral-500 rounded-lg px-4 py-3.5 text-sm text-neutral-900 focus:outline-none focus:border-brand-800 bg-white transition-colors font['Sora']"
 
 export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedDate, initialData }) {
     const [horaInicio, setHoraInicio] = useState(parseHoraParaInput(initialData?.hora_inicio) || '09:00')
     const [horaFim, setHoraFim] = useState(parseHoraParaInput(initialData?.hora_fim) || '10:00')
     const [frequencia, setFrequencia] = useState(
-        initialData 
-            ? (initialData.data_especifica ? 'unica' : 'semanal') 
+        initialData
+            ? (initialData.data_especifica ? 'unica' : 'semanal')
             : (selectedDate ? 'unica' : 'semanal')
     )
     const [diaSemana, setDiaSemana] = useState(initialData?.dia_semana ?? 1)
@@ -64,7 +64,28 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
     const handleSave = async () => {
         if (!horaInicio || !horaFim) return setErro('Horários são obrigatórios.')
         if (horaFim <= horaInicio) return setErro('A hora de fim tem de ser posterior à hora de início.')
-        if (frequencia === 'unica' && !data) return setErro('Data é obrigatória.')
+        if (frequencia === 'unica') {
+            if (!data) return setErro('Data é obrigatória.')
+            const selected = new Date(data)
+            selected.setHours(0, 0, 0, 0)
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+
+            if (selected < today) {
+                return setErro('A data específica não pode ser inferior à data atual.')
+            }
+
+            // Se for hoje, a hora de início tem de ser superior à hora atual
+            if (selected.getTime() === today.getTime()) {
+                const now = new Date()
+                const [h, m] = horaInicio.split(':').map(Number)
+                const start = new Date()
+                start.setHours(h, m, 0, 0)
+                if (start < now) {
+                    return setErro('A hora de início não pode ser inferior à hora atual.')
+                }
+            }
+        }
 
         setSaving(true)
         setErro('')
@@ -88,7 +109,7 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
             } else {
                 await disponibilidadeService.criar(payload)
             }
-            
+
             onSuccess?.()
             onClose()
         } catch (e) {
@@ -102,22 +123,22 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
             <div
-                className="relative bg-[#F4FBF9] rounded-2xl shadow-2xl w-full max-w-2xl p-8 font-['Sora']"
+                className="relative bg-brand-50 rounded-2xl shadow-2xl w-full max-w-2xl p-8 font-['Sora']"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Close button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 w-9 h-9 rounded-full bg-[#BA1A1A] flex items-center justify-center text-white hover:bg-red-700 transition-colors"
+                    className="absolute top-4 right-4 w-9 h-9 rounded-full bg-feedback-error flex items-center justify-center text-white hover:bg-red-700 transition-colors"
                 >
                     <X size={18} />
                 </button>
 
                 {/* Title */}
-                <h2 className="text-center text-[#2D4948] font-normal text-3xl mb-3 tracking-tight">
+                <h2 className="text-center text-brand-900 font-normal text-3xl mb-3 tracking-tight">
                     {isEdit ? 'Editar disponibilidade' : 'Nova disponibilidade'}
                 </h2>
-                <div className="h-px bg-[#006A68] mb-8" />
+                <div className="h-px bg-brand-800 mb-8" />
 
                 {/* Error */}
                 {erro && (
@@ -128,7 +149,7 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
 
                 {/* Form grid */}
                 <div className="grid grid-cols-2 gap-x-8 gap-y-7">
-                    {/* Data — only editable for "Única" */}
+                    {/* Data only editable for "unica" */}
                     <Field label="Data">
                         <input
                             type={frequencia === 'unica' ? 'date' : 'text'}
@@ -171,16 +192,16 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                 <div className="mt-8 grid grid-cols-2 gap-8 items-start">
                     <div>
                         <div className="flex items-center gap-2 mb-3">
-                            <Clock size={17} className="text-[#006A68]" />
-                            <span className="text-[#006A68] font-bold text-sm tracking-wide uppercase">Frequência</span>
+                            <Clock size={17} className="text-brand-800" />
+                            <span className="text-brand-800 font-bold text-sm tracking-wide uppercase">Frequência</span>
                         </div>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setFrequencia('semanal')}
                                 className={`px-6 py-3 rounded-xl font-bold text-sm transition-colors
                                     ${frequencia === 'semanal'
-                                        ? 'bg-[#006A68] text-white shadow-sm'
-                                        : 'bg-[#CCE8E6] text-[#006A68] hover:bg-[#b5dbd9]'
+                                        ? 'bg-brand-800 text-white shadow-sm'
+                                        : 'bg-brand-200 text-brand-800 hover:bg-brand-200'
                                     }`}
                             >
                                 Semanal
@@ -189,8 +210,8 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                                 onClick={() => setFrequencia('unica')}
                                 className={`px-6 py-3 rounded-xl font-bold text-sm transition-colors
                                     ${frequencia === 'unica'
-                                        ? 'bg-[#006A68] text-white shadow-sm'
-                                        : 'bg-[#CCE8E6] text-[#006A68] hover:bg-[#b5dbd9]'
+                                        ? 'bg-brand-800 text-white shadow-sm'
+                                        : 'bg-brand-200 text-brand-800 hover:bg-brand-200'
                                     }`}
                             >
                                 Única
@@ -203,7 +224,7 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                             <select
                                 value={diaSemana}
                                 onChange={e => setDiaSemana(Number(e.target.value))}
-                                className="w-full bg-[#2D4948] text-white rounded-xl px-5 py-3.5 text-sm font-bold appearance-none cursor-pointer focus:outline-none"
+                                className="w-full bg-brand-900 text-white rounded-xl px-5 py-3.5 text-sm font-bold appearance-none cursor-pointer focus:outline-none"
                             >
                                 {DIAS_SEMANA.map(d => (
                                     <option key={d.value} value={d.value}>{d.label}</option>
@@ -225,7 +246,7 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="py-3.5 rounded-2xl bg-[#006A68] text-white font-bold text-sm hover:bg-[#00504E] transition-colors disabled:opacity-50 flex items-center justify-center"
+                        className="py-3.5 rounded-2xl bg-brand-800 text-white font-bold text-sm hover:bg-brand-900 transition-colors disabled:opacity-50 flex items-center justify-center"
                     >
                         {saving ? <RefreshCw size={16} className="animate-spin" /> : (isEdit ? 'Guardar' : 'Criar')}
                     </button>
@@ -234,3 +255,5 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
         </div>
     )
 }
+
+

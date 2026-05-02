@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { X, Search, Check, RefreshCw, AlertCircle } from 'lucide-react'
 import { api } from '../services/api'
 
@@ -142,12 +142,12 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
     }
 
     return (
-        <div className={`fixed top-0 right-0 h-full z-[60] w-[483px] max-w-[95vw] bg-[#F4FBF9] shadow-2xl flex flex-col transform transition-transform duration-300 ease-out border-l border-[#006A68]/20`}>
+        <div className={`fixed top-0 right-0 h-full z-[60] w-[483px] max-w-[95vw] bg-brand-50 shadow-2xl flex flex-col transform transition-transform duration-300 ease-out border-l border-brand-800/20`}>
             {/* Header */}
-            <div className="px-9 pt-10 pb-4 border-b border-[#006A68] shrink-0">
+            <div className="px-9 pt-10 pb-4 border-b border-brand-800 shrink-0">
                 <div className="flex items-center justify-between mb-1">
-                    <h2 className="text-2xl font-bold text-[#006A68] font-['Sora']">{initialGroup ? 'Editar Grupo' : 'Criar novo grupo'}</h2>
-                    <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-[#CCE8E6] flex items-center justify-center text-[#4A6362]">
+                    <h2 className="text-2xl font-bold text-brand-800 font-['Sora']">{initialGroup ? 'Editar Grupo' : 'Criar novo grupo'}</h2>
+                    <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-brand-200 flex items-center justify-center text-neutral-600">
                         <X size={17} />
                     </button>
                 </div>
@@ -160,13 +160,13 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                     </div>
                 )}
 
-                <p className="text-sm font-medium text-[#000]">Detalhes</p>
+                <p className="text-sm font-medium text-black">Detalhes</p>
 
                 <div className="relative">
                     <input
                         value={nome} onChange={e => setNome(e.target.value)}
                         placeholder="Nome do grupo"
-                        className="w-full bg-white border border-[#6F7978] rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68]"
+                        className="w-full bg-white border border-neutral-500 rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-brand-800"
                     />
                 </div>
 
@@ -175,35 +175,35 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                         value={descricao} onChange={e => setDescricao(e.target.value)}
                         placeholder="Descrição do grupo"
                         rows={4}
-                        className="w-full bg-white border border-[#6F7978] rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] resize-none"
+                        className="w-full bg-white border border-neutral-500 rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-brand-800 resize-none"
                     />
                 </div>
 
-                <p className="text-sm font-medium text-[#000] pt-2">Adicionar membros</p>
+                <p className="text-sm font-medium text-black pt-2">Adicionar membros</p>
 
-                <div className="flex items-center gap-2 bg-[#E3E9E8] rounded-full px-4 py-2">
-                    <Search size={18} className="text-[#49454F] shrink-0" />
+                <div className="flex items-center gap-2 bg-neutral-200 rounded-full px-4 py-2">
+                    <Search size={18} className="text-neutral-600 shrink-0" />
                     <input
                         value={searchAluno} onChange={e => setSearchAluno(e.target.value)}
                         placeholder="Pesquise por nome"
-                        className="flex-1 bg-transparent text-sm text-[#49454F] focus:outline-none"
+                        className="flex-1 bg-transparent text-sm text-neutral-600 focus:outline-none"
                     />
                 </div>
 
                 {selected.length > 0 && (
                     <div>
-                        <p className="text-xs font-semibold text-[#000] mb-2">Alunos selecionados ({selected.length})</p>
+                        <p className="text-xs font-semibold text-black mb-2">Alunos selecionados ({selected.length})</p>
                         <div className="grid grid-cols-2 gap-2">
                             {selected.map(u => (
-                                <div key={u.id_utilizador} className="flex items-center gap-2 bg-[#B0CCCA] rounded-xl px-3 py-2">
-                                    <div className="w-9 h-9 rounded-full bg-[#006A68] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                                <div key={u.id_utilizador} className="flex items-center gap-2 bg-neutral-300 rounded-xl px-3 py-2">
+                                    <div className="w-9 h-9 rounded-full bg-brand-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
                                         {getInitials(`${u.nome ?? ''} ${u.apelido ?? ''}`)}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium text-[#000] truncate">{u.nome} {u.apelido}</p>
+                                        <p className="text-xs font-medium text-black truncate">{u.nome} {u.apelido}</p>
                                     </div>
-                                    <button onClick={() => toggleAluno(u)} className="w-5 h-5 rounded-full bg-[#DDE4E3] flex items-center justify-center shrink-0 hover:bg-red-100">
-                                        <X size={11} className="text-[#4A6362]" />
+                                    <button onClick={() => toggleAluno(u)} className="w-5 h-5 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 hover:bg-red-100">
+                                        <X size={11} className="text-neutral-600" />
                                     </button>
                                 </div>
                             ))}
@@ -219,15 +219,15 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                                 <button
                                     key={u.id_utilizador}
                                     onClick={() => toggleAluno(u)}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl border transition-all text-left ${isSel ? 'border-[#006A68] bg-[#EFF5F4]' : 'border-[#BEC9C7] bg-white hover:border-[#006A68]'}`}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl border transition-all text-left ${isSel ? 'border-brand-800 bg-neutral-50' : 'border-neutral-400 bg-white hover:border-brand-800'}`}
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-[#CCE8E6] flex items-center justify-center text-xs font-bold text-[#006A68] shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-brand-200 flex items-center justify-center text-xs font-bold text-brand-800 shrink-0">
                                         {getInitials(`${u.nome ?? ''} ${u.apelido ?? ''}`)}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-[#000] truncate">{u.nome} {u.apelido}</p>
+                                        <p className="text-sm font-medium text-black truncate">{u.nome} {u.apelido}</p>
                                     </div>
-                                    {isSel && <Check size={14} className="text-[#006A68]" />}
+                                    {isSel && <Check size={14} className="text-brand-800" />}
                                 </button>
                             )
                         })}
@@ -235,11 +235,11 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                 )}
             </div>
 
-            <div className="px-9 py-6 border-t border-[#BEC9C7] shrink-0">
+            <div className="px-9 py-6 border-t border-neutral-400 shrink-0">
                 <button
                     onClick={handleCreate}
                     disabled={loading}
-                    className="w-full py-4 bg-[#006A68] text-white font-semibold rounded-2xl hover:bg-[#00504E] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-brand-800 text-white font-semibold rounded-2xl hover:bg-brand-900 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                     {loading ? <RefreshCw size={18} className="animate-spin" /> : <Check size={18} />}
                     {initialGroup ? 'Guardar Alterações' : 'Criar grupo'}
@@ -248,3 +248,5 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
         </div>
     )
 }
+
+
