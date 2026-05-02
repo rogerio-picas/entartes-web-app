@@ -24,6 +24,7 @@ function _handleError(res, error) {
     mensagem.includes('válido') ||
     mensagem.includes('Só é possível') ||
     mensagem.includes('já está') ||
+    mensagem.includes('já passou') ||
     mensagem.includes('Escolhe outra sala')
   ) {
     return res.status(400).json({ message: mensagem });

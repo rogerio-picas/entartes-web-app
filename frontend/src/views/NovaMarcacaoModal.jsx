@@ -66,7 +66,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
   const [loadingColegas, setLoadingColegas] = useState(false)
   const [pesquisaColega, setPesquisaColega] = useState('')
 
-  // â”€â”€ Passo 1: carregar modalidades â”€â”€
+  // Passo 1: carregar modalidades
   useEffect(() => {
     setLoadingMod(true)
     api.get('/modalidades?docentes=true')
@@ -81,7 +81,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
       .finally(() => setLoadingMod(false))
   }, [initialSlot])
 
-  // â”€â”€ Passo 2: carregar disponibilidades para a modalidade escolhida â”€â”€
+  // Passo 2: carregar disponibilidades para a modalidade escolhida
   useEffect(() => {
     if (step !== 2 || !modalidadeSel) return
     setLoadingSlots(true)
@@ -185,7 +185,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
   }
 
 
-  // â”€â”€ Submeter â”€â”€
+  //   Submeter  
   const handleSubmit = async () => {
     setErro('')
 
@@ -296,7 +296,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
             </div>
           )}
 
-          {/* â”€â”€ PASSO 1: Modalidade â”€â”€ */}
+          {/*  PASSO 1: Modalidade */}
           {step === 1 && (
             <div>
               <p className="text-sm font-semibold text-neutral-800 mb-4">Escolhe a modalidade que pretendes praticar:</p>
@@ -335,7 +335,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
             </div>
           )}
 
-          {/* â”€â”€ PASSO 2: Disponibilidades â”€â”€ */}
+          {/*  PASSO 2: Disponibilidades  */}
           {step === 2 && (
             <div>
               <p className="text-sm font-semibold text-neutral-800 mb-4">Escolhe um horário disponível para {modalidadeSel?.nome}:</p>
@@ -390,7 +390,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
             </div>
           )}
 
-          {/* â”€â”€ PASSO 3: Horário â”€â”€ */}
+          {/*  PASSO 3: Horário  */}
           {step === 3 && slotSel && (
             <div className="space-y-5">
               <div className="p-3 bg-neutral-50 rounded-xl flex items-center gap-3">
@@ -573,7 +573,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
             </div>
           )}
 
-          {/* â”€â”€ PASSO 4: Confirmação â”€â”€ */}
+          {/* PASSO 4: Confirmação */}
           {step === 4 && (
             <div className="space-y-4">
               <p className="text-sm font-semibold text-neutral-800 mb-2">Confirma os detalhes da tua marcação:</p>
@@ -587,7 +587,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700 flex items-start gap-2">
                 <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                O teu pedido ficará <strong className="ml-1">Agendado</strong> e será confirmado pela coordenação.
+                O teu pedido ficará <strong className="ml-1">Pendente</strong> e será confirmado pela administração.
               </div>
             </div>
           )}
@@ -647,7 +647,7 @@ function Row({ icon: Icon, label, value }) {
       </div>
       <div className="flex-1 flex items-center justify-between">
         <span className="text-xs text-neutral-600 font-semibold uppercase tracking-wide">{label}</span>
-        <span className="text-sm font-bold text-neutral-800 text-right">{value || 'â€”'}</span>
+        <span className="text-sm font-bold text-neutral-800 text-right">{value || '--'}</span>
       </div>
     </div>
   )

@@ -92,11 +92,29 @@ async function _verificarSalaLivre(id_sala, data_a_realizar, hora_inicio, duraca
 async function listarPedidosPendentes({ estados = null, data_inicio = null, data_fim = null } = {}) {
   const estadosFiltro = estados || [ESTADO_MARCACAO.PENDENTE, ESTADO_MARCACAO.EM_VALIDACAO];
 
+  // RF-COA-03: Não mostrar nem permitir validar aulas que já passaram da data atual (se estiverem pendentes)
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const dInicio = data_inicio ? new Date(data_inicio) : null;
+  const dFim = data_fim ? new Date(data_fim) : null;
+
   const marcacoes = await prisma.marcacao.findMany({
     where: {
       id_estado: { in: estadosFiltro },
-      ...(data_inicio && { data_a_realizar: { gte: new Date(data_inicio) } }),
-      ...(data_fim && { data_a_realizar: { lte: new Date(data_fim) } }),
+      ...(dFim && { data_a_realizar: { lte: dFim } }),
+      // Regra de Negócio: Marcações PENDENTES ou EM_VALIDACAO nunca aparecem no passado.
+      // Estados finais ou confirmados podem aparecer no passado (ex: para relatórios ou histórico).
+      OR: [
+        {
+          id_estado: { notIn: [ESTADO_MARCACAO.PENDENTE, ESTADO_MARCACAO.EM_VALIDACAO] },
+          ...(dInicio && { data_a_realizar: { gte: dInicio } }),
+        },
+        {
+          id_estado: { in: [ESTADO_MARCACAO.PENDENTE, ESTADO_MARCACAO.EM_VALIDACAO] },
+          data_a_realizar: { gte: dInicio && dInicio > hoje ? dInicio : hoje },
+        },
+      ],
     },
     include: {
       docente: {
@@ -118,7 +136,10 @@ async function listarPedidosPendentes({ estados = null, data_inicio = null, data
       },
       participacao_conclusao: { select: { id_aluno: true, id_docente: true } },
     },
-    orderBy: { data_criacao: 'asc' }, // FIFO — os mais antigos primeiro
+    orderBy: [
+      { data_a_realizar: 'asc' },
+      { hora_inicio: 'asc' },
+    ],
   });
 
   return marcacoes.map((m) => {
@@ -179,6 +200,13 @@ async function atribuirSalaEConfirmar(id_coordenadora, id_marcacao, id_sala) {
   });
 
   if (!marcacao) throw new Error('Marcação não encontrada.');
+
+  // Bloqueio de validação de aulas já expiradas
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  if (new Date(marcacao.data_a_realizar) < hoje) {
+    throw new Error('Não é possível confirmar uma marcação que já passou da data de realização.');
+  }
 
   // Só confirma marcações PENDENTES ou EM_VALIDACAO (RF-COA-03 CA3)
   const estadosPermitidos = [ESTADO_MARCACAO.PENDENTE, ESTADO_MARCACAO.EM_VALIDACAO];

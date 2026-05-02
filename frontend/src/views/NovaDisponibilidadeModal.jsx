@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { X, Clock, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react'
 import { disponibilidadeService } from '../services/disponibilidadeService'
 import { formatDateForInput } from '../utils/dateUtils'
@@ -64,7 +64,28 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
     const handleSave = async () => {
         if (!horaInicio || !horaFim) return setErro('Horários são obrigatórios.')
         if (horaFim <= horaInicio) return setErro('A hora de fim tem de ser posterior à hora de início.')
-        if (frequencia === 'unica' && !data) return setErro('Data é obrigatória.')
+        if (frequencia === 'unica') {
+            if (!data) return setErro('Data é obrigatória.')
+            const selected = new Date(data)
+            selected.setHours(0, 0, 0, 0)
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+
+            if (selected < today) {
+                return setErro('A data específica não pode ser inferior à data atual.')
+            }
+
+            // Se for hoje, a hora de início tem de ser superior à hora atual
+            if (selected.getTime() === today.getTime()) {
+                const now = new Date()
+                const [h, m] = horaInicio.split(':').map(Number)
+                const start = new Date()
+                start.setHours(h, m, 0, 0)
+                if (start < now) {
+                    return setErro('A hora de início não pode ser inferior à hora atual.')
+                }
+            }
+        }
 
         setSaving(true)
         setErro('')

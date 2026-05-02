@@ -16,10 +16,10 @@ import {
   User, Star, Megaphone
 } from 'lucide-react'
 
-// Widgets Extracted
 import {
-  StatCard, ModalityChart, CoachingHoursChart, EnrollmentChart,
+  StatCard,
   LiveClassCard, CoachingCard, ConfirmedCard, RequisicaoCard, PresencaDocenteCard,
+  RoomOccupancyWidget,
   PerfilModal, SectionHeader, ScrollRow, Toast
 } from '../components/HomeWidgets'
 import ItemDetailModal from '../components/ItemDetailModal'
@@ -97,8 +97,7 @@ export default function Home() {
   // Admin Data
   const [stats, setStats] = useState({ hoje: 0, porValidar: 0, concluidas: 0 })
   const [liveAulas, setLiveAulas] = useState([])
-  const [horasData, setHorasData] = useState([])
-  const [alunosData, setAlunosData] = useState([])
+  const [ocupacaoSalas, setOcupacaoSalas] = useState([])
 
   // Admin/Docente Shared
   const [coachings48h, setCoachings48h] = useState([]) // For Docente: means Requisições
@@ -168,6 +167,8 @@ export default function Home() {
           docente: role === 2
             ? (m.alunos?.length > 0 ? m.alunos.map(a => typeof a === 'object' ? a.nome : a).join(', ') : 'A aguardar aluno(s)')
             : docenteNome,
+          sala: m.sala_atual || (typeof m.sala === 'object' ? m.sala.nome : (m.sala || '—')),
+          tipo: m.numero_alunos_pretendidos > 1 ? 'Grupo' : 'Individual',
           alunos: m.alunos?.map(a => typeof a === 'object' ? a.nome : a) || [],
           ja_validou: m.ja_validou,
           id_estado: resolvedIdEstado,
@@ -177,21 +178,18 @@ export default function Home() {
       }
 
       if (isAdmin) {
-        const [pendentes, todasRes, horasRes, alunosRes] = await Promise.allSettled([
+        const [pendentes, todasRes, ocupacaoSalasRes] = await Promise.allSettled([
           coachingService.listarPedidosPendentes({ estados: '1,2' }),
           coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' }),
-          api.get('/relatorio/horas-docente'),
-          api.get('/relatorio/alunos'),
+          api.get('/relatorio/ocupacao-salas'),
         ])
         const rawPendentes = pendentes.status === 'fulfilled' ? (Array.isArray(pendentes.value) ? pendentes.value : (pendentes.value?.data || [])) : []
         const rawTodas = todasRes.status === 'fulfilled' ? (Array.isArray(todasRes.value) ? todasRes.value : (todasRes.value?.data || [])) : []
         const pedPendentes = rawPendentes.map(normalizeAula)
         const todas = rawTodas.map(normalizeAula)
-        const horas = horasRes.status === 'fulfilled' && Array.isArray(horasRes.value) ? horasRes.value : []
-        const alunos = alunosRes.status === 'fulfilled' && Array.isArray(alunosRes.value) ? alunosRes.value : []
+        const ocupacao = ocupacaoSalasRes.status === 'fulfilled' && Array.isArray(ocupacaoSalasRes.value) ? ocupacaoSalasRes.value : []
 
-        setHorasData(horas)
-        setAlunosData(alunos)
+        setOcupacaoSalas(ocupacao)
         const limite48h = new Date(now.getTime() + 48 * 60 * 60 * 1000)
         const pendentes48h = pedPendentes.filter(a => {
           const dataAula = new Date(a._data_raw)
@@ -354,27 +352,12 @@ export default function Home() {
 
         {/* ── ADMIN: Stats Row + Charts + Buttons ──────────────── */}
         {isAdmin && (
-          <div className="flex flex-wrap gap-4 items-start">
+          <div className="flex flex-wrap gap-4 items-start justify-between">
             <div className="flex flex-wrap gap-3">
               <StatCard count={stats.hoje} label="aulas hoje" color="text-neutral-800" bg="bg-brand-200" border="border-brand-800" />
               <StatCard count={stats.porValidar} label="por validar" color="text-feedback-info" bg="bg-feedback-info-light" border="border-feedback-info" />
               <StatCard count={stats.concluidas} label="concluída" color="text-feedback-error-dark" bg="bg-feedback-error-light" border="border-feedback-error-dark" />
             </div>
-
-            <div className="flex gap-4 flex-wrap flex-1">
-              <div className="border border-brand-800 rounded-xl p-4 bg-white flex-1 min-w-[200px] max-w-[250px]">
-                <ModalityChart data={horasData} />
-              </div>
-              <div className="border border-brand-800 rounded-xl p-3 bg-white flex-1 min-w-[200px] max-w-[260px]">
-                <p className="text-xs font-bold text-brand-800 mb-1">Média de horas</p>
-                <CoachingHoursChart data={horasData} />
-              </div>
-              <div className="border border-brand-800 rounded-xl p-3 bg-white flex-1 min-w-[200px] max-w-[260px]">
-                <p className="text-xs font-bold text-brand-800 mb-1">Inscrições</p>
-                <EnrollmentChart data={alunosData} />
-              </div>
-            </div>
-
             <div className="flex flex-col gap-2 shrink-0">
               <button onClick={() => navigate('/aulas')}
                 className="px-4 py-2.5 border border-brand-800 text-brand-800 text-sm font-semibold rounded-xl hover:bg-neutral-50 transition-colors whitespace-nowrap">
@@ -384,6 +367,15 @@ export default function Home() {
                 className="flex items-center gap-2 px-4 py-2.5 bg-brand-800 text-white text-sm font-semibold rounded-xl hover:bg-brand-900 transition-colors">
                 <Plus size={16} /> Novo evento
               </button>
+            </div>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="flex gap-4 flex-wrap flex-1">
+            <div className="border border-brand-800 rounded-xl p-4 bg-white flex-1 min-w-[300px]">
+              <p className="text-xs font-bold text-brand-800 mb-3">Ocupação de Salas (Hoje)</p>
+              <RoomOccupancyWidget data={ocupacaoSalas} />
             </div>
           </div>
         )}
@@ -443,8 +435,8 @@ export default function Home() {
           ) : (
             <ScrollRow>
               {aulasConfirmadas.slice(0, 3).map(a => (
-                isAdmin
-                  ? <ConfirmedCard key={a.id} aula={a} onOpen={() => setSelectedItem(a)} />
+                (isAdmin || isDocente)
+                  ? <ConfirmedCard key={a.id} aula={a} onOpen={() => setSelectedItem(a)} role={role} />
                   : <ClassCard key={a.id} item={a} statusType="confirmada" onOpen={() => setSelectedItem(a)} />
               ))}
 

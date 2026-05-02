@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { UserCog, BellRing, Music2, LifeBuoy, LogOut, ChevronRight } from 'lucide-react'
 import { authService } from '../services/authService'
 import { useNavigate } from 'react-router-dom'
@@ -7,7 +7,7 @@ import EditarPerfilModal from '../components/EditarPerfilModal'
 export default function ProfileManagement() {
   const navigate = useNavigate()
   const [showEditarPerfil, setShowEditarPerfil] = useState(false)
-  
+
   // Pegamos no utilizador e role
   const user = authService.getUser()
   const role = user?.role ?? 3
@@ -24,21 +24,21 @@ export default function ProfileManagement() {
       icon: UserCog,
       onClick: () => setShowEditarPerfil(true),
     },
-    { 
-      title: 'Gestão de Notificações', 
-      icon: BellRing, 
-      onClick: () => console.log('Notificações') 
+    {
+      title: 'Gestão de Notificações',
+      icon: BellRing,
+      onClick: () => console.log('Notificações')
     },
     // Apenas mostra "Gerir Modalidades" se não for aluno (role 3)
-    ...(role !== 3 ? [{ 
-      title: 'Gerir modalidades', 
-      icon: Music2, 
-      onClick: () => navigate('/modalidades') 
+    ...(role !== 3 ? [{
+      title: 'Gerir modalidades',
+      icon: Music2,
+      onClick: () => navigate('/modalidades')
     }] : []),
-    { 
-      title: 'Ajuda e Suporte', 
-      icon: LifeBuoy, 
-      onClick: () => console.log('Suporte') 
+    {
+      title: 'Ajuda e Suporte',
+      icon: LifeBuoy,
+      onClick: () => console.log('Suporte')
     },
   ]
 
@@ -81,7 +81,7 @@ export default function ProfileManagement() {
       </div>
 
       {/* Logout Section */}
-      <div className="mt-12 pt-8 border-t border-neutral-600/10">
+      <div className="mt-12 pt-8 border-t border-neutral-600/10 flex flex-col items-center text-center">
         <button
           onClick={handleLogout}
           className="flex items-center justify-center gap-3 w-full max-w-[400px] h-[56px] rounded-xl bg-feedback-error-light text-feedback-error-dark hover:bg-feedback-error-light transition-colors font-semibold text-base"
@@ -89,7 +89,7 @@ export default function ProfileManagement() {
           <LogOut size={20} />
           Terminar Sessão
         </button>
-        <p className="mt-4 text-xs text-neutral-600 opacity-60 px-2">
+        <p className="mt-4 text-xs text-neutral-600 opacity-60 px-2 max-w-[400px]">
           Ao sair, terás de introduzir as tuas credenciais novamente para aceder ao dashboard.
         </p>
       </div>

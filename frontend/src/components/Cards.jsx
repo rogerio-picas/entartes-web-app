@@ -120,7 +120,7 @@ export function ClassCard({ item, statusType, onOpen }) {
 
         <div className="flex flex-col items-center justify-start mt-2">
           <div className="w-14 h-14 rounded-full border-4 border-brand-800 flex items-center justify-center bg-white mb-2 relative overflow-hidden">
-            <User size={30} className="text-brand-800 mt-3" />
+            <User size={30} className="text-brand-800" />
           </div>
           <span className="text-brand-900 text-xs text-center leading-tight">Docente<br /><span className="font-bold">{item.docente}</span></span>
         </div>

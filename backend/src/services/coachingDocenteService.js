@@ -36,7 +36,10 @@ async function listarMinhasAulas(id_docente, { id_estado = null } = {}) {
         select: { confirmou_conclusao: true }
       },
     },
-    orderBy: { data_a_realizar: 'desc' },
+    orderBy: [
+      { data_a_realizar: 'asc' },
+      { hora_inicio: 'asc' },
+    ],
   });
 
   return marcacoes.map((m) => ({

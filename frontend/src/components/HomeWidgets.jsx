@@ -114,7 +114,7 @@ export function LiveClassCard({ aula, idx, onOpen }) {
           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: DOT_COLORS[idx % DOT_COLORS.length] }} />
           <span className="text-sm font-medium text-neutral-900">{String(aula.modalidade || '—')}</span>
         </div>
-        <button onClick={onOpen} className="text-[10px] font-bold text-brand-800 hover:underline uppercase tracking-wider">
+        <button onClick={onOpen} className="text-[10px] font-bold text-brand-900 hover:underline uppercase tracking-wider">
           Ver mais
         </button>
       </div>
@@ -173,7 +173,7 @@ export function CoachingCard({ aula, onConfirm, onReject, loading }) {
 
       <div>
         <label className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-1 block">
-          Aferir sala
+          Atribuir sala
         </label>
         <select value={selectedSala} onChange={e => setSelectedSala(e.target.value)}
           className="w-full bg-white border border-neutral-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-800">
@@ -201,7 +201,7 @@ export function CoachingCard({ aula, onConfirm, onReject, loading }) {
   )
 }
 
-export function ConfirmedCard({ aula, onOpen }) {
+export function ConfirmedCard({ aula, onOpen, role }) {
   return (
     <div className="flex-1 min-w-[300px] w-full bg-brand-50 border border-brand-900 rounded-xl p-5 flex flex-col gap-3">
       <div className="flex gap-3">
@@ -209,7 +209,7 @@ export function ConfirmedCard({ aula, onOpen }) {
           {[
             ['Modalidade', String(aula.modalidade || '—')], ['Data', String(aula.data || '—')],
             ['Hora início', String(aula.hora || '—')], ['Duração', String(aula.duracao || '—')],
-            ['Estúdio', String(aula.sala || '—')], ['Tipo', 'Individual']
+            ['Sala', String(aula.sala || '—')], ['Tipo', String(aula.tipo || '—')]
           ].map(([k, v]) => (
             <div key={k}>
               <span className="text-brand-800 font-semibold">{k}: </span>
@@ -221,8 +221,13 @@ export function ConfirmedCard({ aula, onOpen }) {
           <div className="w-14 h-14 rounded-full bg-brand-200 flex items-center justify-center border-2 border-brand-800">
             <User size={32} className="text-brand-800" />
           </div>
-          <span className="text-sm font-bold text-brand-900">{String(aula.docente || '—')}</span>
-          <span className="text-xs text-black">Docente</span>
+          <span className="text-sm font-bold text-brand-900 flex flex-col items-center">
+            {(role === 3 ? String(aula.alunos || '—') : String(aula.docente || '—'))
+              .split(',')
+              .map((n, i) => <span key={i}>{n.trim()}</span>)
+            }
+          </span>
+          <span className="text-xs text-black">{role === 2 ? 'Aluno(s)' : 'Docente'}</span>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -231,7 +236,7 @@ export function ConfirmedCard({ aula, onOpen }) {
         </span>
         <button
           onClick={onOpen}
-          className="bg-brand-500 border border-brand-800 text-white text-xs font-semibold px-3 py-0.5 rounded-full hover:brightness-95 transition-all"
+          className="bg-brand-500 border border-brand-800 text-brand-900 text-xs font-regular px-3 py-0.5 rounded-full hover:brightness-95 transition-all"
         >
           Ver mais
         </button>
@@ -382,6 +387,54 @@ export function ScrollRow({ children }) {
   return (
     <div className="w-full overflow-x-auto pb-2 hide-scrollbar">
       <div className="grid grid-cols-3 gap-4 w-full">{children}</div>
+    </div>
+  )
+}
+
+export function RoomOccupancyWidget({ data }) {
+  if (!data || data.length === 0) return <div className="text-xs text-gray-400 italic">Sem dados de ocupação.</div>
+
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {data.map(sala => (
+        <div key={sala.id_sala} className="bg-white border border-brand-800/10 rounded-xl p-3 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-bold text-brand-900">{sala.nome}</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${sala.percentagemOcupacao > 70 ? 'bg-red-100 text-red-700 border border-red-200' :
+                sala.percentagemOcupacao > 30 ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                  'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                }`}>
+                {sala.percentagemOcupacao}%
+              </span>
+            </div>
+          </div>
+
+          <div className="w-full h-2 bg-neutral-100 rounded-full overflow-hidden mb-3 border border-neutral-200">
+            <div
+              className={`h-full transition-all duration-500 ${sala.percentagemOcupacao > 70 ? 'bg-feedback-error' :
+                sala.percentagemOcupacao > 30 ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}
+              style={{ width: `${sala.percentagemOcupacao}%` }}
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {sala.ocupacoes.length === 0 ? (
+              <span className="text-[10px] text-emerald-700 font-semibold italic bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
+                Disponível
+              </span>
+            ) : (
+              sala.ocupacoes.map((oc, i) => (
+                <div key={i} className="flex flex-col bg-brand-50 border border-brand-800/20 rounded-lg px-2 py-1 min-w-[70px]">
+                  <span className="text-[9px] font-bold text-brand-900">{oc.inicio} - {oc.fim}</span>
+                  <span className="text-[8px] text-brand-800 truncate max-w-[60px]">{oc.docente}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
