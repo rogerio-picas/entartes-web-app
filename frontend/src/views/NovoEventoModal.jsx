@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { X, Plus, ChevronRight, Check, AlertCircle, RefreshCw, Trash2 } from 'lucide-react'
 import { api } from '../services/api'
 import { formatTime, formatDateForInput, toWallClockISO } from '../utils/dateUtils'
@@ -53,13 +53,26 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
     const initialDuration = initialData?.duracao_minutos || 60
     const [duracaoHoras, setDuracaoHoras] = useState(Math.floor(initialDuration / 60))
     const [duracaoMinutos, setDuracaoMinutos] = useState(initialDuration % 60)
+    
+    let initialDescricao = initialData?.descricao || ''
+    let initialFaqsList = []
+    
+    if (initialDescricao.includes('---FAQS---')) {
+        const parts = initialDescricao.split('---FAQS---')
+        initialDescricao = parts[0].trim()
+        try {
+            initialFaqsList = JSON.parse(parts[1].trim())
+        } catch (e) {
+            console.error("Erro ao fazer parse dos FAQs:", e)
+        }
+    }
 
-    const [descricao, setDescricao] = useState(initialData?.descricao || '')
+    const [descricao, setDescricao] = useState(initialDescricao)
     const [whatsapp, setWhatsapp] = useState(initialData?.link_whatsapp || '')
     const [local, setLocal] = useState(initialData?.local || '')
 
     // FAQs
-    const [faqs, setFaqs] = useState([])
+    const [faqs, setFaqs] = useState(initialFaqsList)
     const [faqPergunta, setFaqPergunta] = useState('')
     const [faqResposta, setFaqResposta] = useState('')
     const [faqGeral, setFaqGeral] = useState(false)
@@ -100,15 +113,19 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
 
         try {
             const totalMinutos = (Number(duracaoHoras) * 60) + Number(duracaoMinutos)
+            
+            let finalDescricao = descricao || ''
+            if (faqs && faqs.length > 0) {
+                finalDescricao += (finalDescricao ? '\n\n' : '') + '---FAQS---\n' + JSON.stringify(faqs)
+            }
 
             const payload = {
                 nome: nome.trim(),
-                descricao: descricao || null,
+                descricao: finalDescricao || null,
                 data_de_realizacao: toWallClockISO(data, hora),
                 duracao_minutos: totalMinutos,
                 link_whatsapp: whatsapp || null,
-                local: local || null,
-                faqs: faqs
+                local: local || null
             }
 
             if (initialData) {

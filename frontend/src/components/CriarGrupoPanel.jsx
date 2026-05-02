@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Search, Check, RefreshCw, AlertCircle } from 'lucide-react'
 import { api } from '../services/api'
 
@@ -192,7 +192,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
 
                 {selected.length > 0 && (
                     <div>
-                        <p className="text-xs font-semibold text-black mb-2">Alunos selecionados ({selected.length})</p>
+                        <p className="text-xs font-semibold text-black mb-2">Membros selecionados ({selected.length})</p>
                         <div className="grid grid-cols-2 gap-2">
                             {selected.map(u => (
                                 <div key={u.id_utilizador} className="flex items-center gap-2 bg-neutral-300 rounded-xl px-3 py-2">
@@ -201,6 +201,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-medium text-black truncate">{u.nome} {u.apelido}</p>
+                                        <p className="text-[10px] text-neutral-600 truncate">{u.tipo_utilizador?.id_tipo === 2 ? 'Docente' : 'Aluno'}</p>
                                     </div>
                                     <button onClick={() => toggleAluno(u)} className="w-5 h-5 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 hover:bg-red-100">
                                         <X size={11} className="text-neutral-600" />
@@ -215,6 +216,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                     <div className="space-y-1.5">
                         {filtered.slice(0, 10).map(u => {
                             const isSel = selected.some(s => s.id_utilizador === u.id_utilizador)
+                            const roleLabel = u.tipo_utilizador?.id_tipo === 2 ? 'Docente' : 'Aluno'
                             return (
                                 <button
                                     key={u.id_utilizador}
@@ -226,6 +228,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-black truncate">{u.nome} {u.apelido}</p>
+                                        <p className="text-[10px] text-neutral-600">{roleLabel} · {u.codigo_username}</p>
                                     </div>
                                     {isSel && <Check size={14} className="text-brand-800" />}
                                 </button>

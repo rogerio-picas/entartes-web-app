@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
@@ -223,9 +223,11 @@ export default function Home() {
 
         // Aulas que o docente tem de "concluir" (validar presença pós-aula)
         // Só marcacoes CONFIRMADA mas no passado (aulas dadas recentement). Ou seja, < now
+        // Apenas mostramos se for nas últimas 48h
+        const limit48h = new Date(now.getTime() - 48 * 60 * 60 * 1000)
         setPresencasDocente(minhasAulas.filter(a => {
           const d = new Date(a._data_raw)
-          return a.id_estado === 3 && d < now
+          return a.id_estado === 3 && d < now && d >= limit48h
         }))
 
       } else if (isAluno) {
@@ -244,9 +246,11 @@ export default function Home() {
         }).sort(sortAsc))
 
         // Aulas dadas, à espera da validação dupla (CONFIRMADAS no passado)
+        // Apenas mostramos se for nas últimas 48h
+        const limit48h = new Date(now.getTime() - 48 * 60 * 60 * 1000)
         setPresencasAluno(meusPedidos.filter(a => {
           const d = new Date(a._data_raw)
-          return a.id_estado === 3 && d < now
+          return a.id_estado === 3 && d < now && d >= limit48h
         }))
       }
 
@@ -298,6 +302,17 @@ export default function Home() {
       showToast('Sessão validada com sucesso!', 'success')
       loadData()
     } catch (err) { showToast(err.response?.data?.message || 'Erro ao validar a sessão.', 'error') }
+    finally { setLoadingAction(null) }
+  }
+
+  async function handleRejectDocente(id_marcacao) {
+    setLoadingAction(id_marcacao)
+    try {
+      await api.post(`/coaching/cancelar-marcacao/${id_marcacao}`, { motivo: 'Cancelado via Dashboard (Docente)' })
+      setPresencasDocente(prev => prev.filter(a => a.id !== id_marcacao))
+      showToast('Presença rejeitada.', 'success')
+      loadData()
+    } catch (err) { showToast(err.response?.data?.message || 'Erro ao rejeitar.', 'error') }
     finally { setLoadingAction(null) }
   }
 
@@ -408,8 +423,9 @@ export default function Home() {
             ) : (
               <ScrollRow>
                 {presencasDocente.slice(0, 3).map(item => (
-                  <PresencaDocenteCard key={item.id} item={item} onConfirm={handleConfirmPresencaDocente} onReject={handleRejectAdminDocente} loading={loadingAction} />
+                  <PresencaDocenteCard key={item.id} item={item} onConfirm={handleConfirmPresencaDocente} onReject={handleRejectDocente} loading={loadingAction} />
                 ))}
+                {presencasDocente.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais presenças" />}
               </ScrollRow>
             )}
           </section>
@@ -423,6 +439,7 @@ export default function Home() {
               {presencasAluno.slice(0, 3).map(item => (
                 <PresencaAlunoCard key={item.id} item={item} onConfirm={handleConfirmarPresencaAluno} onReject={handleRecusarPresencaAluno} loading={loadingAction} />
               ))}
+              {presencasAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais presenças" />}
             </ScrollRow>
           </section>
         )}
@@ -439,8 +456,7 @@ export default function Home() {
                   ? <ConfirmedCard key={a.id} aula={a} onOpen={() => setSelectedItem(a)} role={role} />
                   : <ClassCard key={a.id} item={a} statusType="confirmada" onOpen={() => setSelectedItem(a)} />
               ))}
-
-            </ScrollRow>
+              {aulasConfirmadas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas', { state: { filtroEstado: '3' } })} label="Ver mais coachings" />}            </ScrollRow>
           )}
         </section>
 
@@ -452,6 +468,7 @@ export default function Home() {
               {inscricoesAluno.slice(0, 3).map((item, idx) => (
                 <ClassCard key={item.id || idx} item={item} statusType="pendente" onOpen={() => setSelectedItem(item)} />
               ))}
+              {inscricoesAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais inscrições" />}
             </ScrollRow>
           </section>
         )}
@@ -471,6 +488,7 @@ export default function Home() {
               {eventos.slice(0, 3).map(item => (
                 <SimpleEventCard key={item.id_evento} event={item} onOpen={() => setSelectedItem(item)} />
               ))}
+              {eventos.length > 3 && <ViewMoreCard onClick={() => navigate('/eventos')} label="Ver todos os eventos" />}
             </div>
           )}
         </section>
