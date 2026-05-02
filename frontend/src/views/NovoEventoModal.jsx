@@ -43,7 +43,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
     const [data, setData] = useState(() => {
         if (initialData?.data_de_realizacao) return formatDateForInput(initialData.data_de_realizacao)
         if (selectedDate) return formatDateForInput(selectedDate)
-        return ''
+        return formatDateForInput(new Date())
     })
 
     // Extrair hora do data_de_realizacao sem conversão de timezone
@@ -108,6 +108,14 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
             return
         }
 
+        const todayStr = formatDateForInput(new Date())
+        const currentTimeStr = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
+        
+        if (data === todayStr && hora < currentTimeStr) {
+            setErro('A hora de início não pode ser no passado.')
+            return
+        }
+
         setLoading(true)
         setErro('')
 
@@ -142,6 +150,9 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
             setLoading(false)
         }
     }
+
+    const todayStr = formatDateForInput(new Date())
+    const currentTimeStr = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -181,10 +192,33 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
                             <Field label="Nome" value={nome} onChange={setNome} placeholder="Nome do evento" />
                         </div>
                         <div className="flex-1 min-w-[150px]">
-                            <Field label="Data" value={data} onChange={setData} type="date" min={formatDateForInput(new Date())} />
+                            <Field 
+                                label="Data" 
+                                value={data} 
+                                onChange={(val) => {
+                                    setData(val)
+                                    if (val === todayStr && hora < currentTimeStr) {
+                                        setHora(currentTimeStr)
+                                    }
+                                }} 
+                                type="date" 
+                                min={todayStr} 
+                            />
                         </div>
                         <div className="flex-1 min-w-[130px]">
-                            <Field label="Início" value={hora} onChange={setHora} type="time" />
+                            <Field 
+                                label="Início" 
+                                value={hora} 
+                                onChange={(val) => {
+                                    if (data === todayStr && val < currentTimeStr) {
+                                        setHora(currentTimeStr)
+                                    } else {
+                                        setHora(val)
+                                    }
+                                }} 
+                                type="time" 
+                                min={data === todayStr ? currentTimeStr : undefined} 
+                            />
                         </div>
                         <div className="flex-1 min-w-[200px] flex gap-2">
                             <div className="flex-1">
