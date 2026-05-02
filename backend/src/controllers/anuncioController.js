@@ -1,5 +1,5 @@
 // src/controllers/anuncio.controller.js
-const anuncioService = require('../services/anuncio.service');
+const anuncioService = require('../services/anuncioService');
 
 // POST /api/anuncios
 const createAnuncio = async (req, res) => {
