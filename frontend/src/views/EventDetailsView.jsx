@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2, AlertCircle, Plus, Megaphone, Send, Users, User, Cl
 import CriarGrupoPanel from '../components/CriarGrupoPanel'
 import EditEventPanel from '../components/EditEventPanel'
 import AddEventMemberPanel from '../components/AddEventMemberPanel'
+import { Toast } from '../components/HomeWidgets'
 import { authService } from '../services/authService'
 
 import { formatDate, addMinutesToTime } from '../utils/dateUtils'
@@ -39,6 +40,12 @@ export default function EventDetailsView() {
     const [modalMsgTitle, setModalMsgTitle] = useState('')
 
     const [editingAnuncio, setEditingAnuncio] = useState(null)
+    const [toast, setToast] = useState(null)
+
+    const showToast = (title, type = 'success') => {
+        setToast({ title, type })
+        setTimeout(() => setToast(null), 3000)
+    }
 
     // Load initial Event Details and Groups
     const loadEventData = useCallback(async () => {
@@ -125,6 +132,7 @@ export default function EventDetailsView() {
                 setNewMsg('')
                 loadEventAnnouncements()
             }
+            showToast(isGroupContext ? 'Anúncio publicado no grupo!' : 'Anúncio publicado no evento!')
         } catch (e) {
             alert('Não foi possível publicar.\n' + (e.message || ''))
         } finally {
@@ -138,6 +146,7 @@ export default function EventDetailsView() {
             await api.delete(`/evento/${id}/grupos/${groupId}`);
             setSelectedGroup(null);
             loadEventData();
+            showToast('Grupo apagado com sucesso!');
         } catch (e) {
             alert('Não foi possível eliminar o grupo.\n' + (e.message || ''));
         }
@@ -149,6 +158,7 @@ export default function EventDetailsView() {
             await api.delete(`/anuncios/${id_anuncio}`)
             if (isGroupContext) loadGroupAnnouncements(selectedGroup.id_grupo)
             else loadEventAnnouncements()
+            showToast('Anúncio eliminado.')
         } catch (e) {
             alert('Erro ao apagar anúncio: ' + (e.response?.data?.error || e.message))
         }
@@ -165,6 +175,7 @@ export default function EventDetailsView() {
             else loadEventAnnouncements()
 
             setEditingAnuncio(null)
+            showToast('Anúncio atualizado com sucesso!')
         } catch (e) {
             alert('Erro ao editar anúncio: ' + (e.response?.data?.error || e.message))
         }
@@ -588,6 +599,7 @@ export default function EventDetailsView() {
                         onSuccess={() => {
                             setShowEditEvent(false)
                             loadEventData()
+                            showToast('Evento atualizado com sucesso!')
                         }}
                     />
                 </>
@@ -605,6 +617,7 @@ export default function EventDetailsView() {
                             setShowCreateGroup(false)
                             setEditGroupData(null)
                             loadEventData() // Reload groups list!
+                            showToast(editGroupData ? 'Grupo atualizado!' : 'Grupo criado com sucesso!')
                         }}
                     />
                 </>
@@ -616,7 +629,10 @@ export default function EventDetailsView() {
                     <AddEventMemberPanel
                         eventId={id}
                         onClose={() => setShowAddMember(false)}
-                        onSuccess={() => loadEventData()}
+                        onSuccess={() => {
+                            loadEventData()
+                            showToast('Membros adicionados com sucesso!')
+                        }}
                     />
                 </>
             )}

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Search, UserPlus, RefreshCw, AlertCircle, CheckCircle2, Check } from 'lucide-react'
 import { api } from '../services/api'
 
@@ -132,7 +132,7 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-semibold text-neutral-900 truncate">{u.nome} {u.apelido}</p>
-                                        <p className="text-[10px] text-neutral-600 truncate">{u.tipo_utilizador?.id_tipo === 2 ? 'Docente' : 'Aluno'}</p>
+                                        <p className="text-[10px] text-neutral-600 truncate">{u.id_tipo === 1 ? 'Coordenação' : u.id_tipo === 2 ? 'Docente' : 'Aluno'}</p>
                                     </div>
                                     <button onClick={() => toggle(u)} className="w-5 h-5 rounded-full bg-white/60 flex items-center justify-center shrink-0 hover:bg-red-100">
                                         <X size={11} className="text-neutral-600" />
@@ -152,7 +152,7 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
                     <div className="space-y-1.5">
                         {filtered.slice(0, 10).map(u => {
                             const isSel = selected.some(s => s.id_utilizador === u.id_utilizador)
-                            const isDocente = u.tipo_utilizador?.id_tipo === 2
+                            const roleLabel = u.id_tipo === 1 ? 'Coordenação' : u.id_tipo === 2 ? 'Docente' : 'Aluno'
                             return (
                                 <button
                                     key={u.id_utilizador}
@@ -164,7 +164,7 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-semibold text-neutral-900 truncate">{u.nome} {u.apelido}</p>
-                                        <p className="text-[10px] text-neutral-600">{isDocente ? 'Docente' : 'Aluno'} · {u.codigo_username}</p>
+                                        <p className="text-[10px] text-neutral-600">{roleLabel} · {u.codigo_username}</p>
                                     </div>
                                     {isSel && <Check size={15} className="text-brand-800 shrink-0" />}
                                 </button>
