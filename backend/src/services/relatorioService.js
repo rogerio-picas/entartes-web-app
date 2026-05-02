@@ -1,4 +1,4 @@
-// src/services/relatorio.service.js
+// src/services/relatorioService.js
 // Módulo de Relatórios — Lógica de negócio
 // Segue as convenções do projecto Ent'artes: todo o acesso ao Prisma fica aqui.
 
