@@ -98,7 +98,7 @@ const createUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Erro no Controller [createUser]:", error);
+    // Logging de erros é responsabilidade do middleware de erros global, não do controller.
 
     // 5. Duplicados detetados pelo pré-check do serviço (verifica todos os campos em paralelo
     //    antes do insert, para que a mensagem liste todos os conflitos de uma só vez).

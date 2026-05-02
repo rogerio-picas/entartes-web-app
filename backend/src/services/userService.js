@@ -219,30 +219,9 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
                 } else if (novoTipo === 1) {
                     await tx.coordenadora.create({ data: { id_utilizador: userId } });
                 }
-            // Adicionar na nova tabela
-            switch (novoTipo) {
-                case 3: // Novo aluno
-                    await tx.aluno.create({
-                        data: { id_utilizador: userId },
-                    });
-                    break;
-                case 2: // Novo docente
-                    await tx.docente.create({
-                        data: {
-                            id_utilizador: userId,
-                            estado_atividade: true,
-                        },
-                    });
-                    break;
-                case 1: // Nova coordenadora
-                    await tx.coordenadora.create({
-                        data: { id_utilizador: userId },
-                    });
-                    break;
-                default:
-                    // Outros tipos não têm tabelas específicas
-                    break;
             }
+            // CORREÇÃO: switch duplicado removido — o if/else if acima já trata a criação na nova tabela;
+            // o switch ficou por engano após refactor e deixava o bloco if sem fechar, causando SyntaxError.
 
             return utilizadorAtualizado;
         });

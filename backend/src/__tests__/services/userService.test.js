@@ -50,6 +50,7 @@ const mockPrisma = {
     utilizador: {
         findMany: jest.fn(),
         findUnique: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
     },
     $transaction: jest.fn(),
 };

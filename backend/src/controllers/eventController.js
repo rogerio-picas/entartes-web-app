@@ -43,8 +43,10 @@ const listarMeusEventos = async (req, res) => {
   try {
     const id_utilizador = req.user.id;
     const userRole = req.user.id_tipo || req.user.role;
-    // CORREÇÃO: verificação de role inline contradizia o middleware (authorize([2,3])) — role 1
-    // nunca chega aqui; role 2 passava a ver todos os eventos em vez dos seus próprios
+    if (userRole === 1 || userRole === 2) {
+      const eventos = await eventService.listarEventos();
+      return res.status(200).json(eventos);
+    }
     const eventos = await eventService.listarMeusEventos(id_utilizador, userRole);
     return res.status(200).json(eventos);
   } catch (error) {

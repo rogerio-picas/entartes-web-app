@@ -29,6 +29,7 @@ const mockReqRes = (overrides = {}) => {
         query: {},
         params: {},
         body: {},
+        user: { id: 1, role: 1 },
         ...overrides,
     };
     const res = {
@@ -124,7 +125,7 @@ describe('userController › getUser', () => {
 
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({ message: expect.stringContaining('formato válido') })
+            expect.objectContaining({ message: expect.stringContaining('inválido') })
         );
         expect(userService.getUser).not.toHaveBeenCalled();
     });
@@ -181,7 +182,7 @@ describe('userController › createUser', () => {
         expect(userService.criarUtilizador).not.toHaveBeenCalled();
     });
 
-    it('deve retornar 400 em caso de erro P2002 (Unique constraint)', async () => {
+    it('deve retornar 409 em caso de erro P2002 (Unique constraint)', async () => {
         const erroP2002 = new Error('Unique constraint');
         erroP2002.code = 'P2002';
         userService.criarUtilizador.mockRejectedValue(erroP2002);
@@ -189,7 +190,7 @@ describe('userController › createUser', () => {
         const { req, res } = mockReqRes({ body: corpoValido });
         await userController.createUser(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.status).toHaveBeenCalledWith(409);
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({ error: expect.stringContaining('já existe') })
         );
@@ -258,7 +259,7 @@ describe('userController › deleteUser', () => {
         const { req, res } = mockReqRes({ params: { id_utilizador: '1' } });
         await userController.deleteUser(req, res);
 
-        expect(userService.deleteUser).toHaveBeenCalledWith('1');
+        expect(userService.deleteUser).toHaveBeenCalledWith(1);
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({ message: 'Utilizador removido com sucesso' });
     });
