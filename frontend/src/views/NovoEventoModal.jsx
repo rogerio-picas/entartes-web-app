@@ -45,10 +45,10 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
         if (selectedDate) return formatDateForInput(selectedDate)
         return ''
     })
-    
+
     // Extrair hora do data_de_realizacao sem conversão de timezone
     const [hora, setHora] = useState(initialData?.data_de_realizacao ? formatTime(initialData.data_de_realizacao) : '19:00')
-    
+
     // Duração decomposta em Horas e Minutos
     const initialDuration = initialData?.duracao_minutos || 60
     const [duracaoHoras, setDuracaoHoras] = useState(Math.floor(initialDuration / 60))
@@ -153,7 +153,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
             >
                 {/* Header */}
                 <div className="px-8 pt-8 pb-0 shrink-0">
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-end mb-1">
                         <button
                             onClick={onClose}
                             className="w-8 h-8 rounded-full hover:bg-brand-200 flex items-center justify-center text-neutral-600"
@@ -207,7 +207,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
                         <div className="space-y-1 mb-3">
                             {faqs.map((faq) => (
                                 <div key={faq.id} className="flex flex-col">
-                                    <div 
+                                    <div
                                         className="flex items-center gap-2 px-3 py-2 hover:bg-brand-200/50 rounded-lg cursor-pointer"
                                         onClick={() => setExpandedFaq(expandedFaq === faq.id ? null : faq.id)}
                                     >
@@ -250,14 +250,13 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
                             <div className="bg-white rounded-xl p-4 space-y-3 border border-neutral-400">
                                 <Field label="Pergunta" value={faqPergunta} onChange={setFaqPergunta} placeholder="Escreve a pergunta" />
                                 <Field label="Resposta" value={faqResposta} onChange={setFaqResposta} placeholder="Escreve a resposta" multiline />
-                                
+
                                 <div className="flex items-center justify-between">
                                     <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                                         <div
                                             onClick={() => setFaqGeral(!faqGeral)}
-                                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                                                faqGeral ? 'bg-brand-800 border-brand-800' : 'border-neutral-700'
-                                            }`}
+                                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${faqGeral ? 'bg-brand-800 border-brand-800' : 'border-neutral-700'
+                                                }`}
                                         >
                                             {faqGeral && <Check size={11} className="text-white" strokeWidth={3} />}
                                         </div>
