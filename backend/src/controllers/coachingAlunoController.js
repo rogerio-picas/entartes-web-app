@@ -4,7 +4,12 @@ function _handleError(res, error) {
   const mensagemOriginal = error?.message || 'Erro interno no servidor.';
   const mensagemMinuscula = mensagemOriginal.toLowerCase();
 
-  if (mensagemMinuscula.includes('não encontrado') || mensagemMinuscula.includes('não pertence')) {
+  if (
+    mensagemMinuscula.includes('não encontrado') ||
+    mensagemMinuscula.includes('não pertence') ||
+    mensagemMinuscula.includes('não está ativo') ||
+    mensagemMinuscula.includes('não leciona')
+  ) {
     return res.status(404).json({ message: mensagemOriginal });
   }
   // CORREÇÃO: 'não tem permissão' era mapeado para 400 em vez de 403
@@ -20,7 +25,9 @@ function _handleError(res, error) {
     mensagemMinuscula.includes('expirou') ||
     mensagemMinuscula.includes('não cabe') ||
     mensagemMinuscula.includes('já não está disponível') ||
-    mensagemMinuscula.includes('conflito')
+    mensagemMinuscula.includes('conflito') ||
+    mensagemMinuscula.includes('só é possível') ||
+    mensagemMinuscula.includes('não tem permissão de coaching')
   ) {
     return res.status(400).json({ message: mensagemOriginal });
   }

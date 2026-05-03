@@ -8,18 +8,20 @@ Library             Collections
 Library             BuiltIn
 Resource            ../resources/auth.resource
 
-Suite Setup         Authenticate All Roles
+Suite Setup         Setup Suite
+Suite Teardown      Teardown Suite
 
 
 *** Variables ***
-${ALUNO_TOKEN}          ${NONE}
-${ADMIN_TOKEN}          ${NONE}
-${DOCENTE_TOKEN}        ${NONE}
-${CREATED_MARCACAO_ID}  ${NONE}
-${DOCENTE_ID}           ${1}
-${MODALIDADE_ID}        ${1}
-${DATA_FUTURA}          2027-06-15
-${HORA_INICIO}          10:00
+${ALUNO_TOKEN}              ${NONE}
+${ADMIN_TOKEN}              ${NONE}
+${DOCENTE_TOKEN}            ${NONE}
+${CREATED_MARCACAO_ID}      ${NONE}
+${CREATED_DISPONIBILIDADE}  ${NONE}
+${DOCENTE_ID}               ${42}
+${MODALIDADE_ID}            ${2}
+${DATA_FUTURA}              2027-06-15
+${HORA_INICIO}              10:00
 
 
 *** Test Cases ***
@@ -124,8 +126,8 @@ Solicitar Marcação Com Dados Válidos
     Dictionary Should Contain Key    ${json}    message
     Dictionary Should Contain Key    ${json}    details
     ${details}=    Get From Dictionary    ${json}    details
-    Dictionary Should Contain Key    ${details}    id_marcacao
-    Set Suite Variable    ${CREATED_MARCACAO_ID}    ${details}[id_marcacao]
+    Dictionary Should Contain Key    ${details}    id_marcacoes
+    Set Suite Variable    ${CREATED_MARCACAO_ID}    ${details}[id_marcacoes]
 
 Solicitar Marcação Duplicada Para O Mesmo Slot Retorna 400
     [Documentation]    Repetir o mesmo pedido (mesmo docente, data e hora) enquanto o anterior ainda
@@ -194,18 +196,60 @@ Cancelar Pedido Já Cancelado Retorna 400
 
 
 *** Keywords ***
-Authenticate All Roles
-    [Documentation]    Suite Setup: autentica como aluno, docente e admin, guardando os três tokens.
+Setup Suite
+    [Documentation]    Autentica os três roles, valida os IDs e cria disponibilidade para o teste.
     ${aluno_token}=     Login As Aluno
     ${docente_token}=   Login As Docente
     ${admin_token}=     Login As Admin
     Set Suite Variable    ${ALUNO_TOKEN}      ${aluno_token}
     Set Suite Variable    ${DOCENTE_TOKEN}    ${docente_token}
     Set Suite Variable    ${ADMIN_TOKEN}      ${admin_token}
+    Validate Docente And Modalidade
+    Criar Disponibilidade Para Teste
+
+Teardown Suite
+    [Documentation]    Remove a marcação e a disponibilidade criadas no setup/testes para não poluir a BD.
+    Run Keyword If    '${CREATED_MARCACAO_ID}' != 'None'
+    ...    Cancelar Marcacao Se Pendente
+    Run Keyword If    '${CREATED_DISPONIBILIDADE}' != 'None'
+    ...    Eliminar Disponibilidade De Teste
+
+Cancelar Marcacao Se Pendente
+    [Documentation]    Tenta cancelar a marcação criada; ignora erro se já estiver cancelada.
+    ${headers}=    Make Auth Headers    ${ALUNO_TOKEN}
+    Run Keyword And Ignore Error
+    ...    DELETE    ${BASE_URL}/api/coaching/pedido/${CREATED_MARCACAO_ID}/cancelar    headers=${headers}    expected_status=200
+
+Validate Docente And Modalidade
+    [Documentation]    Garante que MODALIDADE_ID existe e que DOCENTE_ID está associado a ela.
+    ...                Falha o suite com mensagem clara se os IDs estiverem errados.
+    ${headers}=    Make Auth Headers    ${ALUNO_TOKEN}
+    ${response}=    GET    url=${BASE_URL}/api/modalidades/${MODALIDADE_ID}    params=docentes=true    headers=${headers}    expected_status=200
+    ${json}=    Set Variable    ${response.json()}
+    ${docentes}=    Get From Dictionary    ${json}    docente_modalidade
+    ${docente_ids}=    Evaluate    [d['id_docente'] for d in $docentes]
+    Should Contain    ${docente_ids}    ${DOCENTE_ID}
+    ...    msg=DOCENTE_ID=${DOCENTE_ID} não está associado a MODALIDADE_ID=${MODALIDADE_ID}. Atualiza as variáveis no topo do ficheiro.
+
+Criar Disponibilidade Para Teste
+    [Documentation]    Cria uma disponibilidade pontual (data_especifica=${DATA_FUTURA}) com janela
+    ...                09:00-12:00, cobrindo o HORA_INICIO=10:00 + 60 min usado nos testes.
+    ${headers}=    Make Auth Headers    ${DOCENTE_TOKEN}
+    ${body}=    Create Dictionary    data_especifica=${DATA_FUTURA}    hora_inicio=09:00    hora_fim=12:00
+    ${response}=    POST    ${BASE_URL}/api/disponibilidades    json=${body}    headers=${headers}    expected_status=201
+    ${json}=    Set Variable    ${response.json()}
+    ${data}=    Get From Dictionary    ${json}    data
+    ${id}=    Get From Dictionary    ${data}    id_disponibilidade
+    Set Suite Variable    ${CREATED_DISPONIBILIDADE}    ${id}
+
+Eliminar Disponibilidade De Teste
+    [Documentation]    Apaga a disponibilidade criada no setup.
+    ${headers}=    Make Auth Headers    ${DOCENTE_TOKEN}
+    ${response}=    DELETE    ${BASE_URL}/api/disponibilidades/${CREATED_DISPONIBILIDADE}    headers=${headers}    expected_status=200
 
 Login As Aluno
-    [Documentation]    Realiza login com a conta de aluno e devolve o token JWT.
-    ${body}=      Create Dictionary    codigo_username=aluno    password=aluno
+    [Documentation]    Realiza login com a conta de aluno de automação e devolve o token JWT.
+    ${body}=      Create Dictionary    codigo_username=automation.aluno    password=1234567
     ${response}=  POST    ${BASE_URL}/api/auth/login    json=${body}    expected_status=200
     ${token}=     Get From Dictionary    ${response.json()}    token
     RETURN    ${token}
