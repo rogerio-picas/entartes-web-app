@@ -66,6 +66,9 @@ jobs:
     name: E2E Tests (Robot Framework)
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
     defaults:
       run:
         working-directory: .
@@ -91,7 +94,7 @@ jobs:
 
       - name: Start backend server
         working-directory: backend
-        run: npm start &
+        run: npm start > /tmp/backend.log 2>&1 &
 
       - name: Wait for backend to be ready
         run: |
@@ -100,15 +103,18 @@ jobs:
             echo "Waiting... ($i/30)"
             sleep 2
           done
+          curl -sf http://localhost:3000/api-docs > /dev/null || (cat /tmp/backend.log && exit 1)
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
       - name: Install Robot Framework
+        working-directory: backend
         run: pip install -r tests/robot/requirements.txt
 
       - name: Run E2E tests
+        working-directory: backend
         run: python -m robot --outputdir tests/robot/results --xunit xunit.xml tests/robot/tests/
         continue-on-error: true
 
@@ -117,7 +123,7 @@ jobs:
         if: always()
         with:
           name: Robot Framework Results
-          path: tests/robot/results/xunit.xml
+          path: backend/tests/robot/results/xunit.xml
           reporter: java-junit
 
       - name: Upload HTML report
@@ -125,4 +131,4 @@ jobs:
         if: always()
         with:
           name: robot-report
-          path: tests/robot/results/
+          path: backend/tests/robot/results/
