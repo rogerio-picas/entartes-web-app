@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns'
 import { pt } from 'date-fns/locale'
@@ -15,7 +15,7 @@ import ItemDetailModal from '../components/ItemDetailModal'
 import { authService } from '../services/authService'
 import { api } from '../services/api'
 import coachingService from '../services/coachingService'
-import { formatDate, formatTime, parseDate, addMinutesToTime, toWallClockISO } from '../utils/dateUtils'
+import { formatDate, formatTime, parseDate, parseDateTime, addMinutesToTime, toWallClockISO } from '../utils/dateUtils'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovoEventoModal from './NovoEventoModal'
 import NovaMarcacaoModal from './NovaMarcacaoModal'
@@ -484,7 +484,7 @@ export default function Horario() {
 
         const mappedAulas = aulasToUse.map(a => {
             const dur = a.duracao_minutos || 60
-            const start = parseDate(a.data_de_realizacao || a._data_raw)
+            const start = parseDateTime(a.data_de_realizacao || a._data_raw)
             const end = start ? new Date(start.getTime() + dur * 60000) : null
             return {
                 ...a,
@@ -502,7 +502,7 @@ export default function Horario() {
 
         const mappedEventos = eventos.map(e => {
             const dur = e.duracao_minutos || 60
-            const start = parseDate(e.data_de_realizacao)
+            const start = parseDateTime(e.data_de_realizacao)
             const end = start ? new Date(start.getTime() + dur * 60000) : null
             return {
                 ...e,
@@ -853,7 +853,7 @@ export default function Horario() {
 
                         {/* Admin: Novo evento */}
                         {role === 1 && (
-                            <button onClick={() => setShowNovoEvento(true)}
+                            <button onClick={() => { setSelectedDate(null); setShowNovoEvento(true); }}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors">
                                 <Plus size={15} /> Novo evento
                             </button>
@@ -978,6 +978,7 @@ export default function Horario() {
                         selectable={false}
                         length={30}
                         longPressThreshold={100}
+                        dayLayoutAlgorithm="no-overlap"
                     />
                 </div>
 
