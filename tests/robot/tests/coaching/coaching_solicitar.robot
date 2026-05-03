@@ -6,7 +6,7 @@ Documentation       Testes end-to-end para POST /api/coaching/marcacao/solicitar
 Library             RequestsLibrary
 Library             Collections
 Library             BuiltIn
-Resource            ../resources/auth.resource
+Resource            ../../resources/auth.resource
 
 Suite Setup         Setup Suite
 Suite Teardown      Teardown Suite
