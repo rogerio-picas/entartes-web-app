@@ -8,7 +8,7 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "test:e2e": "python3 -m robot --outputdir ../tests/robot/results ../tests/robot/tests/evento_crud.robot"
+    "test:e2e": "python3 -m robot --outputdir ../tests/robot/results ../tests/robot/tests/"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

@@ -5,7 +5,7 @@ Documentation       Testes end-to-end de CRUD para a API de Eventos.
 Library             RequestsLibrary
 Library             Collections
 Library             BuiltIn
-Resource            ../resources/auth.resource
+Resource            ../../resources/auth.resource
 
 Suite Setup         Authenticate As Admin
 
