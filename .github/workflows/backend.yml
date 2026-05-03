@@ -88,6 +88,10 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Sync Prisma schema
+        working-directory: backend
+        run: npx prisma db pull
+
       - name: Generate Prisma Client
         working-directory: backend
         run: npx prisma generate
@@ -110,11 +114,9 @@ jobs:
           python-version: '3.x'
 
       - name: Install Robot Framework
-        working-directory: backend
         run: pip install -r tests/robot/requirements.txt
 
       - name: Run E2E tests
-        working-directory: backend
         run: python -m robot --outputdir tests/robot/results --xunit xunit.xml tests/robot/tests/
         continue-on-error: true
 
@@ -123,7 +125,7 @@ jobs:
         if: always()
         with:
           name: Robot Framework Results
-          path: backend/tests/robot/results/xunit.xml
+          path: tests/robot/results/xunit.xml
           reporter: java-junit
 
       - name: Upload HTML report
@@ -131,4 +133,4 @@ jobs:
         if: always()
         with:
           name: robot-report
-          path: backend/tests/robot/results/
+          path: tests/robot/results/
