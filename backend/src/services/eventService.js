@@ -578,6 +578,92 @@ const editarEvento = async (id_evento, dados) => {
   return eventoAtualizado;
 };
 
+const listarEventosPaginados = async (params) => {
+  const { page = 1, limit = 6, search = '', estado = 'ativos', sortBy = 'date_asc', id_utilizador = null, role = null } = params;
+  
+  const skip = (page - 1) * limit;
+
+  let AND = [];
+
+  if (search) {
+    AND.push({
+      OR: [
+        { nome: { contains: search, mode: 'insensitive' } },
+        { local: { contains: search, mode: 'insensitive' } },
+        { descricao: { contains: search, mode: 'insensitive' } },
+      ]
+    });
+  }
+
+  const now = new Date();
+
+  if (estado === 'ativos') {
+    AND.push({ id_evento_estado: { notIn: [4, 5] } });
+    AND.push({ 
+      OR: [
+        { data_de_realizacao: { gte: now } },
+        { data_de_realizacao: null }
+      ]
+    });
+  } else if (estado === 'passados') {
+    AND.push({
+      OR: [
+        { id_evento_estado: 4 },
+        { 
+          id_evento_estado: { notIn: [5] }, 
+          data_de_realizacao: { not: null, lt: now } 
+        }
+      ]
+    });
+  } else if (estado === 'cancelados') {
+    AND.push({ id_evento_estado: 5 });
+  }
+
+  if (id_utilizador && role) {
+    if (role === 2) {
+      AND.push({ evento_docente: { some: { id_docente: id_utilizador } } });
+    } else if (role === 3) {
+      AND.push({ evento_aluno: { some: { id_utilizador: id_utilizador } } });
+    }
+  }
+
+  const where = AND.length > 0 ? { AND } : {};
+
+  // For data_de_realizacao ordering with nulls
+  const orderBy = { data_de_realizacao: sortBy === 'date_asc' ? 'asc' : 'desc' };
+
+  const [eventos, total] = await prisma.$transaction([
+    prisma.evento.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+      include: {
+        coordenadora_evento: {
+          include: {
+            coordenadora: {
+              include: {
+                utilizador: { select: { nome: true, apelido: true, email: true } },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.evento.count({ where })
+  ]);
+
+  return {
+    data: eventos,
+    meta: {
+      totalItems: total,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      itemsPerPage: limit
+    }
+  };
+};
+
 
 
 
@@ -594,4 +680,5 @@ module.exports = {
   editarEvento,
   cancelarEvento,
   concluirEvento,
+  listarEventosPaginados,
 };
