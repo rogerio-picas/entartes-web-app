@@ -12,6 +12,19 @@ const relController = require('../controllers/relatorioController');
  *     tags: [Relatórios]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data de início (YYYY-MM-DD)
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data de fim (YYYY-MM-DD)
  *     responses:
  *       200:
  *         description: Sucesso
@@ -22,6 +35,19 @@ const relController = require('../controllers/relatorioController');
  *     tags: [Relatórios]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: data_inicio
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data de início opcional (YYYY-MM-DD)
+ *       - in: query
+ *         name: data_fim
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data de fim opcional (YYYY-MM-DD)
  *     responses:
  *       200:
  *         description: Sucesso
@@ -32,6 +58,19 @@ const relController = require('../controllers/relatorioController');
  *     tags: [Relatórios]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: data_inicio
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data de início opcional (YYYY-MM-DD)
+ *       - in: query
+ *         name: data_fim
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data de fim opcional (YYYY-MM-DD)
  *     responses:
  *       200:
  *         description: Sucesso
@@ -46,12 +85,42 @@ const relController = require('../controllers/relatorioController');
  *       200:
  *         description: Sucesso
  *
+ * /api/relatorio/ocupacao-salas:
+ *   get:
+ *     summary: Relatório de ocupação de salas
+ *     tags: [Relatórios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: data
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data opcional para filtrar a ocupação (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ *
  * /api/relatorio/exportar:
  *   get:
  *     summary: Exporta relatório em CSV
  *     tags: [Relatórios]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data de início (YYYY-MM-DD)
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data de fim (YYYY-MM-DD)
  *     responses:
  *       200:
  *         description: Ficheiro CSV gerado com sucesso
@@ -59,6 +128,9 @@ const relController = require('../controllers/relatorioController');
  *           text/csv:
  *             schema:
  *               type: string
+ *     responses:
+ *       400:
+ *         description: Parâmetros em falta
  */
 
 // CORREÇÃO: middleware duplicado — router.use aplicava tokenValidation+authorize e cada rota repetia-os
