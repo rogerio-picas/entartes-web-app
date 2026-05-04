@@ -14,15 +14,19 @@ const tokenValidation = async (req, res, next) => {
         //busca e compara na BD a role atual do utilizador com o id do token
         const userReal = await prisma.utilizador.findUnique({
             where: { id_utilizador: verified.id },
-            select: { id_tipo: true }
+            select: { id_tipo: true, password: true }
         });
         //se o utilizador nao existir na BD:
         if (!userReal) {
             return res.status(401).json({ message: "Utilizador nao encontrado" });
         }
-        //se a role da BD for diferente da role do token: 
+        //se a role da BD for diferente da role do token:
         if (userReal.id_tipo !== verified.role) {
             return res.status(401).json({ message: "Permissões alteradas. Faça login novamente." });
+        }
+        // se a password foi alterada após a emissão do token:
+        if (verified.pwf && userReal.password.slice(-8) !== verified.pwf) {
+            return res.status(401).json({ message: "Password alterada. Faça login novamente." });
         }
 
         req.user = verified;
