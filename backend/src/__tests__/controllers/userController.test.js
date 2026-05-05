@@ -154,7 +154,7 @@ describe('userController › createUser', () => {
         email: 'aluno@escola.pt',
     };
 
-    it('deve retornar 201 e criar utilizador com dados válidos', async () => {
+    it('deve retornar 201 e criar utilizador com dados válidos (bugfix)', async () => {
         const novoUser = { ...corpoValido, id_utilizador: 10 };
         userService.criarUtilizador.mockResolvedValue(novoUser);
 
@@ -171,7 +171,7 @@ describe('userController › createUser', () => {
         );
     });
 
-    it('deve retornar 400 quando faltam campos obrigatórios', async () => {
+    it('deve retornar 400 quando faltam campos obrigatórios (bugfix)', async () => {
         const { req, res } = mockReqRes({ body: { email: 'falta_resto@escola.pt' } });
         await userController.createUser(req, res);
 
@@ -182,7 +182,7 @@ describe('userController › createUser', () => {
         expect(userService.criarUtilizador).not.toHaveBeenCalled();
     });
 
-    it('deve retornar 409 em caso de erro DUPLICATE (pré-check do service)', async () => {
+    it('deve retornar 409 em caso de erro DUPLICATE (pré-check do service) (bugfix)', async () => {
         const erroDuplicate = new Error('Já existe um utilizador registado com este(s) campo(s): e-mail.');
         erroDuplicate.code = 'DUPLICATE';
         userService.criarUtilizador.mockRejectedValue(erroDuplicate);
@@ -196,7 +196,7 @@ describe('userController › createUser', () => {
         });
     });
 
-    it('deve retornar 409 em caso de erro P2002 sem meta.target (fallback genérico)', async () => {
+    it('deve retornar 409 em caso de erro P2002 sem meta.target (fallback genérico) (bugfix)', async () => {
         const erroP2002 = new Error('Unique constraint');
         erroP2002.code = 'P2002';
         userService.criarUtilizador.mockRejectedValue(erroP2002);
@@ -210,7 +210,7 @@ describe('userController › createUser', () => {
         });
     });
 
-    it('deve retornar 409 com label específica quando P2002 identifica o campo (nif)', async () => {
+    it('deve retornar 409 com label específica quando P2002 identifica o campo (nif) (bugfix)', async () => {
         const erroP2002 = new Error('Unique constraint');
         erroP2002.code = 'P2002';
         erroP2002.meta = { target: ['nif'] };
@@ -225,7 +225,7 @@ describe('userController › createUser', () => {
         });
     });
 
-    it('deve retornar 409 com mensagem genérica quando P2002 tem campo desconhecido', async () => {
+    it('deve retornar 409 com mensagem genérica quando P2002 tem campo desconhecido (bugfix)', async () => {
         const erroP2002 = new Error('Unique constraint');
         erroP2002.code = 'P2002';
         erroP2002.meta = { target: ['campo_desconhecido'] };
@@ -240,7 +240,7 @@ describe('userController › createUser', () => {
         });
     });
 
-    it('deve retornar 400 (Erro genérico) para outros erros do Service', async () => {
+    it('deve retornar 400 (Erro genérico) para outros erros do Service (bugfix)', async () => {
         userService.criarUtilizador.mockRejectedValue(new Error('Erro genérico'));
 
         const { req, res } = mockReqRes({ body: corpoValido });
@@ -260,7 +260,7 @@ describe('userController › createUser', () => {
 describe('userController › updateUser', () => {
     beforeEach(() => jest.clearAllMocks());
 
-    it('deve retornar 200 e atualizar o utilizador', async () => {
+    it('deve retornar 200 e atualizar o utilizador (bugfix)', async () => {
         const updatedUser = { id_utilizador: 1, nome: 'Nome Atualizado' };
         userService.atualizarUtilizador.mockResolvedValue(updatedUser);
 
@@ -277,7 +277,7 @@ describe('userController › updateUser', () => {
         );
     });
 
-    it('deve retornar 500 quando o service lança erro', async () => {
+    it('deve retornar 500 quando o service lança erro (bugfix)', async () => {
         userService.atualizarUtilizador.mockRejectedValue(new Error('Service error'));
 
         const { req, res } = mockReqRes({ params: { id_utilizador: '1' } });
@@ -289,7 +289,7 @@ describe('userController › updateUser', () => {
         );
     });
 
-    it('deve retornar 409 quando o service detecta duplicação (mensagem "Já existe")', async () => {
+    it('deve retornar 409 quando o service detecta duplicação (mensagem "Já existe") (bugfix)', async () => {
         const erroDuplicacao = new Error('Já existe um utilizador registado com este NIF.');
         userService.atualizarUtilizador.mockRejectedValue(erroDuplicacao);
 
@@ -305,7 +305,7 @@ describe('userController › updateUser', () => {
         });
     });
 
-    it('deve retornar 400 quando o id não é um número válido', async () => {
+    it('deve retornar 400 quando o id não é um número válido (bugfix)', async () => {
         const { req, res } = mockReqRes({ params: { id_utilizador: 'abc' } });
         await userController.updateUser(req, res);
 
@@ -324,7 +324,7 @@ describe('userController › updateUser', () => {
 describe('userController › deleteUser', () => {
     beforeEach(() => jest.clearAllMocks());
 
-    it('deve retornar 200 e eliminar utilizador com sucesso', async () => {
+    it('deve retornar 200 e eliminar utilizador com sucesso (bugfix)', async () => {
         userService.deleteUser.mockResolvedValue({});
 
         const { req, res } = mockReqRes({ params: { id_utilizador: '1' } });
@@ -335,7 +335,7 @@ describe('userController › deleteUser', () => {
         expect(res.json).toHaveBeenCalledWith({ message: 'Utilizador removido com sucesso' });
     });
 
-    it('deve retornar 404 quando o utilizador não existe (erro custom)', async () => {
+    it('deve retornar 404 quando o utilizador não existe (erro custom) (bugfix)', async () => {
         userService.deleteUser.mockRejectedValue(new Error('Utilizador não encontrado'));
 
         const { req, res } = mockReqRes({ params: { id_utilizador: '999' } });
@@ -345,7 +345,7 @@ describe('userController › deleteUser', () => {
         expect(res.json).toHaveBeenCalledWith({ message: 'Utilizador não encontrado' });
     });
 
-    it('deve retornar 500 quando o service lança um erro genérico', async () => {
+    it('deve retornar 500 quando o service lança um erro genérico (bugfix)', async () => {
         userService.deleteUser.mockRejectedValue(new Error('Service error'));
 
         const { req, res } = mockReqRes({ params: { id_utilizador: '1' } });
@@ -357,7 +357,7 @@ describe('userController › deleteUser', () => {
         );
     });
 
-    it('deve retornar 400 quando o id não é um número válido', async () => {
+    it('deve retornar 400 quando o id não é um número válido (bugfix)', async () => {
         const { req, res } = mockReqRes({ params: { id_utilizador: 'abc' } });
         await userController.deleteUser(req, res);
 
@@ -376,7 +376,7 @@ describe('userController › deleteUser', () => {
 describe('userController › atualizarPassword', () => {
     beforeEach(() => jest.clearAllMocks());
 
-    it('deve retornar 200 quando a password é actualizada com sucesso', async () => {
+    it('deve retornar 200 quando a password é actualizada com sucesso (bugfix)', async () => {
         userProfileService.atualizarPassword.mockResolvedValue({
             success: true,
             message: 'Password atualizada com sucesso.',
@@ -395,7 +395,7 @@ describe('userController › atualizarPassword', () => {
         );
     });
 
-    it('deve retornar 400 quando oldPassword está ausente', async () => {
+    it('deve retornar 400 quando oldPassword está ausente (bugfix)', async () => {
         const { req, res } = mockReqRes({
             params: { id_utilizador: '1' },
             body: { newPassword: 'nova123' },
@@ -406,7 +406,7 @@ describe('userController › atualizarPassword', () => {
         expect(userProfileService.atualizarPassword).not.toHaveBeenCalled();
     });
 
-    it('deve retornar 400 quando newPassword está ausente', async () => {
+    it('deve retornar 400 quando newPassword está ausente (bugfix)', async () => {
         const { req, res } = mockReqRes({
             params: { id_utilizador: '1' },
             body: { oldPassword: 'antiga' },
@@ -417,7 +417,7 @@ describe('userController › atualizarPassword', () => {
         expect(userProfileService.atualizarPassword).not.toHaveBeenCalled();
     });
 
-    it('deve retornar 400 quando o service lança erro', async () => {
+    it('deve retornar 400 quando o service lança erro (bugfix)', async () => {
         userProfileService.atualizarPassword.mockRejectedValue(
             new Error('A password atual está incorreta.')
         );
@@ -434,7 +434,7 @@ describe('userController › atualizarPassword', () => {
         );
     });
 
-    it('deve retornar 403 quando um não-coordenador tenta alterar a password de outro utilizador', async () => {
+    it('deve retornar 403 quando um não-coordenador tenta alterar a password de outro utilizador (bugfix)', async () => {
         const { req, res } = mockReqRes({
             params: { id_utilizador: '5' },
             body: { oldPassword: 'antiga', newPassword: 'nova123' },
@@ -449,7 +449,7 @@ describe('userController › atualizarPassword', () => {
         expect(userProfileService.atualizarPassword).not.toHaveBeenCalled();
     });
 
-    it('deve retornar 400 quando o id não é um número válido', async () => {
+    it('deve retornar 400 quando o id não é um número válido (bugfix)', async () => {
         const { req, res } = mockReqRes({
             params: { id_utilizador: 'abc' },
             body: { oldPassword: 'antiga', newPassword: 'nova123' },
@@ -471,7 +471,7 @@ describe('userController › atualizarPassword', () => {
 describe('userController › atualizarDadosPessoais', () => {
     beforeEach(() => jest.clearAllMocks());
 
-    it('deve retornar 200 quando os dados são actualizados com sucesso', async () => {
+    it('deve retornar 200 quando os dados são actualizados com sucesso (bugfix)', async () => {
         userProfileService.atualizarDadosPessoais.mockResolvedValue({
             success: true,
             message: 'Dados atualizados.',
@@ -488,7 +488,7 @@ describe('userController › atualizarDadosPessoais', () => {
         expect(res.status).toHaveBeenCalledWith(200);
     });
 
-    it('deve retornar 400 quando não é fornecido email nem telemóvel', async () => {
+    it('deve retornar 400 quando não é fornecido email nem telemóvel (bugfix)', async () => {
         const { req, res } = mockReqRes({
             params: { id_utilizador: '1' },
             body: { nome: 'Só Nome' },
@@ -502,7 +502,7 @@ describe('userController › atualizarDadosPessoais', () => {
         expect(userProfileService.atualizarDadosPessoais).not.toHaveBeenCalled();
     });
 
-    it('deve retornar 400 quando o service lança erro de validação', async () => {
+    it('deve retornar 400 quando o service lança erro de validação (bugfix)', async () => {
         userProfileService.atualizarDadosPessoais.mockRejectedValue(new Error('Email inválido.'));
 
         const { req, res } = mockReqRes({
@@ -515,7 +515,7 @@ describe('userController › atualizarDadosPessoais', () => {
         expect(res.json).toHaveBeenCalledWith({ error: 'Email inválido.' });
     });
 
-    it('deve aceitar actualização apenas com telemóvel', async () => {
+    it('deve aceitar actualização apenas com telemóvel (bugfix)', async () => {
         userProfileService.atualizarDadosPessoais.mockResolvedValue({ success: true });
 
         const { req, res } = mockReqRes({
@@ -528,7 +528,7 @@ describe('userController › atualizarDadosPessoais', () => {
         expect(res.status).toHaveBeenCalledWith(200);
     });
 
-    it('deve retornar 403 quando um não-coordenador tenta alterar dados de outro utilizador', async () => {
+    it('deve retornar 403 quando um não-coordenador tenta alterar dados de outro utilizador (bugfix)', async () => {
         const { req, res } = mockReqRes({
             params: { id_utilizador: '5' },
             body: { email: 'novo@email.pt' },
@@ -543,7 +543,7 @@ describe('userController › atualizarDadosPessoais', () => {
         expect(userProfileService.atualizarDadosPessoais).not.toHaveBeenCalled();
     });
 
-    it('deve retornar 400 quando o id não é um número válido', async () => {
+    it('deve retornar 400 quando o id não é um número válido (bugfix)', async () => {
         const { req, res } = mockReqRes({
             params: { id_utilizador: 'abc' },
             body: { email: 'novo@email.pt' },

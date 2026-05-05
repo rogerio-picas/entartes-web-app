@@ -224,7 +224,7 @@ export default function Aulas() {
     if (filtroEstado !== 'todos' && String(a.id_estado) !== String(filtroEstado)) return false
     if (filtroModalidade !== 'todas' && a.modalidade !== filtroModalidade) return false
     if (!showAll && role === 1 && a.id_estado !== 1 && a.id_estado !== 2) return false
-    // Oculta canceladas por defeito em todos os roles — só aparecem com "Ver todas" ou filtro explícito
+    // Oculta canceladas por omissao em todos os roles — só aparecem com "Ver todas" ou filtro explícito
     if (!showAll && a.id_estado === 5 && filtroEstado === 'todos') return false
     return true
   })

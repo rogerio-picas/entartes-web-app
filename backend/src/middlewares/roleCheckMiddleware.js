@@ -10,9 +10,6 @@ function authorize (allowedRoles = []){
         // O token já foi verificado pelo authMiddleware, então podemos usar req.user diretamente
         const userRole = Number(req.user.role);
 
-        console.log("Role do utilizador:", userRole);
-        console.log("Roles permitidas:", allowedRoles);
-
         if(!allowedRoles.includes(userRole)) {
             return res.status(403).json({ message : "Acesso negado: Perfil não autorizado"});
         }

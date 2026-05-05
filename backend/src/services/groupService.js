@@ -253,7 +253,6 @@ const removerDocenteDoGrupo = async (id_grupo, id_docente) => {
 // Editar grupo
 const editarGrupo = async (id_grupo, dados) => {
   const { nome, descricao, hora_atuacao } = dados;
-  console.log(id_grupo);
   const grupo = await prisma.grupo.findUnique({ 
     where: { id_grupo: parseInt(id_grupo) } 
   });

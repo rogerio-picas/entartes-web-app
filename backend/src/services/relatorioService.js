@@ -226,7 +226,7 @@ async function gerarDadosCSV(from, to) {
 }
 
 /**
- * Devolve a ocupação de todas as salas para uma data específica (hoje por defeito).
+ * Devolve a ocupação de todas as salas para uma data específica (hoje por omissao).
  */
 async function obterOcupacaoSalas(data) {
   const targetDate = data ? new Date(data) : new Date();

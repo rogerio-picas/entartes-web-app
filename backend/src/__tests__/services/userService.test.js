@@ -142,7 +142,7 @@ describe('userService › criarUtilizador', () => {
             expect(resultado).toEqual(utilizadorCriado);
         });
 
-        it('deve usar coaching=false por defeito quando não fornecido', async () => {
+        it('deve usar coaching=false por omissao quando não fornecido', async () => {
             const dados = { ...dadosAluno(), coaching: undefined };
             mockTx.utilizador.create.mockResolvedValue({ id_utilizador: 11, id_tipo: 3 });
             mockTx.aluno.create.mockResolvedValue({});

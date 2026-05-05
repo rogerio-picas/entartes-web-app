@@ -23,7 +23,7 @@
 
 jest.mock('../../middlewares/authMiddleware', () =>
     jest.fn((req, _res, next) => {
-        // Injeta um user coordenador (role 1) por defeito
+        // Injeta um user coordenador (role 1) por omissão
         req.user = { id: 1, role: 1 };
         next();
     })
