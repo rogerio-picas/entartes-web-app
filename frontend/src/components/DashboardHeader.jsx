@@ -32,9 +32,13 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
 
             {/* Left: Greeting */}
             <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-brand-800 flex items-center justify-center shrink-0">
+                <button 
+                    onClick={() => navigate('/profile')}
+                    className="w-12 h-12 rounded-full bg-brand-800 flex items-center justify-center shrink-0 hover:bg-brand-900 hover:scale-105 transition-all cursor-pointer outline-none focus:ring-2 focus:ring-brand-500"
+                    title="Ver Perfil"
+                >
                     <span className="text-brand-500 text-lg font-medium">{firstName?.[0] ?? 'A'}</span>
-                </div>
+                </button>
                 <div className="flex flex-col">
                     <span className="text-neutral-600 text-sm tracking-wide">Olá,</span>
                     <span className="text-black font-semibold text-xl leading-tight">
@@ -97,4 +101,3 @@ export default function DashboardHeader({ unreadCount = 0, onBellClick }) {
         </nav>
     )
 }
-
