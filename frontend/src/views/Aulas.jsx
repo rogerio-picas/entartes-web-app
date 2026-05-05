@@ -588,7 +588,7 @@ export default function Aulas() {
                 className="flex items-center gap-2 px-4 py-2 bg-brand-800 text-white rounded-xl text-sm font-bold hover:bg-brand-900 transition-colors shadow-sm"
               >
                 <Plus size={15} />
-                Nova
+                Nova Disponibilidade 
               </button>
             </div>
             <div className="rounded-2xl border border-neutral-600/20 overflow-hidden shadow-sm bg-white">

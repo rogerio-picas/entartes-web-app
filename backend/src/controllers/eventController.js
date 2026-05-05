@@ -52,6 +52,32 @@ const listarMeusEventos = async (req, res) => {
   }
 };
 
+const listarEventosPaginados = async (req, res) => {
+  try {
+    const params = {
+      page: parseInt(req.query.page) || 1,
+      limit: parseInt(req.query.limit) || 6,
+      search: req.query.search || '',
+      estado: req.query.estado || 'ativos',
+      sortBy: req.query.sortBy || 'date_asc',
+    };
+    
+    const userRole = req.user.id_tipo || req.user.role;
+    
+    // Se for Aluno, restringe aos seus eventos
+    if (userRole === 3) {
+      params.id_utilizador = req.user.id;
+      params.role = userRole;
+    }
+
+    const resultado = await eventService.listarEventosPaginados(params);
+    return res.status(200).json(resultado);
+  } catch (error) {
+    console.error("Erro ao listar eventos paginados:", error);
+    return res.status(500).json({ error: "Erro ao listar eventos paginados." });
+  }
+};
+
 
 const buscarEventoPorId = async (req, res) => {
   try {
@@ -242,4 +268,5 @@ module.exports = {
   listarParticipantes,
   removerAlunoDoEvento,
   removerDocenteDoEvento,
+  listarEventosPaginados,
 };

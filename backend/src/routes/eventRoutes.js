@@ -227,6 +227,7 @@ const groupRoutes = require("../routes/groupRoutes");
 router.use('/', groupRoutes);
 
 // --- ROTAS DE EVENTOS ---
+router.get("/paginados", tokenValidation, authorize([1,2,3]), eventController.listarEventosPaginados);
 router.get("/meus-eventos", tokenValidation, authorize([2,3]), eventController.listarMeusEventos);
 router.get("/", tokenValidation, authorize([1,2,3]), eventController.listarEventos);
 router.get("/:id", tokenValidation, authorize([1,2,3]), eventController.buscarEventoPorId);

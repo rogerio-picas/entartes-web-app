@@ -132,7 +132,14 @@ export default function Home() {
         hora: formatTime(e.data_de_realizacao),
         duracao: e.duracao_minutos ? `${e.duracao_minutos} min` : '—',
         // Outros campos já existem no objeto
-      })).filter(e => e.id_evento_estado !== 5)
+      })).filter(e => {
+        if (e.id_evento_estado === 5) return false;
+        const eventDate = new Date(e.data_de_realizacao);
+        const today = new Date(now);
+        eventDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        return eventDate >= today;
+      })
       setEventos(evs)
 
       const normalizeAula = (m) => {
@@ -501,11 +508,7 @@ export default function Home() {
           onSuccess={(nome) => {
             setShowNovoEvento(false)
             showToast(`Evento "${nome}" criado com sucesso!`)
-            if (isAdmin || isDocente) {
-              eventService.getAll().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
-            } else {
-              eventService.getMyEvents().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
-            }
+            loadData()
           }}
         />
       )}

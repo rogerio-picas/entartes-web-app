@@ -34,7 +34,7 @@ const inputCls = (hasError) =>
 function PasswordStrength({ password }) {
     if (!password) return null
     const checks = [
-        password.length >= 8,
+        password.length >= 6,
         /[A-Z]/.test(password),
         /[0-9]/.test(password),
         /[^A-Za-z0-9]/.test(password),
@@ -162,7 +162,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
         const e = {}
         if (!passForm.password_atual) e.password_atual = 'Insere a password atual'
         if (!passForm.nova_password) e.nova_password = 'Insere a nova password'
-        else if (passForm.nova_password.length < 8) e.nova_password = 'Mínimo 8 caracteres'
+        else if (passForm.nova_password.length < 6) e.nova_password = 'Mínimo 6 caracteres'
         if (passForm.nova_password !== passForm.confirmar_password) e.confirmar_password = 'As passwords não coincidem'
         return e
     }
@@ -429,7 +429,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                             type={showPass.nova ? 'text' : 'password'}
                                             value={passForm.nova_password}
                                             onChange={e => setPass('nova_password', e.target.value)}
-                                            placeholder="Mínimo 8 caracteres"
+                                            placeholder="Mínimo 6 caracteres"
                                             className={`${inputCls(passErrors.nova_password)} pr-11`}
                                         />
                                         <button type="button"
@@ -469,7 +469,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                             <div className="bg-brand-200/40 border border-brand-500 rounded-xl px-4 py-3 space-y-1.5">
                                 <p className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider mb-2">Requisitos</p>
                                 {[
-                                    ['Mínimo 8 caracteres', passForm.nova_password.length >= 8],
+                                    ['Mínimo 6 caracteres', passForm.nova_password.length >= 6],
                                     ['Pelo menos uma maiúscula', /[A-Z]/.test(passForm.nova_password)],
                                     ['Pelo menos um número', /[0-9]/.test(passForm.nova_password)],
                                     ['Pelo menos um símbolo', /[^A-Za-z0-9]/.test(passForm.nova_password)],
