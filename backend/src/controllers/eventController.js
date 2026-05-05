@@ -4,8 +4,6 @@ const eventService = require("../services/eventService");
 
 const criarEvento = async (req, res) => {
   try {
-    console.log("Conteúdo do req.user:", req.user);
-
     const { data_de_realizacao } = req.body;
     if (data_de_realizacao) {
       if (isNaN(new Date(data_de_realizacao).getTime())) {

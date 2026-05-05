@@ -58,7 +58,7 @@ const login = async (codigo_username, password) => {
     }
 
     const token = jwt.sign(
-        { id: user.id_utilizador, role: user.id_tipo },
+        { id: user.id_utilizador, role: user.id_tipo, pwf: user.password.slice(-8) },
         process.env.JWT_SECRET,
         { expiresIn: '8h' }
     );

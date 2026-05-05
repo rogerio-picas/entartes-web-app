@@ -11,9 +11,6 @@ const listarTodosOsGrupos = async (req, res) => {
 };
 
 const criarGrupo = async (req, res) => {
-  console.log("--- DEBUG CONTROLLER ---");
-  console.log("Params:", req.params);
-  console.log("Body:", req.body);
   try {
     // CORREÇÃO: ID do evento não era validado antes de chamar o serviço
     const id_evento = parseInt(req.params.id_evento);
@@ -49,7 +46,6 @@ const adicionarAlunoAoGrupo = async (req, res) => {
     if (isNaN(id_grupo))  return res.status(400).json({ erro: "ID do grupo inválido." });
     if (isNaN(id_aluno))  return res.status(400).json({ erro: "ID do aluno inválido." });
 
-    console.log(`Evento: ${id_evento}, Grupo: ${id_grupo}, Aluno: ${id_aluno}`);
     const resultado = await groupService.adicionarAlunoAoGrupo(id_evento, id_grupo, id_aluno);
     res.status(201).json(resultado);
   } catch (erro) {

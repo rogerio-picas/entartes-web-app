@@ -75,7 +75,7 @@ describe('tokenValidation middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('retorna erro 401 quando token é inválido ou expirado', async () => {
+  it('retorna erro 401 quando token é inválido ou expirado (bugfix)', async () => {
     const req = { headers: { authorization: `Bearer token-falso-123` } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
@@ -124,6 +124,49 @@ describe('tokenValidation middleware', () => {
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ message: 'Acesso negado. É necessária autenticação.' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('autoriza sessões antigas que não têm verificação de password no token (bugfix)', async () => {
+    const token = jwt.sign({ id: 1, role: 2 }, 'test-secret');
+    const req = { headers: { authorization: `Bearer ${token}` } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    mockPrismaClient.utilizador.findUnique.mockResolvedValue({ id_tipo: 2, password: 'hashed_password_xyz' });
+
+    await tokenValidation(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('autoriza o pedido quando a verificação de password no token corresponde à password atual (bugfix)', async () => {
+    const password = 'hashed_password_xyz';
+    const pwf = password.slice(-8);
+    const token = jwt.sign({ id: 1, role: 2, pwf }, 'test-secret');
+    const req = { headers: { authorization: `Bearer ${token}` } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    mockPrismaClient.utilizador.findUnique.mockResolvedValue({ id_tipo: 2, password });
+
+    await tokenValidation(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('retorna 401 quando a sessão foi emitida com uma password antiga (password foi alterada) (bugfix)', async () => {
+    const token = jwt.sign({ id: 1, role: 2, pwf: 'oldslice' }, 'test-secret');
+    const req = { headers: { authorization: `Bearer ${token}` } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    mockPrismaClient.utilizador.findUnique.mockResolvedValue({ id_tipo: 2, password: 'hashed_NEW_password!' });
+
+    await tokenValidation(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Password alterada. Faça login novamente.' });
     expect(next).not.toHaveBeenCalled();
   });
 });
