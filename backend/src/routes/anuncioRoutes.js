@@ -126,6 +126,32 @@ router.delete('/:id_anuncio', tokenValidation, authorize([1]), anuncioController
 /**
  * @swagger
  * /api/anuncios/evento/{id_evento}:
+ *   post:
+ *     summary: Publicar anúncio num evento
+ *     tags: [Anúncios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_evento
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               titulo:
+ *                 type: string
+ *               mensagem:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Anúncio publicado no evento com sucesso
+ *
  *   get:
  *     summary: Listar anúncios de um evento
  *     tags: [Anúncios]
@@ -141,11 +167,38 @@ router.delete('/:id_anuncio', tokenValidation, authorize([1]), anuncioController
  *       200:
  *         description: Lista de anúncios do evento
  */
+router.post('/evento/:id_evento', tokenValidation, authorize([1]), anuncioController.publicarNoEvento);
 router.get('/evento/:id_evento', tokenValidation, authorize([1, 2, 3]), anuncioController.getAnunciosByEvento);
 
 /**
  * @swagger
  * /api/anuncios/grupo/{id_grupo}:
+ *   post:
+ *     summary: Publicar anúncio num grupo
+ *     tags: [Anúncios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id_grupo
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               titulo:
+ *                 type: string
+ *               mensagem:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Anúncio publicado no grupo com sucesso
+ *
  *   get:
  *     summary: Listar anúncios de um grupo
  *     tags: [Anúncios]
@@ -161,6 +214,7 @@ router.get('/evento/:id_evento', tokenValidation, authorize([1, 2, 3]), anuncioC
  *       200:
  *         description: Lista de anúncios do grupo
  */
+router.post('/grupo/:id_grupo', tokenValidation, authorize([1]), anuncioController.publicarNoGrupo);
 router.get('/grupo/:id_grupo', tokenValidation, authorize([1, 2, 3]), anuncioController.getAnunciosByGrupo);
 
 module.exports = router;
