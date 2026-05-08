@@ -112,8 +112,6 @@ async function validarConclusaoSessao(id_docente, id_marcacao) {
 
   // Diagnóstico — remover após confirmar que o bug está resolvido
   const todosRegistos = await prisma.participacao_conclusao.findMany({ where: { id_marcacoes: id_marcacao } });
-  console.log(`[DOCENTE validar] id_marcacao=${id_marcacao} | registos na BD:`, JSON.stringify(todosRegistos))
-  console.log(`[DOCENTE validar] validacaoAluno encontrada:`, JSON.stringify(validacaoAluno))
 
   if (validacaoAluno) {
     await prisma.$transaction(async (tx) => {

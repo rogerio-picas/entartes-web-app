@@ -24,7 +24,6 @@ const login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Erro no processo de login:", error.message);
         const statusCode = error.message === "Credenciais inválidas." ? 401 : 500;
         res.status(statusCode).json({
             message: error.message || "Erro interno no servidor."
@@ -61,7 +60,6 @@ const getMe = async (req, res) => {
 
         res.status(200).json(user);
     } catch (error) {
-        console.error('Erro no getMe:', error);
         res.status(500).json({ message: 'Erro ao obter dados do utilizador.', error: error.message });
     }
 };

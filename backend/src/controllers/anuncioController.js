@@ -8,18 +8,19 @@ const createAnuncio = async (req, res) => {
     const novo = await anuncioService.criarAnuncio(req.user.id, { titulo, mensagem, id_evento, id_grupo });
     res.status(201).json(novo);
   } catch (error) {
-    console.error('createAnuncio:', error);
+    if (error.message === 'O título e a mensagem são obrigatórios.') {
+      return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
 
 // GET /api/anuncios
-const getAllAnuncios = async (req, res) => {
+const getAllAnuncios = async (_req, res) => {
   try {
     const anuncios = await anuncioService.listarTodosAnuncios();
     res.status(200).json(anuncios);
   } catch (error) {
-    console.error('getAllAnuncios:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
@@ -30,7 +31,9 @@ const getAnuncioById = async (req, res) => {
     const anuncio = await anuncioService.obterAnuncioPorId(req.params.id_anuncio);
     res.status(200).json(anuncio);
   } catch (error) {
-    console.error('getAnuncioById:', error);
+    if (error.message === 'Anúncio não encontrado.') {
+      return res.status(404).json({ error: error.message });
+    }
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
@@ -42,7 +45,6 @@ const updateAnuncio = async (req, res) => {
     const atualizado = await anuncioService.actualizarAnuncio(req.params.id_anuncio, req.user.id, { titulo, mensagem });
     res.status(200).json(atualizado);
   } catch (error) {
-    console.error('updateAnuncio:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
@@ -53,7 +55,6 @@ const removeAnuncio = async (req, res) => {
     const resultado = await anuncioService.eliminarAnuncio(req.params.id_anuncio, req.user.id);
     res.status(200).json(resultado);
   } catch (error) {
-    console.error('removeAnuncio:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
@@ -65,7 +66,6 @@ const publicarNoEvento = async (req, res) => {
     const novo = await anuncioService.publicarAnuncioNoEvento(req.params.id_evento, req.user.id, { titulo, mensagem });
     res.status(201).json(novo);
   } catch (error) {
-    console.error('publicarNoEvento:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
@@ -77,7 +77,6 @@ const publicarNoGrupo = async (req, res) => {
     const novo = await anuncioService.publicarAnuncioNoGrupo(req.params.id_grupo, req.user.id, { titulo, mensagem });
     res.status(201).json(novo);
   } catch (error) {
-    console.error('publicarNoGrupo:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
@@ -88,7 +87,6 @@ const getAnunciosByEvento = async (req, res) => {
     const anuncios = await anuncioService.listarAnunciosDoEvento(req.params.id_evento);
     res.status(200).json(anuncios);
   } catch (error) {
-    console.error('getAnunciosByEvento:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
@@ -99,7 +97,6 @@ const getAnunciosByGrupo = async (req, res) => {
     const anuncios = await anuncioService.listarAnunciosDoGrupo(req.params.id_grupo);
     res.status(200).json(anuncios);
   } catch (error) {
-    console.error('getAnunciosByGrupo:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };

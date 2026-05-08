@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
-import { ArrowLeft, Loader2, AlertCircle, Plus, Megaphone, Send, Users, User, Clock, Trash2, Calendar, MapPin, Edit2, X, RefreshCw, UserPlus, MessageCircle, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Loader2, AlertCircle, Plus, Megaphone, Send, Users, Clock, Trash2, Calendar, MapPin, Edit2, X, UserPlus, MessageCircle, ChevronRight } from 'lucide-react'
 import CriarGrupoPanel from '../components/CriarGrupoPanel'
 import EditEventPanel from '../components/EditEventPanel'
 import AddEventMemberPanel from '../components/AddEventMemberPanel'
@@ -76,7 +76,7 @@ export default function EventDetailsView() {
     // Load Announcements (Event only)
     const loadEventAnnouncements = useCallback(async () => {
         try {
-            const data = await api.get(`/anuncios/anuncios/${id}`)
+            const data = await api.get(`/anuncios/evento/${id}`)
             setAnnouncements(Array.isArray(data) ? data : [])
         } catch (e) {
             setAnnouncements([])
@@ -134,7 +134,7 @@ export default function EventDetailsView() {
             }
             showToast(isGroupContext ? 'Anúncio publicado no grupo!' : 'Anúncio publicado no evento!')
         } catch (e) {
-            alert('Não foi possível publicar.\n' + (e.message || ''))
+            showToast(e.response?.data?.error || e.message || 'Não foi possível publicar.', 'error')
         } finally {
             setPosting(false)
         }
@@ -213,7 +213,6 @@ export default function EventDetailsView() {
         )
     }
 
-    const unassignedAlunosCount = event?.evento_aluno?.length || 0
     const isPastOrCancelled = event?.id_evento_estado === 4 || event?.id_evento_estado === 5 || (event?.data_de_realizacao && new Date(event.data_de_realizacao) < new Date());
 
     let cleanDescricao = event?.descricao || ''
@@ -710,6 +709,7 @@ export default function EventDetailsView() {
                 </div>
             )}
 
+        {toast && <Toast msg={toast.title} type={toast.type} onClose={() => setToast(null)} />}
         </div>
     )
 }
