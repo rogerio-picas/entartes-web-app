@@ -1,0 +1,165 @@
+---
+config:
+  theme: base
+  layout: elk
+  look: classic
+  flowchart:
+    padding: 40
+    nodeSpacing: 60
+    rankSpacing: 80
+---
+classDiagram
+direction TB
+
+%% ==== CLASSES DE DOMÍNIO ====
+class Utilizador ["`Utilizador **`"] {
+  +login(username, pass)
+  +logout()
+  +atualizarPerfil()
+  +alterarPassword()
+}
+
+class Aluno ["`Aluno **`"] {
+  +solicitarCoaching()
+  +convidarColegas()
+  +confirmarPresenca()
+  +inscreverEvento()
+}
+
+class Docente ["`Docente **`"] {
+  +definirDisponibilidade()
+  +cancelarAula()
+  +validarSessao()
+}
+
+class Coordenadora ["`Coordenadora **`"] {
+  +aprovarSolicitacao()
+  +atribuirSala()
+  +gerarRelatorios()
+  +gerirEscola()
+}
+
+Utilizador <|-- Docente
+Utilizador <|-- Coordenadora
+
+
+%% ==== CONTROLLERS ====
+class AuthController ["`AuthController **`"] {
+  +login(req, res)
+  +getMe(req, res)
+}
+
+class AlunoCoachingController ["`AlunoCoachingController **`"] {
+  +consultarDisponibilidades()
+  +solicitarMarcacao()
+  +listarMeusPedidos()
+  +cancelarPedidoPendente()
+  +confirmarPresencaGrupo()
+  +listarColegas()
+}
+
+class DocenteCoachingController ["`DocenteCoachingController **`"] {
+  +listarMinhasAulas()
+  +validarConclusaoSessao()
+  +cancelarMarcacao()
+}
+
+class CoordenacaoCoachingController ["`CoordenacaoCoachingController **`"] {
+  +listarPedidosPendentes()
+  +confirmarMarcacao()
+  +rejeitarMarcacao()
+  +reatribuirSala()
+  +concluirMarcacao()
+  +consultarHistorico()
+}
+
+class EventController ["`EventController **`"] {
+  +listarEventos()
+  +criarEvento()
+  +editarEvento()
+  +cancelarEvento()
+  +concluirEvento()
+  +listarParticipantes()
+}
+
+class GroupController ["`GroupController **`"] {
+  +criarGrupo()
+  +editarGrupo()
+  +eliminarGrupo()
+  +adicionarMembro()
+  +removerMembro()
+}
+
+class AdminController ["`AdminController **`"] {
+  +listSalas()
+  +createSala()
+  +updateSala()
+  +deleteSala()
+  +listModalidades()
+  +associarDocente()
+}
+
+
+%% ==== SERVICES ====
+class AuthService ["`AuthService **`"] {
+  +validarCredenciais()
+  +obterUtilizador()
+}
+
+class CoachingService ["`CoachingService **`"] {
+  +validarSobreposicaoHorario()
+  +processarSolicitacaoGrupo()
+  +notificarAlteracaoEstado()
+  +verificarPrazoCancelamento()
+}
+
+class EventService ["`EventService **`"] {
+  +validarCapacidade()
+  +gerirParticipantes()
+  +dispararNotificacoes()
+}
+
+class AdminService ["`AdminService **`"] {
+  +validarDuplicadosSala()
+  +sincronizarSequenciasDB()
+  +processarExportacaoCSV()
+}
+
+
+%% ==== INFRAESTRUTURA ====
+class PrismaClient ["`PrismaClient **`"] {
+  +utilizador.find()
+  +marcacao.create()
+  +sala.upsert()
+}
+
+
+%% ==== RELAÇÕES PRINCIPAIS ====
+
+%% Controllers usam seus respectivos serviços
+AuthController --> AuthService : usa
+AlunoCoachingController --> CoachingService : usa
+DocenteCoachingController --> CoachingService : usa
+CoordenacaoCoachingController --> CoachingService : usa
+EventController --> EventService : usa
+GroupController --> EventService : usa
+AdminController --> AdminService : usa
+
+%% Services acedem à base de dados
+AuthService --> PrismaClient : consulta credenciais
+CoachingService --> PrismaClient : acede
+EventService --> PrismaClient : acede
+AdminService --> PrismaClient : acede
+
+%% ==== INTERAÇÕES UTILIZADORAS ====
+Utilizador ..> AuthController : faz login
+
+Aluno ..> AlunoCoachingController : interage com
+Docente ..> DocenteCoachingController : interage com
+Coordenadora ..> CoordenacaoCoachingController : interage com
+Coordenadora ..> AdminController : interage com
+Coordenadora ..> EventController : gere eventos
+Coordenadora ..> GroupController : gere grupos
+
+Aluno ..> EventController : consulta
+Docente ..> EventController : consulta

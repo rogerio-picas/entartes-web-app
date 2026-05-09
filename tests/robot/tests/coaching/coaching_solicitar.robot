@@ -20,8 +20,8 @@ ${CREATED_MARCACAO_ID}      ${NONE}
 ${CREATED_DISPONIBILIDADE}  ${NONE}
 ${DOCENTE_ID}               ${42}
 ${MODALIDADE_ID}            ${2}
-${DATA_FUTURA}              2027-06-15
-${HORA_INICIO}              10:00
+${DATA_FUTURA}              2026-06-17
+${HORA_INICIO}              19:00
 
 
 *** Test Cases ***
@@ -233,9 +233,9 @@ Validate Docente And Modalidade
 
 Criar Disponibilidade Para Teste
     [Documentation]    Cria uma disponibilidade pontual (data_especifica=${DATA_FUTURA}) com janela
-    ...                09:00-12:00, cobrindo o HORA_INICIO=10:00 + 60 min usado nos testes.
+    ...                18:30-21:30, cobrindo o HORA_INICIO=19:00 + 60 min usado nos testes.
     ${headers}=    Make Auth Headers    ${DOCENTE_TOKEN}
-    ${body}=    Create Dictionary    data_especifica=${DATA_FUTURA}    hora_inicio=09:00    hora_fim=12:00
+    ${body}=    Create Dictionary    data_especifica=${DATA_FUTURA}    hora_inicio=18:30    hora_fim=21:30
     ${response}=    POST    ${BASE_URL}/api/disponibilidades    json=${body}    headers=${headers}    expected_status=201
     ${json}=    Set Variable    ${response.json()}
     ${data}=    Get From Dictionary    ${json}    data
