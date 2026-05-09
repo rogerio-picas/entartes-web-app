@@ -5,6 +5,7 @@ jest.mock('../../services/horarioEscolaService');
 
 describe('horarioEscolaController', () => {
     let req, res;
+    let consoleErrorSpy;
 
     beforeEach(() => {
         req = { body: {} };
@@ -12,7 +13,13 @@ describe('horarioEscolaController', () => {
             json: jest.fn(),
             status: jest.fn().mockReturnThis(),
         };
+        // Silenciar console.error para não poluir o output dos testes com erros esperados
+        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+        consoleErrorSpy.mockRestore();
     });
 
     // ─────────────────────────────────────────────

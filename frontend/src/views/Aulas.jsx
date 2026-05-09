@@ -54,7 +54,7 @@ function StatusBadge({ id_estado, estado_nome }) {
   const StatusIcon = cfg.icon
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border whitespace-nowrap ${cfg.bg} ${cfg.textColor} ${cfg.border}`}>
-      {StatusIcon && <StatusIcon size={11} />}
+      {StatusIcon && <StatusIcon size={18} />}
       {cfg.label}
     </span>
   )
@@ -537,7 +537,7 @@ export default function Aulas() {
                           ) : prazoExpiradoTabela ? (
                             <span className="text-xs text-gray-400 font-medium">Prazo expirado</span>
                           ) : (
-                            <span className="text-xs text-gray-300 font-['Sora']">—</span>
+                            <span className="text-xs text-gray-300 font-['Sora']"></span>
                           )}
                           <button
                             onClick={() => setModalAula(row)}
