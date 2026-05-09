@@ -206,6 +206,21 @@ async function solicitarMarcacao(id_aluno, dados) {
   const diaSemana = new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay();
   // Normaliza a data para T00:00:00.000Z (mesmo formato que as disponibilidades guardadas)
   const dataRealizarDate = new Date(`${data_a_realizar.split('T')[0]}T00:00:00.000Z`);
+
+  const countDisponibilidadeNoDia = await prisma.disponibilidade.count({
+    where: {
+      id_docente,
+      OR: [
+        { data_especifica: dataRealizarDate },
+        { dia_semana: diaSemana },
+      ],
+    },
+  });
+
+  if (countDisponibilidadeNoDia === 0) {
+    throw new Error('Não existe disponibilidade associada a esta data.');
+  }
+
   const disponibilidadeValida = await prisma.disponibilidade.findFirst({
     where: {
       id_docente,

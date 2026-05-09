@@ -158,7 +158,7 @@ export function CoachingCard({ aula, onConfirm, onReject, loading }) {
   }
 
   return (
-    <div className="flex-1 min-w-[300px] max-w-[380px] bg-brand-50 border border-brand-800 rounded-xl p-4 flex flex-col gap-2.5">
+    <div className="flex-1 min-w-[300px] bg-brand-50 border border-brand-800 rounded-xl p-4 flex flex-col gap-2.5">
       <div className="flex flex-col gap-1 text-sm">
         {[['Modalidade', String(aula.modalidade || '—')], ['Data', String(aula.data || '—')],
         ['Docente', String(aula.docente || '—')], ['Duração', String(aula.duracao || '—')],

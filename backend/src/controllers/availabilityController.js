@@ -114,8 +114,8 @@ const deleteAvailability = async (req, res) => {
       return res.status(400).json({ message: error.message });
     }
     if (error.code === 'P2003') {
-      return res.status(400).json({ 
-        message: "Erro: Esta disponibilidade está a ser usada noutro registo." 
+      return res.status(400).json({
+        message: "Erro: Esta disponibilidade está a ser usada noutro registo."
       });
     }
 

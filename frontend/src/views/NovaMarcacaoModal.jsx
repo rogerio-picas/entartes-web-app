@@ -352,9 +352,12 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                 ) : (
                   slotsFuturos.map((slot, i) => {
                     const proximaData = proximaDataDoSlot(slot)
+                    const hojeStr = formatLocalYYYYMMDD(new Date())
                     const dataOuDia = slot.data_especifica
-                      ? formatDate(slot.data_especifica)
-                      : (slot.dia_semana != null ? DIAS[slot.dia_semana] : 'â€”')
+                      ? (formatLocalYYYYMMDD(new Date(slot.data_especifica)) === hojeStr ? 'Hoje' : formatDate(slot.data_especifica))
+                      : (slot.dia_semana != null
+                        ? (proximaData === hojeStr ? 'Hoje' : DIAS[slot.dia_semana])
+                        : '-')
 
                     return (
                       <button
@@ -377,7 +380,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                               <CalendarDays size={12} /> {dataOuDia}
                             </span>
                             <span className="flex items-center gap-1 text-xs text-gray-500">
-                              <Clock size={12} /> {formatTime(slot.hora_inicio)} â€“ {formatTime(slot.hora_fim)}
+                              <Clock size={12} /> {formatTime(slot.hora_inicio)} - {formatTime(slot.hora_fim)}
                             </span>
                           </div>
                         </div>
@@ -400,9 +403,17 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                 <div>
                   <p className="font-bold text-brand-800 text-sm">{docenteSel?.nome_docente}</p>
                   <p className="text-xs text-neutral-600">
-                    Disponibilidade: {slotSel.data_especifica
-                      ? formatDate(slotSel.data_especifica)
-                      : (slotSel.dia_semana != null ? DIAS[slotSel.dia_semana] : '')} ({formatTime(slotSel.hora_inicio)} - {formatTime(slotSel.hora_fim)})
+                    Disponibilidade: {(() => {
+                      const hojeStr = formatLocalYYYYMMDD(new Date())
+                      if (slotSel.data_especifica) {
+                        return formatLocalYYYYMMDD(new Date(slotSel.data_especifica)) === hojeStr ? 'Hoje' : formatDate(slotSel.data_especifica)
+                      }
+                      if (slotSel.dia_semana != null) {
+                        const proxData = proximaDataDoSlot(slotSel)
+                        return proxData === hojeStr ? 'Hoje' : DIAS[slotSel.dia_semana]
+                      }
+                      return ''
+                    })()} ({formatTime(slotSel.hora_inicio)} - {formatTime(slotSel.hora_fim)})
                   </p>
                 </div>
               </div>

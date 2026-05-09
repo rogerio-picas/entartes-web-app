@@ -407,7 +407,7 @@ export default function Home() {
           <section>
             <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Coachings pendentes a expirar em 48h"} action="Ver todas" onAction={() => navigate('/coaching')} />
             {coachings48h.length === 0 ? (
-              <p className="text-sm text-neutral-600 italic">Sem coachings pendentes nas próximas 48h.</p>
+              <p className="text-sm text-neutral-600 italic">Sem coachings pendentes.</p>
             ) : (
               <ScrollRow>
                 {coachings48h.slice(0, 3).map(a => (
@@ -415,7 +415,6 @@ export default function Home() {
                     ? <CoachingCard key={a.id} aula={a} onConfirm={handleConfirmAdminDocente} onReject={handleRejectAdminDocente} loading={loadingAction} />
                     : <RequisicaoCard key={a.id} item={a} onAccept={handleConfirmAdminDocente} onReject={handleRejectAdminDocente} loading={loadingAction} onVerPerfil={handleVerPerfil} />
                 ))}
-                {coachings48h.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais pendentes" />}
               </ScrollRow>
             )}
           </section>
@@ -463,7 +462,7 @@ export default function Home() {
                   ? <ConfirmedCard key={a.id} aula={a} onOpen={() => setSelectedItem(a)} role={role} />
                   : <ClassCard key={a.id} item={a} statusType="confirmada" onOpen={() => setSelectedItem(a)} />
               ))}
-              {aulasConfirmadas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas', { state: { filtroEstado: '3' } })} label="Ver mais coachings" />}            </ScrollRow>
+            </ScrollRow>
           )}
         </section>
 
@@ -475,7 +474,6 @@ export default function Home() {
               {inscricoesAluno.slice(0, 3).map((item, idx) => (
                 <ClassCard key={item.id || idx} item={item} statusType="pendente" onOpen={() => setSelectedItem(item)} />
               ))}
-              {inscricoesAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais inscrições" />}
             </ScrollRow>
           </section>
         )}
@@ -495,7 +493,6 @@ export default function Home() {
               {eventos.slice(0, 3).map(item => (
                 <SimpleEventCard key={item.id_evento} event={item} onOpen={() => setSelectedItem(item)} />
               ))}
-              {eventos.length > 3 && <ViewMoreCard onClick={() => navigate('/eventos')} label="Ver todos os eventos" />}
             </div>
           )}
         </section>

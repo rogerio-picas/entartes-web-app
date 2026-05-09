@@ -22,6 +22,7 @@ jest.mock('@prisma/client', () => {
     disponibilidade: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      count: jest.fn().mockResolvedValue(1),
     },
     marcacao: {
       findMany: jest.fn(),
@@ -35,6 +36,9 @@ jest.mock('@prisma/client', () => {
     },
     docente: {
       findFirst: jest.fn(),
+    },
+    modalidade: {
+      findUnique: jest.fn().mockResolvedValue({ nome: 'Coaching' }),
     },
     aluno_marcacao: {
       findMany: jest.fn(),
@@ -58,6 +62,7 @@ jest.mock('@prisma/client', () => {
     },
     utilizador: {
       findMany: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue({ nome: 'Aluno', apelido: 'Teste' }),
     },
     // $transaction simula uma transacção Prisma:
     // executa o callback passado, entregando o próprio mockPrisma como "tx"
@@ -69,6 +74,14 @@ jest.mock('@prisma/client', () => {
     PrismaClient: jest.fn(() => mockPrisma),
   };
 });
+
+// ─────────────────────────────────────────────────────────────
+// MOCK DO HORÁRIO ESCOLA SERVICE
+// ─────────────────────────────────────────────────────────────
+jest.mock('../../services/horarioEscolaService', () => ({
+  validarHorario: jest.fn().mockResolvedValue(true),
+}));
+const { validarHorario: mockValidarHorario } = require('../../services/horarioEscolaService');
 
 // ─────────────────────────────────────────────────────────────
 // IMPORTAÇÕES
@@ -128,7 +141,7 @@ const docenteFixture = {
 const dadosMarcacao = {
   id_docente: 10,
   id_modalidade: 5,
-  data_a_realizar: '2025-06-10',
+  data_a_realizar: '2099-06-10',
   hora_inicio: '10:00:00',
   duracao_minutos: 60,
   numero_alunos_pretendidos: 1,
@@ -141,7 +154,7 @@ const marcacaoFixture = {
   id_docente: 10,
   id_modalidade: 5,
   id_estado: ESTADO_MARCACAO.PENDENTE,
-  data_a_realizar: new Date('2025-06-10T00:00:00.000Z'),
+  data_a_realizar: new Date('2099-06-10T00:00:00.000Z'),
   hora_inicio: new Date('1970-01-01T10:00:00Z'),
   duracao_minutos: 60,
   numero_alunos_pretendidos: 1,
@@ -340,6 +353,11 @@ describe('solicitarMarcacao', () => {
         hora_fim: new Date('1970-01-01T11:00:00Z'),
       },
     ]);
+
+    // A validação do horário da escola é feita pelo horarioEscolaService (mockado)
+    mockValidarHorario.mockRejectedValueOnce(
+      new Error('O horário coincide com um período letivo fixo do docente.')
+    );
 
     await expect(solicitarMarcacao(1, dadosMarcacao))
       .rejects.toThrow('O horário coincide com um período letivo fixo do docente.');

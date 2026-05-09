@@ -1,19 +1,24 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     CalendarCheck, BookOpen, Clock, Coins
 } from 'lucide-react'
-import { api } from '../services/api'
 import {
     ValidacaoModal, HistoricoModal, CoachingModal, ExtratoModal, formatDate
 } from '../components/EscolaModais'
+import HorarioEscolaModal from '../components/HorarioEscolaModal'
 import ActionCard from '../components/ActionCard'
+import { authService } from '../services/authService'
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Escola() {
     const [modal, setModal] = useState(null)
 
+    const user = authService.getUser()
+    const isAdmin = user?.role === 1
+
     const cards = [
+        ...(isAdmin ? [{ key: 'horario_escola', label: 'Horário Letivo da Escola', icon: CalendarCheck, description: 'Define o ano letivo e os horários de funcionamento globais' }] : []),
         { key: 'validacao', label: 'Validação de Aulas', icon: CalendarCheck, description: 'Confirma as aulas pendentes das próximas 48h' },
         { key: 'historico', label: 'Histórico de Aulas', icon: BookOpen, description: 'Consulta o historial completo de marcações' },
         { key: 'coaching', label: 'Consultar Horas de Coaching', icon: Clock, description: 'Total de horas e sessões por docente' },
@@ -52,6 +57,7 @@ export default function Escola() {
             {modal === 'historico' && <HistoricoModal onClose={() => setModal(null)} />}
             {modal === 'coaching' && <CoachingModal onClose={() => setModal(null)} />}
             {modal === 'extrato' && <ExtratoModal onClose={() => setModal(null)} />}
+            {modal === 'horario_escola' && <HorarioEscolaModal onClose={() => setModal(null)} />}
         </>
     )
 }

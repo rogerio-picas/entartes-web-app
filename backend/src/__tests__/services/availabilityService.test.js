@@ -15,6 +15,10 @@ jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn(() => mockPrisma),
 }));
 
+jest.mock('../../services/horarioEscolaService', () => ({
+  validarHorarioDisponibilidade: jest.fn().mockResolvedValue(true),
+}));
+
 const {
   validarDocente,
   validarParametrosCreate,

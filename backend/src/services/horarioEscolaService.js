@@ -76,12 +76,12 @@ async function atualizarHorarioEscola(data_inicio, data_fim, hora_inicio, hora_f
   return obterHorarioEscola();
 }
 
-/**
- * Função utilitária para verificar se uma data e hora estão dentro do horário da escola.
- */
+// ─────────────────────────────────────────────────────────────
+// FUNÇÕES DE VALIDAÇÃO
+// ─────────────────────────────────────────────────────────────
+
 async function validarHorario(data, horaInicioStr, duracaoMinutos) {
   const escola = await obterHorarioEscola();
-  // Se não houver horário da escola definido, não há restrições ativas (ou deveria bloquear? Vamos assumir que não bloqueia se não estiver configurado)
   if (!escola) return true;
 
   const dataAlvo = new Date(data);
@@ -89,33 +89,40 @@ async function validarHorario(data, horaInicioStr, duracaoMinutos) {
 
   const inicioAno = new Date(escola.data_inicio);
   inicioAno.setHours(0, 0, 0, 0);
-
   const fimAno = new Date(escola.data_fim);
   fimAno.setHours(0, 0, 0, 0);
 
-  // 1. Validar se está dentro do ano letivo
+  // 1. Validar Ano Letivo
   if (dataAlvo < inicioAno || dataAlvo > fimAno) {
     throw new Error(`A data solicitada está fora do ano letivo configurado (de ${inicioAno.toLocaleDateString('pt-PT')} a ${fimAno.toLocaleDateString('pt-PT')}).`);
   }
 
-  // 2. Validar o dia da semana (0=Domingo, 1=Segunda, etc. na BD ou no JS)
-  // Assumindo que a BD guarda 0=Domingo, 1=Segunda... (o getDay() do JS devolve assim)
   const diaDaSemanaJS = dataAlvo.getDay();
-  // Se a frontend usar 1=Segunda...7=Domingo, precisamos de mapear. Vou assumir o padrão do JS (0-6).
-  // Na verdade, vou verificar depois no Frontend como são mapeados os DIAS.
-  if (!escola.dias_semana.includes(diaDaSemanaJS)) {
-    throw new Error('A escola não está aberta neste dia da semana.');
-  }
-
-  // 3. Validar a janela de horas (Deve começar DEPOIS do horário letivo acabar)
   const [hNova, mNova] = horaInicioStr.split(':').map(Number);
   const novaInicioMin = hNova * 60 + (mNova || 0);
+  const novaFimMin = novaInicioMin + duracaoMinutos;
+
+  // EXCEÇÃO: Sábado (6)
+  if (diaDaSemanaJS === 6) {
+    const sabadoInicio = 8 * 60 + 30; // 08:30
+    const sabadoFim = 20 * 60; // 20:00
+    if (novaInicioMin < sabadoInicio || novaFimMin > sabadoFim) {
+      throw new Error('Ao Sábado, os coachings só são permitidos entre as 08:30 e as 20:00.');
+    }
+    return true; // Passou a validação de sábado
+  }
+
+  // DIAS NORMAIS (0 a 5)
+  if (!escola.dias_semana.includes(diaDaSemanaJS)) {
+    throw new Error('A escola não está aberta neste dia da semana para coachings.');
+  }
 
   const [hEscFim, mEscFim] = escola.hora_fim.split(':').map(Number);
   const escFimMin = hEscFim * 60 + (mEscFim || 0);
+  const limiteFimDia = 22 * 60; // 22:00
 
-  if (novaInicioMin <= escFimMin) {
-    throw new Error(`Os coachings só podem ser marcados após o fim do horário letivo diário da escola (${escola.hora_fim}).`);
+  if (novaInicioMin < escFimMin || novaFimMin > limiteFimDia) {
+    throw new Error(`Os coachings só podem ser marcados entre as ${escola.hora_fim} e as 22:00.`);
   }
 
   return true;
@@ -128,44 +135,53 @@ async function validarHorarioDisponibilidade(dia_semana, data_especifica, hora_i
   const escola = await obterHorarioEscola();
   if (!escola) return true;
 
-  // 1. Validar horas (ambos os casos) - Só após o fim do horário letivo
-  const hNovaIni = hora_inicio instanceof Date ? hora_inicio.getUTCHours() : parseInt(hora_inicio.split(':')[0]);
-  const mNovaIni = hora_inicio instanceof Date ? hora_inicio.getUTCMinutes() : parseInt(hora_inicio.split(':')[1]);
-  const novaInicioMin = hNovaIni * 60 + mNovaIni;
+  let diaDaSemanaJS = null;
 
-  const [hEscFim, mEscFim] = escola.hora_fim.split(':').map(Number);
-  const escFimMin = hEscFim * 60 + (mEscFim || 0);
-
-  if (novaInicioMin <= escFimMin) {
-    throw new Error(`As disponibilidades para coaching só podem ser definidas após o fim do horário letivo diário da escola (${escola.hora_fim}).`);
-  }
-
-  // 2. Validar Data Específica vs Ano Letivo
   if (data_especifica) {
     const dataAlvo = new Date(data_especifica);
     dataAlvo.setHours(0, 0, 0, 0);
-
     const inicioAno = new Date(escola.data_inicio);
     inicioAno.setHours(0, 0, 0, 0);
-
     const fimAno = new Date(escola.data_fim);
     fimAno.setHours(0, 0, 0, 0);
 
     if (dataAlvo < inicioAno || dataAlvo > fimAno) {
       throw new Error(`A data solicitada está fora do ano letivo configurado (de ${inicioAno.toLocaleDateString('pt-PT')} a ${fimAno.toLocaleDateString('pt-PT')}).`);
     }
-
-    const diaDaSemanaJS = dataAlvo.getDay();
-    if (!escola.dias_semana.includes(diaDaSemanaJS)) {
-      throw new Error('A escola não está aberta neste dia da semana.');
-    }
+    diaDaSemanaJS = dataAlvo.getDay();
+  } else if (dia_semana !== undefined && dia_semana !== null) {
+    diaDaSemanaJS = parseInt(dia_semana);
   }
 
-  // 3. Validar Dia da Semana (recorrente)
-  if (dia_semana !== undefined && dia_semana !== null) {
-    if (!escola.dias_semana.includes(parseInt(dia_semana))) {
-      throw new Error('A escola não está aberta neste dia da semana.');
+  const hNovaIni = hora_inicio instanceof Date ? hora_inicio.getUTCHours() : parseInt(hora_inicio.split(':')[0]);
+  const mNovaIni = hora_inicio instanceof Date ? hora_inicio.getUTCMinutes() : parseInt(hora_inicio.split(':')[1]);
+  const novaInicioMin = hNovaIni * 60 + mNovaIni;
+
+  const hNovaFim = hora_fim instanceof Date ? hora_fim.getUTCHours() : parseInt(hora_fim.split(':')[0]);
+  const mNovaFim = hora_fim instanceof Date ? hora_fim.getUTCMinutes() : parseInt(hora_fim.split(':')[1]);
+  const novaFimMin = hNovaFim * 60 + mNovaFim;
+
+  // EXCEÇÃO: Sábado (6)
+  if (diaDaSemanaJS === 6) {
+    const sabadoInicio = 8 * 60 + 30; // 08:30
+    const sabadoFim = 20 * 60; // 20:00
+    if (novaInicioMin < sabadoInicio || novaFimMin > sabadoFim) {
+      throw new Error('Ao Sábado, as disponibilidades só são permitidas entre as 08:30 e as 20:00.');
     }
+    return true;
+  }
+
+  // DIAS NORMAIS
+  if (diaDaSemanaJS !== null && !escola.dias_semana.includes(diaDaSemanaJS)) {
+    throw new Error('A escola não está aberta neste dia da semana para coachings.');
+  }
+
+  const [hEscFim, mEscFim] = escola.hora_fim.split(':').map(Number);
+  const escFimMin = hEscFim * 60 + (mEscFim || 0);
+  const limiteFimDia = 22 * 60; // 22:00
+
+  if (novaInicioMin < escFimMin || novaFimMin > limiteFimDia) {
+    throw new Error(`As disponibilidades para coaching só podem ser definidas entre as ${escola.hora_fim} e as 22:00.`);
   }
 
   return true;

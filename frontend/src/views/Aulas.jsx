@@ -425,7 +425,7 @@ export default function Aulas() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-neutral-50 border-b-2 border-neutral-600/20">
-                {['Modalidade', 'Data', 'Hora', 'Duração', 'Tipo Aula', 'Sala', 'Estado', 'Ação', ''].map((col, i) => (
+                {['Modalidade', 'Data', 'Hora', 'Duração', 'Tipo Aula', 'Sala', 'Estado', ''].map((col, i) => (
                   <th
                     key={col || i}
                     className="px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap"
@@ -496,56 +496,56 @@ export default function Aulas() {
                         <StatusBadge id_estado={row.id_estado} estado_nome={row.estado_nome} />
                       </td>
                       <td className="px-4 py-4">
-                        {isLoading ? (
-                          <RefreshCw size={18} className="text-brand-800 animate-spin" />
-                        ) : role === 1 && isPendente ? (
-                          <div className="flex gap-2">
-                            <button onClick={() => handleConfirm(row.id)} title="Confirmar"
-                              className="w-8 h-8 bg-feedback-success border border-feedback-success-dark rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
-                              <Check size={15} strokeWidth={3} className="text-white" />
+                        <div className="flex gap-2 items-center justify-end">
+                          {isLoading ? (
+                            <RefreshCw size={18} className="text-brand-800 animate-spin" />
+                          ) : role === 1 && isPendente ? (
+                            <div className="flex gap-2">
+                              <button onClick={() => handleConfirm(row.id)} title="Confirmar"
+                                className="w-8 h-8 bg-feedback-success border border-feedback-success-dark rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
+                                <Check size={15} strokeWidth={3} className="text-white" />
+                              </button>
+                              <button onClick={() => {
+                                if (window.confirm('Tem a certeza que deseja rejeitar esta marcação?')) {
+                                  handleReject(row.id)
+                                }
+                              }} title="Rejeitar"
+                                className="w-8 h-8 bg-feedback-error border border-feedback-error-dark rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
+                                <X size={15} strokeWidth={3} className="text-white" />
+                              </button>
+                            </div>
+                          ) : (role === 2 || role === 3) && isPendente ? (
+                            <button
+                              onClick={() => {
+                                if (window.confirm('Tem a certeza que deseja cancelar esta marcação?')) {
+                                  handleReject(row.id)
+                                }
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
+                            >
+                              <X size={12} strokeWidth={3} />
+                              Cancelar
                             </button>
-                            <button onClick={() => {
-                              if (window.confirm('Tem a certeza que deseja rejeitar esta marcação?')) {
-                                handleReject(row.id)
-                              }
-                            }} title="Rejeitar"
-                              className="w-8 h-8 bg-feedback-error border border-feedback-error-dark rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
-                              <X size={15} strokeWidth={3} className="text-white" />
+                          ) : podeConfirmarPresenca ? (
+                            <button
+                              onClick={() => handleConfirm(row.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors"
+                            >
+                              <Check size={12} strokeWidth={3} />
+                              Confirmar presen&ccedil;a
                             </button>
-                          </div>
-                        ) : (role === 2 || role === 3) && isPendente ? (
+                          ) : prazoExpiradoTabela ? (
+                            <span className="text-xs text-gray-400 font-medium">Prazo expirado</span>
+                          ) : (
+                            <span className="text-xs text-gray-300 font-['Sora']">—</span>
+                          )}
                           <button
-                            onClick={() => {
-                              if (window.confirm('Tem a certeza que deseja cancelar esta marcação?')) {
-                                handleReject(row.id)
-                              }
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
+                            onClick={() => setModalAula(row)}
+                            className="px-3.5 py-1.5 rounded-lg bg-brand-200 text-brand-800 text-xs font-bold hover:bg-brand-800 hover:text-white transition-colors whitespace-nowrap"
                           >
-                            <X size={12} strokeWidth={3} />
-                            Cancelar
+                            Ver mais
                           </button>
-                        ) : podeConfirmarPresenca ? (
-                          <button
-                            onClick={() => handleConfirm(row.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors"
-                          >
-                            <Check size={12} strokeWidth={3} />
-                            Confirmar presen&ccedil;a
-                          </button>
-                        ) : prazoExpiradoTabela ? (
-                          <span className="text-xs text-gray-400 font-medium">Prazo expirado</span>
-                        ) : (
-                          <span className="text-xs text-gray-300 font-['Sora']">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4">
-                        <button
-                          onClick={() => setModalAula(row)}
-                          className="px-3.5 py-1.5 rounded-lg bg-brand-200 text-brand-800 text-xs font-bold hover:bg-brand-800 hover:text-white transition-colors whitespace-nowrap"
-                        >
-                          Ver mais
-                        </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -588,7 +588,7 @@ export default function Aulas() {
                 className="flex items-center gap-2 px-4 py-2 bg-brand-800 text-white rounded-xl text-sm font-bold hover:bg-brand-900 transition-colors shadow-sm"
               >
                 <Plus size={15} />
-                Nova Disponibilidade 
+                Nova Disponibilidade
               </button>
             </div>
             <div className="rounded-2xl border border-neutral-600/20 overflow-hidden shadow-sm bg-white">
