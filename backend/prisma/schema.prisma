@@ -160,6 +160,8 @@ model horario_letivo {
   dia_semana  Int?
   hora_inicio DateTime? @db.Time(6)
   hora_fim    DateTime? @db.Time(6)
+  data_inicio DateTime? @db.Date
+  data_fim    DateTime? @db.Date
   docente     docente?  @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
 }
 

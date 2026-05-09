@@ -14,6 +14,12 @@ const groupRoutes = require("../routes/groupRoutes");
  *     tags: [Events]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: estado
+ *         schema:
+ *           type: string
+ *         description: Filtra eventos por estado (ex. ativos, cancelados, concluidos)
  *     responses:
  *       200:
  *         description: Sucesso
@@ -28,20 +34,72 @@ const groupRoutes = require("../routes/groupRoutes");
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [nome]
  *             properties:
  *               nome:
  *                 type: string
  *               descricao:
  *                 type: string
- *               data_inicio:
+ *               data_de_realizacao:
  *                 type: string
- *                 format: date
- *               data_fim:
+ *                 format: date-time
+ *                 description: Data e hora de realização do evento
+ *               local:
  *                 type: string
- *                 format: date
+ *                 description: Local do evento
+ *               duracao_minutos:
+ *                 type: integer
+ *                 description: Duração em minutos (default 60)
+ *               link_whatsapp:
+ *                 type: string
+ *                 description: Link do grupo WhatsApp do evento
  *     responses:
  *       201:
  *         description: Criado com sucesso
+ *       400:
+ *         description: Dados inválidos
+ *
+ * /api/evento/paginados:
+ *   get:
+ *     summary: Lista eventos com paginação, pesquisa e filtros
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 6
+ *         description: Número de eventos por página
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Termo de pesquisa (nome do evento)
+ *       - in: query
+ *         name: estado
+ *         schema:
+ *           type: string
+ *           default: ativos
+ *         description: "Filtro de estado: ativos, cancelados, concluidos, todos"
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           default: date_asc
+ *         description: "Ordenação: date_asc, date_desc"
+ *     responses:
+ *       200:
+ *         description: Lista paginada de eventos
+ *       500:
+ *         description: Erro interno no servidor
  *
  * /api/evento/{id}:
  *   get:
@@ -84,7 +142,13 @@ const groupRoutes = require("../routes/groupRoutes");
  *                 type: string
  *               data_de_realizacao:
  *                 type: string
- *                 format: date
+ *                 format: date-time
+ *               local:
+ *                 type: string
+ *               duracao_minutos:
+ *                 type: integer
+ *               link_whatsapp:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Evento atualizado com sucesso
@@ -160,11 +224,11 @@ const groupRoutes = require("../routes/groupRoutes");
  *             properties:
  *               codigo_username:
  *                 type: string
- *               tipo_utilizador:
- *                  type: integer
  *     responses:
  *       201:
  *         description: Participante adicionado com sucesso
+ *       400:
+ *         description: Código de utilizador é obrigatório
  *   get:
  *     summary: Lista participantes do evento
  *     tags: [Events]

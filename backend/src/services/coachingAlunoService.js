@@ -4,6 +4,7 @@
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const horarioEscolaService = require('./horarioEscolaService');
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTES DE DOMÍNIO
@@ -180,6 +181,18 @@ async function solicitarMarcacao(id_aluno, dados) {
   if (id_modalidade) {
     whereDocente.docente_modalidade = { some: { id_modalidade } };
   }
+  const dataSolicitada = new Date(data_a_realizar);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  if (dataSolicitada < hoje) {
+    throw new Error('Não é possível solicitar marcações para o passado.');
+  }
+
+  // ── Validação 0: Horário da Escola
+  await horarioEscolaService.validarHorario(data_a_realizar, hora_inicio, duracao_minutos);
+
+  // ── Validação 1: Docente e Modalidade válidos
   const docenteAtivo = await prisma.docente.findFirst({ where: whereDocente });
 
   if (!docenteAtivo) {
@@ -272,6 +285,23 @@ async function solicitarMarcacao(id_aluno, dados) {
     }
   }
 
+  // Buscar o nome do aluno para incluir na notificação ao docente
+  const utilizadorAluno = await prisma.utilizador.findUnique({
+    where: { id_utilizador: id_aluno },
+    select: { nome: true, apelido: true },
+  });
+  const nomeAluno = utilizadorAluno
+    ? `${utilizadorAluno.nome} ${utilizadorAluno.apelido}`
+    : 'Um aluno';
+
+  // Buscar o nome da modalidade para a notificação
+  const modalidadeInfo = id_modalidade
+    ? await prisma.modalidade.findUnique({ where: { id_modalidade }, select: { nome: true } })
+    : null;
+  const nomeModalidade = modalidadeInfo?.nome ?? 'Coaching';
+
+  const dataFormatada = dataRealizarDate.toLocaleDateString('pt-PT');
+
   let resultado;
   try {
     resultado = await prisma.$transaction(async (tx) => {
@@ -303,6 +333,15 @@ async function solicitarMarcacao(id_aluno, dados) {
           id_aluno,
           id_marcacoes: marcacao.id_marcacoes,
           id_aluno_estado: ESTADO_ALUNO_MARCACAO.CONFIRMADO, // ← id 2 para o criador da marcação, já confirmado
+        },
+      });
+
+      // Notifica o docente sobre o novo pedido de coaching
+      await tx.notificacao.create({
+        data: {
+          id_user: id_docente,
+          titulo: 'Novo Pedido de Coaching',
+          mensagem: `${nomeAluno} solicitou uma sessão de ${nomeModalidade} para ${dataFormatada} (${duracao_minutos} min). Aguarda confirmação da coordenação.`,
         },
       });
 

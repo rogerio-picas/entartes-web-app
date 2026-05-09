@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const horarioEscolaService = require('./horarioEscolaService');
 
 /**
  * Validações e lógica de negócio para Disponibilidades
@@ -154,6 +155,9 @@ const criarDisponibilidade = async (id_docente, dados) => {
 
   validarParametrosCreate(dia_semana, data_especifica, hora_inicio, hora_fim);
 
+  // Verificar horário da escola
+  await horarioEscolaService.validarHorarioDisponibilidade(dia_semana, data_especifica, hora_inicio, hora_fim);
+
   // Verificar sobreposição
   await verificarSobreposicao(id_docente, dia_semana, data_especifica, hora_inicio, hora_fim);
 
@@ -225,6 +229,9 @@ const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) =
       throw new Error("A Data não pode ser no passado.");
     }
   }
+
+  // Verificar horário da escola
+  await horarioEscolaService.validarHorarioDisponibilidade(diaSemana, dataEspecifica, novaHoraInicio, novaHoraFim);
 
   // 3. Verificar sobreposição
   await verificarSobreposicao(id_docente, diaSemana, dataEspecifica, novaHoraInicio, novaHoraFim, id_disponibilidade);

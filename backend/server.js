@@ -30,7 +30,10 @@ const swaggerOptions = {
       { name: 'Modalidades', description: 'Gestão de Modalidades' },
       { name: 'Notificações', description: 'Gestão de Notificações' },
       { name: 'Anúncios', description: 'Gestão de Anúncios' },
-      { name: 'Relatórios', description: 'Geração de Relatórios' }
+      { name: 'Relatórios', description: 'Geração de Relatórios' },
+      { name: 'Events - Grupos', description: 'Gestão de Grupos dentro de Eventos' },
+      { name: 'Horário', description: 'Gestão de Horários e Inscrições em Aulas' },
+      { name: 'Configurações', description: 'Configurações gerais da Escola' }
     ],
     components: {
       securitySchemes: {
@@ -60,6 +63,7 @@ const horarioRoutes = require('./src/routes/horarioRoutes');
 const notificacaoRoutes = require('./src/routes/notificacaoRoutes');
 const salaRoutes = require('./src/routes/salaRoutes');
 const modalidadeRoutes = require('./src/routes/modalidadeRoutes');
+const horarioEscolaRoutes = require('./src/routes/horarioEscolaRoutes');
 
 app.use(cors());
 app.use(express.json());
@@ -78,6 +82,7 @@ app.use('/api/horario', horarioRoutes);
 app.use('/api/notificacoes', notificacaoRoutes);
 app.use('/api/salas', salaRoutes);
 app.use('/api/modalidades', modalidadeRoutes);
+app.use('/api/configuracao', horarioEscolaRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

@@ -15,7 +15,6 @@ function _handleError(res, error) {
   if (mensagem.includes('não encontrada') || mensagem.includes('não encontrado')) {
     return res.status(404).json({ message: mensagem });
   }
-  // CORREÇÃO: erros de permissão não tinham mapeamento para 403
   if (mensagem.includes('não tem permissão') || mensagem.includes('Sem permissão')) {
     return res.status(403).json({ message: mensagem });
   }
@@ -25,7 +24,8 @@ function _handleError(res, error) {
     mensagem.includes('Só é possível') ||
     mensagem.includes('já está') ||
     mensagem.includes('já passou') ||
-    mensagem.includes('Escolhe outra sala')
+    mensagem.includes('Escolhe outra sala') ||
+    mensagem.includes('não é compatível com o horário letivo')
   ) {
     return res.status(400).json({ message: mensagem });
   }
@@ -36,7 +36,7 @@ const listarPedidosPendentes = async (req, res) => {
   try {
     const estados = _parseEstados(req.query.estados);
     const data_inicio = req.query.data_inicio || null;
-    const data_fim    = req.query.data_fim    || null;
+    const data_fim = req.query.data_fim || null;
 
     // CORREÇÃO: datas não eram validadas quanto ao formato nem à ordem (fim >= início)
     if (data_inicio && isNaN(new Date(data_inicio).getTime())) {

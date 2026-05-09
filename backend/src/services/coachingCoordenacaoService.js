@@ -56,22 +56,39 @@ async function _registarHistorico(id_marcacoes, id_estado, tx = null) {
 // ─────────────────────────────────────────────────────────────
 
 async function _verificarSalaLivre(id_sala, data_a_realizar, hora_inicio, duracao_minutos, excluir_id_marcacao = null) {
-  const horaInicioDate = new Date(`1970-01-01T${hora_inicio}Z`);
-  const horaFimDate = new Date(horaInicioDate.getTime() + duracao_minutos * 60 * 1000);
+  // Converte a hora_inicio (ex: "19:30:00") para minutos desde a meia-noite
+  const [hNova, mNova] = hora_inicio.split(':').map(Number);
+  const novaInicioMin = hNova * 60 + (mNova || 0);
+  const novaFimMin = novaInicioMin + duracao_minutos;
 
-  const conflito = await prisma.marcacao.findFirst({
+  const marcacoesNoDia = await prisma.marcacao.findMany({
     where: {
       id_sala,
       data_a_realizar: new Date(data_a_realizar),
       id_estado: { in: [ESTADO_MARCACAO.EM_VALIDACAO, ESTADO_MARCACAO.CONFIRMADA] },
-      // Exclui a própria marcação (útil ao reatribuir sala)
       ...(excluir_id_marcacao && { id_marcacoes: { not: excluir_id_marcacao } }),
-      // Sobreposição: a existente começa antes do fim da nova E acaba depois do início da nova
-      hora_inicio: { lt: horaFimDate },
     },
+    select: {
+      hora_inicio: true,
+      duracao_minutos: true
+    }
   });
 
-  return !conflito; // true = livre
+  // Verifica sobreposição para cada marcação existente nesse dia
+  for (const m of marcacoesNoDia) {
+    const hExist = m.hora_inicio.getUTCHours();
+    const minExist = m.hora_inicio.getUTCMinutes();
+    const existInicioMin = hExist * 60 + minExist;
+    const existFimMin = existInicioMin + (m.duracao_minutos || 60);
+
+    // Lógica de sobreposição: 
+    // (A existe começa antes de B nova acabar) E (A existe acaba depois de B nova começar)
+    if (existInicioMin < novaFimMin && existFimMin > novaInicioMin) {
+      return false; // Há conflito
+    }
+  }
+
+  return true; // Livre
 }
 
 // ─────────────────────────────────────────────────────────────
