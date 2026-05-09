@@ -102,7 +102,7 @@ Solicitar Com Horário Fora Da Disponibilidade Retorna 400
     ${headers}=    Make Auth Headers    ${ALUNO_TOKEN}
     ${body}=    Create Dictionary
     ...    id_docente=${DOCENTE_ID}    id_modalidade=${MODALIDADE_ID}
-    ...    data_a_realizar=${DATA_FUTURA}    hora_inicio=03:00    duracao_minutos=${60}
+    ...    data_a_realizar=${DATA_FUTURA}    hora_inicio=18:00    duracao_minutos=${60}
     ${response}=    POST    ${BASE_URL}/api/coaching/marcacao/solicitar    json=${body}    headers=${headers}    expected_status=400
     ${msg}=    Get From Dictionary    ${response.json()}    message
     Should Contain    ${msg}    não cabe dentro da disponibilidade
