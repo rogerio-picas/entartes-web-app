@@ -11,20 +11,21 @@ import { authService } from '../services/authService'
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovaMarcacaoModal from './NovaMarcacaoModal'
 import { disponibilidadeService } from '../services/disponibilidadeService'
+import ItemDetailModal from '../components/ItemDetailModal'
 
 // ─── Mapeamento de estados e Funções Auxiliares ───────────
 const STATUS_CFG = {
-  1: { label: 'Agendada', icon: Clock, textColor: 'text-amber-700', bg: 'bg-amber-100', border: 'border-amber-200' },
+  1: { label: 'Pendente', icon: Clock, textColor: 'text-amber-700', bg: 'bg-amber-100', border: 'border-amber-200' },
   2: { label: 'Em Validação', icon: Clock, textColor: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-200' },
   3: { label: 'Confirmada', icon: CheckCircle2, textColor: 'text-emerald-700', bg: 'bg-emerald-100', border: 'border-emerald-200' },
-  4: { label: 'Concluída', icon: CheckCircle2, textColor: 'text-[#006A68]', bg: 'bg-[#CCE8E6]', border: 'border-[#006A68]' },
+  4: { label: 'Concluída', icon: CheckCircle2, textColor: 'text-brand-800', bg: 'bg-brand-200', border: 'border-brand-800' },
   5: { label: 'Cancelada', icon: XCircle, textColor: 'text-red-700', bg: 'bg-red-100', border: 'border-red-200' },
 }
 
 function getStatusCfg(id_estado, estado_nome) {
   if (STATUS_CFG[id_estado]) return STATUS_CFG[id_estado]
   const nome = (estado_nome ?? '').toLowerCase()
-  if (nome.includes('agend') || nome.includes('pend')) return STATUS_CFG[1]
+  if (nome.includes('pend')) return STATUS_CFG[1]
   if (nome.includes('valida')) return STATUS_CFG[2]
   if (nome.includes('confirm')) return STATUS_CFG[3]
   if (nome.includes('conclui') || nome.includes('finaliz')) return STATUS_CFG[4]
@@ -33,92 +34,12 @@ function getStatusCfg(id_estado, estado_nome) {
 }
 
 
-// ─── Modal Detalhe ─────────────────────────────────────────────
-function AulaModal({ aula, onClose, role }) {
-  if (!aula) return null
-  const cfg = getStatusCfg(aula.id_estado, aula.estado_nome)
-  const StatusIcon = cfg.icon
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-      <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="bg-[#EFF5F4] border-b-2 border-[#006A68] px-6 py-5 flex items-start justify-between">
-          <div>
-            <p className="text-[#4A6362] text-xs font-medium tracking-widest uppercase mb-1">Detalhe da Aula</p>
-            <h3 className="text-[#006A68] font-bold text-xl">{aula.modalidade}</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/80 flex items-center justify-center hover:bg-white transition-colors text-[#4A6362]"
-          >
-            <X size={16} />
-          </button>
-        </div>
-        {/* Body */}
-        <div className="px-6 py-6 space-y-4">
-          {/* Estado */}
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border ${cfg.bg} ${cfg.textColor} ${cfg.border}`}>
-            {StatusIcon && <StatusIcon size={13} />}
-            {cfg.label}
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <InfoItem icon={CalendarDays} label="Data" value={aula.data} />
-            <InfoItem icon={Clock} label="Hora" value={aula.hora} />
-            <InfoItem icon={Clock} label="Duração" value={aula.duracao} />
-            <InfoItem icon={MapPin} label="Sala / Estúdio" value={aula.sala} />
-            <InfoItem icon={User} label={role === 2 ? "Aluno(s)" : "Professor"} value={aula.docente} />
-            <InfoItem icon={Music} label="Modalidade" value={aula.modalidade} />
-            <InfoItem label="Tipo de Aula" value={aula.tipo_aula ?? 'Individual'} icon={BookOpen} />
-          </div>
-          {aula.alunos && aula.alunos.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-[#4A6362] uppercase tracking-wider mb-2">
-                Alunos ({aula.alunos.length})
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {aula.alunos.map((a, i) => (
-                  <span key={i} className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full font-medium">
-                    {a}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="px-6 pb-6">
-          <button
-            onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-[#006A68] text-white font-semibold text-sm hover:bg-[#00504E] transition-colors"
-          >
-            Fechar
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+// O componente AulaModal foi removido pois agora usamos o ItemDetailModal compartilhado.
 
-function InfoItem({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-start gap-2.5">
-      <div className="w-7 h-7 rounded-lg bg-[#CCE8E6] flex items-center justify-center shrink-0 mt-0.5">
-        {Icon && <Icon size={14} className="text-[#006A68]" />}
-      </div>
-      <div>
-        <p className="text-[10px] uppercase tracking-wider text-[#4A6362] font-semibold">{label}</p>
-        <p className="text-sm font-medium text-gray-800">{value}</p>
-      </div>
-    </div>
-  )
-}
 
 function SkeletonRow() {
   return (
-    <tr className="animate-pulse border-b border-[#4a6362]/10">
+    <tr className="animate-pulse border-b border-neutral-600/10">
       {[...Array(9)].map((_, i) => (
         <td key={i} className="px-4 py-4">
           <div className="h-4 bg-gray-100 rounded-lg mx-auto" style={{ width: `${60 + (i % 3) * 15}%` }} />
@@ -157,8 +78,6 @@ export default function Aulas() {
   const [disponibilidades, setDisponibilidades] = useState([])
   const [loadingDisp, setLoadingDisp] = useState(false)
   const [deletingDispId, setDeletingDispId] = useState(null)
-  const [showDisponibilidadesModal, setShowDisponibilidadesModal] = useState(false)
-  const [slotParaMarcacao, setSlotParaMarcacao] = useState(null)
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -184,18 +103,18 @@ export default function Aulas() {
       const formatadas = rawData.map(m => {
         return {
           id: m.id_marcacao,
-          modalidade: m.modalidade || '—',
+          modalidade: typeof m.modalidade === 'object' ? m.modalidade.nome : (m.modalidade || '—'),
           data: formatDate(m.data),
           hora: formatTime(m.hora_inicio),
           duracao: `${m.duracao_minutos} min`,
           tipo_aula: m.numero_alunos_pretendidos > 1 ? 'Grupo' : 'Individual',
-          sala: m.sala || m.sala_atual || 'Por atribuir',
+          sala: typeof m.sala === 'object' ? m.sala.nome : (m.sala || m.sala_atual || 'Por atribuir'),
           docente: role === 2
-            ? (m.alunos?.length > 0 ? m.alunos.map(a => a.nome).join(', ') : 'A aguardar alunos')
-            : (m.docente || '—'),
+            ? (m.alunos?.length > 0 ? m.alunos.map(a => typeof a === 'object' ? a.nome : a).join(', ') : 'A aguardar alunos')
+            : (typeof m.docente === 'object' ? m.docente.nome : (m.docente || '—')),
           id_estado: m.id_estado,
           estado_nome: m.estado || '—',
-          alunos: m.alunos?.map(a => a.nome) || [],
+          alunos: m.alunos?.map(a => typeof a === 'object' ? a.nome : a) || [],
           numero_alunos_pretendidos: m.numero_alunos_pretendidos,
           ja_validou: m.ja_validou
         }
@@ -305,7 +224,7 @@ export default function Aulas() {
     if (filtroEstado !== 'todos' && String(a.id_estado) !== String(filtroEstado)) return false
     if (filtroModalidade !== 'todas' && a.modalidade !== filtroModalidade) return false
     if (!showAll && role === 1 && a.id_estado !== 1 && a.id_estado !== 2) return false
-    // Oculta canceladas por defeito em todos os roles — só aparecem com "Ver todas" ou filtro explícito
+    // Oculta canceladas por omissao em todos os roles — só aparecem com "Ver todas" ou filtro explícito
     if (!showAll && a.id_estado === 5 && filtroEstado === 'todos') return false
     return true
   })
@@ -325,17 +244,18 @@ export default function Aulas() {
         {/* Cabeçalho de conteúdo */}
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
           <div>
-            <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Gestão de Presenças</p>
-            <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
-              {showAll ? 'Todas as Aulas' : 'Confirmação de Aulas'}
-              {!showAll && <span className="text-[#006A68] font-semibold"> (48h)</span>}
+            <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">
+              {role === 1 ? 'Gestão de Coachings' : 'Gestão de Presenças'}
+            </p>
+            <h1 className="text-neutral-800 font-normal text-4xl leading-tight tracking-tight">
+              {showAll ? 'Todos os Coachings' : 'Confirmação de Coachings'}
             </h1>
           </div>
           <div className="flex items-center gap-3">
             {role === 3 && (
               <button
                 onClick={() => setShowNovaMarcacao(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors shadow-sm"
+                className="flex items-center gap-2 px-5 py-2.5 bg-brand-800 text-white rounded-xl text-sm font-bold hover:bg-brand-900 transition-colors shadow-sm"
               >
                 <Plus size={16} />
                 Nova Marcação
@@ -344,7 +264,7 @@ export default function Aulas() {
             {role === 2 && (
               <button
                 onClick={() => setShowNovaDisponibilidade(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors shadow-sm"
+                className="flex items-center gap-2 px-5 py-2.5 bg-brand-800 text-white rounded-xl text-sm font-bold hover:bg-brand-900 transition-colors shadow-sm"
               >
                 <Plus size={16} />
                 Nova Disponibilidade
@@ -357,13 +277,13 @@ export default function Aulas() {
               </div>
             )}
             <button onClick={() => setShowAll(v => !v)}
-              className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#006A68] text-[#006A68] text-sm font-medium hover:bg-[#CCE8E6] transition-colors">
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-brand-800 text-brand-800 text-sm font-medium hover:bg-brand-200 transition-colors">
               <BookOpen size={15} />
               {showAll ? 'Ver próximas 48h' : 'Ver todas'}
             </button>
             <button onClick={fetchMarcacoes} disabled={loading} title="Atualizar"
-              className="w-9 h-9 rounded-full border border-[#4a6362]/30 flex items-center justify-center hover:bg-[#EFF5F4] transition-colors disabled:opacity-40">
-              <RefreshCw size={15} className={`text-[#4A6362] ${loading ? 'animate-spin' : ''}`} />
+              className="w-9 h-9 rounded-full border border-neutral-600/30 flex items-center justify-center hover:bg-neutral-50 transition-colors disabled:opacity-40">
+              <RefreshCw size={15} className={`text-neutral-600 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
@@ -371,7 +291,7 @@ export default function Aulas() {
         {/* Filtros */}
         {!loading && marcacoes.length > 0 && (
           <div className="flex flex-wrap items-center gap-3 mb-6">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#4A6362]">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-600">
               Filtrar:
             </div>
             {/* Filtro modalidade */}
@@ -379,7 +299,7 @@ export default function Aulas() {
               <select
                 value={filtroModalidade}
                 onChange={e => setFiltroModalidade(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-[#4a6362]/25 text-xs font-medium text-[#324B4A] bg-white focus:outline-none focus:border-[#006A68] cursor-pointer"
+                className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-neutral-600/25 text-xs font-medium text-neutral-800 bg-white focus:outline-none focus:border-brand-800 cursor-pointer"
               >
                 <option value="todas">Todas as modalidades</option>
                 {modalidades.filter(m => m !== 'todas').map(m => (
@@ -392,7 +312,7 @@ export default function Aulas() {
               <select
                 value={filtroEstado}
                 onChange={e => setFiltroEstado(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-[#4a6362]/25 text-xs font-medium text-[#324B4A] bg-white focus:outline-none focus:border-[#006A68] cursor-pointer"
+                className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-neutral-600/25 text-xs font-medium text-neutral-800 bg-white focus:outline-none focus:border-brand-800 cursor-pointer"
               >
                 <option value="todos">Todos os estados</option>
                 {Object.entries(STATUS_CFG).map(([id, cfg]) =>
@@ -408,7 +328,7 @@ export default function Aulas() {
                 <X size={11} /> Limpar filtros
               </button>
             )}
-            <span className="ml-auto text-xs text-[#4A6362]">
+            <span className="ml-auto text-xs text-neutral-600">
               {marcacoesFiltradas.length} aula{marcacoesFiltradas.length !== 1 ? 's' : ''}
             </span>
           </div>
@@ -451,7 +371,7 @@ export default function Aulas() {
                   <div key={aula.id} className="flex flex-wrap items-center gap-3 px-5 py-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-[#324B4A] text-sm">{aula.modalidade}</span>
+                        <span className="font-bold text-neutral-800 text-sm">{aula.modalidade}</span>
                         {prazoExpirou ? (
                           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full font-semibold">
                             Prazo expirado
@@ -501,19 +421,19 @@ export default function Aulas() {
         )}
 
         {/* Tabela */}
-        <div className="rounded-2xl border border-[#4a6362]/20 overflow-hidden shadow-sm bg-white">
+        <div className="rounded-2xl border border-neutral-600/20 overflow-hidden shadow-sm bg-white">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#EFF5F4] border-b-2 border-[#4a6362]/20">
+              <tr className="bg-neutral-50 border-b-2 border-neutral-600/20">
                 {['Modalidade', 'Data', 'Hora', 'Duração', 'Tipo Aula', 'Sala', 'Estado', 'Ação', ''].map((col, i) => (
                   <th
                     key={col || i}
-                    className="px-4 py-3.5 text-left text-xs font-bold text-[#006A68] uppercase tracking-wider whitespace-nowrap"
+                    className="px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap"
                   >
                     {col && (
                       <span className="flex items-center gap-1">
                         {col}
-                        {col && col !== '' && <ArrowUpDown size={10} className="text-[#006A68]/30" />}
+                        {col && col !== '' && <ArrowUpDown size={10} className="text-brand-800/30" />}
                       </span>
                     )}
                   </th>
@@ -526,8 +446,8 @@ export default function Aulas() {
               ) : marcacoesFiltradas.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-20 text-center">
-                    <BookOpen size={40} className="mx-auto text-[#006A68]/15 mb-3" />
-                    <p className="text-sm text-[#4A6362] font-medium">
+                    <BookOpen size={40} className="mx-auto text-brand-800/15 mb-3" />
+                    <p className="text-sm text-neutral-600 font-medium">
                       {showAll
                         ? 'Não existem aulas registadas.'
                         : 'Nenhuma aula para confirmar nas próximas 48h.'}
@@ -559,12 +479,12 @@ export default function Aulas() {
                   return (
                     <tr
                       key={row.id ?? idx}
-                      className={`border-b border-[#4a6362]/10 hover:bg-[#F4FBF9] transition-colors ${idx % 2 === 0 ? '' : 'bg-[#FAFFFE]'}`}
+                      className={`border-b border-neutral-600/10 hover:bg-brand-50 transition-colors ${idx % 2 === 0 ? '' : 'bg-brand-50'}`}
                     >
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-8 rounded-full bg-[#80D5D2] shrink-0" />
-                          <span className="font-semibold text-[#324B4A]">{row.modalidade}</span>
+                          <div className="w-1.5 h-8 rounded-full bg-brand-500 shrink-0" />
+                          <span className="font-semibold text-neutral-800">{row.modalidade}</span>
                         </div>
                       </td>
                       <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.data}</td>
@@ -577,14 +497,34 @@ export default function Aulas() {
                       </td>
                       <td className="px-4 py-4">
                         {isLoading ? (
-                          <RefreshCw size={18} className="text-[#006A68] animate-spin" />
+                          <RefreshCw size={18} className="text-brand-800 animate-spin" />
                         ) : role === 1 && isPendente ? (
                           <div className="flex gap-2">
                             <button onClick={() => handleConfirm(row.id)} title="Confirmar"
-                              className="w-8 h-8 bg-[#049A59] border border-[#0A7659] rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
+                              className="w-8 h-8 bg-feedback-success border border-feedback-success-dark rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
                               <Check size={15} strokeWidth={3} className="text-white" />
                             </button>
+                            <button onClick={() => {
+                              if (window.confirm('Tem a certeza que deseja rejeitar esta marcação?')) {
+                                handleReject(row.id)
+                              }
+                            }} title="Rejeitar"
+                              className="w-8 h-8 bg-feedback-error border border-feedback-error-dark rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
+                              <X size={15} strokeWidth={3} className="text-white" />
+                            </button>
                           </div>
+                        ) : (role === 2 || role === 3) && isPendente ? (
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Tem a certeza que deseja cancelar esta marcação?')) {
+                                handleReject(row.id)
+                              }
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
+                          >
+                            <X size={12} strokeWidth={3} />
+                            Cancelar
+                          </button>
                         ) : podeConfirmarPresenca ? (
                           <button
                             onClick={() => handleConfirm(row.id)}
@@ -602,7 +542,7 @@ export default function Aulas() {
                       <td className="px-4 py-4">
                         <button
                           onClick={() => setModalAula(row)}
-                          className="px-3.5 py-1.5 rounded-lg bg-[#CCE8E6] text-[#006A68] text-xs font-bold hover:bg-[#006A68] hover:text-white transition-colors whitespace-nowrap"
+                          className="px-3.5 py-1.5 rounded-lg bg-brand-200 text-brand-800 text-xs font-bold hover:bg-brand-800 hover:text-white transition-colors whitespace-nowrap"
                         >
                           Ver mais
                         </button>
@@ -640,30 +580,30 @@ export default function Aulas() {
           <div className="mt-10">
             <div className="flex items-end justify-between gap-4 mb-4">
               <div>
-                <p className="text-[#4A6362] text-xs font-medium tracking-wide mb-0.5">As tuas janelas de coaching</p>
-                <h2 className="text-[#324B4A] font-semibold text-xl">Disponibilidades</h2>
+                <p className="text-neutral-600 text-xs font-medium tracking-wide mb-0.5">As tuas janelas de coaching</p>
+                <h2 className="text-neutral-800 font-semibold text-xl">Disponibilidades</h2>
               </div>
               <button
                 onClick={() => setShowNovaDisponibilidade(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-brand-800 text-white rounded-xl text-sm font-bold hover:bg-brand-900 transition-colors shadow-sm"
               >
                 <Plus size={15} />
-                Nova
+                Nova Disponibilidade 
               </button>
             </div>
-            <div className="rounded-2xl border border-[#4a6362]/20 overflow-hidden shadow-sm bg-white">
+            <div className="rounded-2xl border border-neutral-600/20 overflow-hidden shadow-sm bg-white">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-[#EFF5F4] border-b-2 border-[#4a6362]/20">
+                  <tr className="bg-neutral-50 border-b-2 border-neutral-600/20">
                     {['Frequência', 'Data / Dia', 'Hora Início', 'Hora Fim', ''].map((col, i) => (
-                      <th key={i} className="px-4 py-3.5 text-left text-xs font-bold text-[#4A6362] uppercase tracking-wider">{col}</th>
+                      <th key={i} className="px-4 py-3.5 text-left text-xs font-bold text-neutral-600 uppercase tracking-wider">{col}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loadingDisp ? (
                     [...Array(3)].map((_, i) => (
-                      <tr key={i} className="animate-pulse border-b border-[#4a6362]/10">
+                      <tr key={i} className="animate-pulse border-b border-neutral-600/10">
                         {[...Array(5)].map((_, j) => (
                           <td key={j} className="px-4 py-4"><div className="h-4 bg-gray-100 rounded-lg w-3/4" /></td>
                         ))}
@@ -686,7 +626,7 @@ export default function Aulas() {
                       const isDeleting = deletingDispId === d.id_disponibilidade
                       return (
                         <tr key={d.id_disponibilidade}
-                          className={`border-b border-[#4a6362]/10 hover:bg-[#F4FBF9] transition-colors ${idx % 2 === 0 ? '' : 'bg-[#FAFFFE]'}`}
+                          className={`border-b border-neutral-600/10 hover:bg-brand-50 transition-colors ${idx % 2 === 0 ? '' : 'bg-brand-50'}`}
                         >
                           <td className="px-4 py-4">
                             <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border
@@ -726,7 +666,16 @@ export default function Aulas() {
 
       {/* Modal de detalhes */}
       {modalAula && (
-        <AulaModal aula={modalAula} onClose={() => setModalAula(null)} />
+        <ItemDetailModal
+          item={modalAula}
+          role={role}
+          onClose={() => setModalAula(null)}
+          onDelete={(modalAula.id_estado === 1 || modalAula.id_estado === 2) ? () => {
+            if (window.confirm('Tem a certeza que deseja cancelar esta marcação?')) {
+              handleReject(modalAula.id)
+            }
+          } : undefined}
+        />
       )}
 
       {showNovaDisponibilidade && (

@@ -21,7 +21,16 @@ const swaggerOptions = {
     tags: [
       { name: 'Auth', description: 'Endpoints de Autenticação (Login, Registo)' },
       { name: 'Users', description: 'Operações CRUD de Utilizadores' },
-      { name: 'Events', description: 'Gestão de Eventos e relacionados' }
+      { name: 'Events', description: 'Gestão de Eventos e relacionados' },
+      { name: 'Coaching - Aluno', description: 'Operações de Coaching para Alunos' },
+      { name: 'Coaching - Docente', description: 'Operações de Coaching para Docentes' },
+      { name: 'Coaching - Coordenadora', description: 'Gestão de Coaching pela Coordenação' },
+      { name: 'Disponibilidades', description: 'Gestão de disponibilidades de Docentes' },
+      { name: 'Salas', description: 'Gestão de Salas' },
+      { name: 'Modalidades', description: 'Gestão de Modalidades' },
+      { name: 'Notificações', description: 'Gestão de Notificações' },
+      { name: 'Anúncios', description: 'Gestão de Anúncios' },
+      { name: 'Relatórios', description: 'Geração de Relatórios' }
     ],
     components: {
       securitySchemes: {
@@ -34,7 +43,7 @@ const swaggerOptions = {
     },
   },
   // DIRETÓRIO ONDE O SWAGGER VAI PROCURAR AS ANOTAÇÕES NAS ROTAS
-  apis: ['./src/routes/*.js'], 
+  apis: ['./src/routes/*.js'],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -48,7 +57,6 @@ const relatorioRoutes = require('./src/routes/relatorioRoutes');
 const anuncioRoutes = require('./src/routes/anuncioRoutes');
 const availabilityRoutes = require('./src/routes/availabilityRoutes');
 const horarioRoutes = require('./src/routes/horarioRoutes');
-// const aulasRoutes = require('./src/routes/aulasRoutes');
 const notificacaoRoutes = require('./src/routes/notificacaoRoutes');
 const salaRoutes = require('./src/routes/salaRoutes');
 const modalidadeRoutes = require('./src/routes/modalidadeRoutes');
@@ -67,7 +75,6 @@ app.use('/api/disponibilidades', availabilityRoutes);
 app.use('/api/coaching', coachingRoutes);
 app.use('/api/relatorio', relatorioRoutes);
 app.use('/api/horario', horarioRoutes);
-// app.use('/api/aulas', aulasRoutes);
 app.use('/api/notificacoes', notificacaoRoutes);
 app.use('/api/salas', salaRoutes);
 app.use('/api/modalidades', modalidadeRoutes);

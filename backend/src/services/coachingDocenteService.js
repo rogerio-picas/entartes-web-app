@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const ESTADO_MARCACAO = {
-  AGENDADA: 1,
+  PENDENTE: 1,
   EM_VALIDACAO: 2,
   CONFIRMADA: 3,
   CONCLUIDA: 4,
@@ -36,7 +36,10 @@ async function listarMinhasAulas(id_docente, { id_estado = null } = {}) {
         select: { confirmou_conclusao: true }
       },
     },
-    orderBy: { data_a_realizar: 'desc' },
+    orderBy: [
+      { data_a_realizar: 'asc' },
+      { hora_inicio: 'asc' },
+    ],
   });
 
   return marcacoes.map((m) => ({
@@ -46,6 +49,7 @@ async function listarMinhasAulas(id_docente, { id_estado = null } = {}) {
     data: m.data_a_realizar,
     hora_inicio: m.hora_inicio,
     duracao_minutos: m.duracao_minutos,
+    numero_alunos_pretendidos: m.numero_alunos_pretendidos,
     estado: m.estado_marcacao?.nome ?? '—',
     id_estado: m.id_estado,
     ja_validou: m.participacao_conclusao?.some(p => p.confirmou_conclusao) ?? false,
@@ -108,8 +112,6 @@ async function validarConclusaoSessao(id_docente, id_marcacao) {
 
   // Diagnóstico — remover após confirmar que o bug está resolvido
   const todosRegistos = await prisma.participacao_conclusao.findMany({ where: { id_marcacoes: id_marcacao } });
-  console.log(`[DOCENTE validar] id_marcacao=${id_marcacao} | registos na BD:`, JSON.stringify(todosRegistos))
-  console.log(`[DOCENTE validar] validacaoAluno encontrada:`, JSON.stringify(validacaoAluno))
 
   if (validacaoAluno) {
     await prisma.$transaction(async (tx) => {
@@ -140,7 +142,6 @@ async function validarConclusaoSessao(id_docente, id_marcacao) {
 }
 
 async function cancelarMarcacao(id_docente, id_marcacao, motivo) {
-  if (!motivo || motivo.trim() === '') throw new Error('O motivo do cancelamento é obrigatório.');
 
   const marcacao = await prisma.marcacao.findUnique({
     where: { id_marcacoes: id_marcacao },
@@ -167,11 +168,12 @@ async function cancelarMarcacao(id_docente, id_marcacao, motivo) {
     // Notifica os alunos do cancelamento
     const dataFormatada = marcacao.data_a_realizar.toLocaleDateString('pt-PT');
     for (const am of marcacao.aluno_marcacao) {
+      const motivoTexto = motivo && motivo.trim() !== '' ? ` Motivo: ${motivo}` : '';
       await tx.notificacao.create({
         data: {
           id_user: am.id_aluno,
           titulo: 'Sessão de Coaching Cancelada',
-          mensagem: `O teu docente cancelou a sessão de ${dataFormatada}. Motivo: ${motivo}`,
+          mensagem: `O teu docente cancelou a sessão de ${dataFormatada}.${motivoTexto}`,
         },
       });
     }

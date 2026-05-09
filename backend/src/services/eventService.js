@@ -11,7 +11,7 @@ const EVENT_STATE = {
 };
 
 const criarEvento = async (dados, id_coordenadora) => {
-  const { nome, descricao, data_de_realizacao } = dados;
+  const { nome, descricao, data_de_realizacao, duracao_minutos, link_whatsapp, local } = dados;
 
   if (!nome || nome.trim() === "") {
     throw new Error("O nome do evento é obrigatório.");
@@ -32,6 +32,9 @@ const criarEvento = async (dados, id_coordenadora) => {
         nome: nome.trim(),
         descricao: descricao ?? null,
         data_de_realizacao: data_de_realizacao ? new Date(data_de_realizacao) : null,
+        duracao_minutos: duracao_minutos ? parseInt(duracao_minutos) : 60,
+        link_whatsapp: link_whatsapp ?? null,
+        local: local ?? null,
         id_evento_estado: EVENT_STATE.PLANEADO,
       },
     });
@@ -228,7 +231,7 @@ const adicionarParticipante = async (id_evento, codigo_username) => {
           data: {
             id_user: id_utilizador,
             titulo: "Novo Evento",
-            mensagem: `Foste adicionado ao evento "${evento.nome}" como docente.`,
+            mensagem: `Foste adicionado ao evento "${evento.nome}"`,
           },
         });
         return ed;
@@ -391,14 +394,19 @@ const cancelarEvento = async (id_evento, id_coordenadora) => {
 
   if (!evento) throw new Error("Evento não encontrado.");
 
-  // 2. Validar se a coordenadora tem permissão para cancelar o evento
-  const temPermissao = evento.coordenadora_evento.some(
-    (ce) => ce.id_utilizador === id_coordenadora
-  );
+  // 2. Validar se a coordenadora tem permissão para cancelar o evento (ou se é Admin geral)
+  // Nota: id_coordenadora aqui vem do token, se for role 1, deve poder cancelar.
+  // Já que o authorize([1]) no router garante que é admin, e aqui o id_coordenadora é o id do utilizador.
+  // Vamos permitir se for admin.
+  // const temPermissao = evento.coordenadora_evento.some(
+  //   (ce) => ce.id_utilizador === id_coordenadora
+  // );
 
-  if (!temPermissao) {
-    throw new Error("Sem permissão para cancelar este evento. Apenas coordenadoras do evento podem cancelá-lo.");
-  }
+  // if (!temPermissao) {
+  //   throw new Error("Sem permissão para cancelar este evento. Apenas coordenadoras do evento podem cancelá-lo.");
+  // }
+  // Permitimos a qualquer admin cancelar qualquer evento.
+
 
   // 3. Procurar o ID do estado "Cancelado"
   const estadoCancelado = await prisma.evento_estado.findFirst({
@@ -418,7 +426,7 @@ const cancelarEvento = async (id_evento, id_coordenadora) => {
 
   // 6. Tudo numa transação atómica
   await prisma.$transaction(async (tx) => {
-    
+
     // Atualizar estado do evento para Cancelado
     await tx.evento.update({
       where: { id_evento: eventoId },
@@ -516,7 +524,7 @@ const concluirEvento = async (id_evento, id_coordenadora) => {
  */
 const editarEvento = async (id_evento, dados) => {
   const eventoId = parseInt(id_evento);
-  const { nome, descricao, data_de_realizacao } = dados;
+  const { nome, descricao, data_de_realizacao, duracao_minutos, link_whatsapp, local } = dados;
 
   // 1. Verificar se o evento existe
   const evento = await prisma.evento.findUnique({
@@ -527,7 +535,7 @@ const editarEvento = async (id_evento, dados) => {
 
   // 2. Preparar dados para atualização (apenas campos fornecidos)
   const dataAtualizar = {};
-  
+
   if (nome !== undefined && nome.trim() !== "") {
     dataAtualizar.nome = nome.trim();
   }
@@ -537,6 +545,16 @@ const editarEvento = async (id_evento, dados) => {
   if (data_de_realizacao !== undefined) {
     dataAtualizar.data_de_realizacao = data_de_realizacao ? new Date(data_de_realizacao) : null;
   }
+  if (duracao_minutos !== undefined) {
+    dataAtualizar.duracao_minutos = duracao_minutos ? parseInt(duracao_minutos) : null;
+  }
+  if (link_whatsapp !== undefined) {
+    dataAtualizar.link_whatsapp = link_whatsapp;
+  }
+  if (local !== undefined) {
+    dataAtualizar.local = local;
+  }
+
 
   if (
     dataAtualizar.data_de_realizacao !== undefined &&
@@ -560,6 +578,92 @@ const editarEvento = async (id_evento, dados) => {
   return eventoAtualizado;
 };
 
+const listarEventosPaginados = async (params) => {
+  const { page = 1, limit = 6, search = '', estado = 'ativos', sortBy = 'date_asc', id_utilizador = null, role = null } = params;
+  
+  const skip = (page - 1) * limit;
+
+  let AND = [];
+
+  if (search) {
+    AND.push({
+      OR: [
+        { nome: { contains: search, mode: 'insensitive' } },
+        { local: { contains: search, mode: 'insensitive' } },
+        { descricao: { contains: search, mode: 'insensitive' } },
+      ]
+    });
+  }
+
+  const now = new Date();
+
+  if (estado === 'ativos') {
+    AND.push({ id_evento_estado: { notIn: [4, 5] } });
+    AND.push({ 
+      OR: [
+        { data_de_realizacao: { gte: now } },
+        { data_de_realizacao: null }
+      ]
+    });
+  } else if (estado === 'passados') {
+    AND.push({
+      OR: [
+        { id_evento_estado: 4 },
+        { 
+          id_evento_estado: { notIn: [5] }, 
+          data_de_realizacao: { not: null, lt: now } 
+        }
+      ]
+    });
+  } else if (estado === 'cancelados') {
+    AND.push({ id_evento_estado: 5 });
+  }
+
+  if (id_utilizador && role) {
+    if (role === 2) {
+      AND.push({ evento_docente: { some: { id_docente: id_utilizador } } });
+    } else if (role === 3) {
+      AND.push({ evento_aluno: { some: { id_utilizador: id_utilizador } } });
+    }
+  }
+
+  const where = AND.length > 0 ? { AND } : {};
+
+  // For data_de_realizacao ordering with nulls
+  const orderBy = { data_de_realizacao: sortBy === 'date_asc' ? 'asc' : 'desc' };
+
+  const [eventos, total] = await prisma.$transaction([
+    prisma.evento.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+      include: {
+        coordenadora_evento: {
+          include: {
+            coordenadora: {
+              include: {
+                utilizador: { select: { nome: true, apelido: true, email: true } },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.evento.count({ where })
+  ]);
+
+  return {
+    data: eventos,
+    meta: {
+      totalItems: total,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      itemsPerPage: limit
+    }
+  };
+};
+
 
 
 
@@ -576,4 +680,5 @@ module.exports = {
   editarEvento,
   cancelarEvento,
   concluirEvento,
+  listarEventosPaginados,
 };

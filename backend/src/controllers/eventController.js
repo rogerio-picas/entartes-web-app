@@ -1,10 +1,19 @@
 // src/controllers/eventoController.js
 const eventService = require("../services/eventService");
-const { editarGrupo } = require("./groupController");
+// CORREÇÃO: importação de editarGrupo não era usada neste controlador
 
 const criarEvento = async (req, res) => {
   try {
-    console.log("Conteúdo do req.user:", req.user);
+    const { data_de_realizacao } = req.body;
+    if (data_de_realizacao) {
+      if (isNaN(new Date(data_de_realizacao).getTime())) {
+        return res.status(400).json({ error: "Data de realizacao tem formato inválido." });
+      }
+      const today = new Date().toISOString().split('T')[0];
+      if (new Date(data_de_realizacao).toISOString().split('T')[0] < today) {
+        return res.status(400).json({ error: "Data de realizacao não pode ser no passado." });
+      }
+    }
 
     const id_coordenadora = req.user.id;
     const evento = await eventService.criarEvento(req.body, id_coordenadora);
@@ -31,8 +40,6 @@ const listarEventos = async (req, res) => {
 const listarMeusEventos = async (req, res) => {
   try {
     const id_utilizador = req.user.id;
-    const role = req.user.role; // Assuming token sets role, or id_tipo
-    // The role is probably req.user.id_tipo or req.user.role. Let's check tokenMiddleware.
     const userRole = req.user.id_tipo || req.user.role;
     if (userRole === 1 || userRole === 2) {
       const eventos = await eventService.listarEventos();
@@ -45,10 +52,39 @@ const listarMeusEventos = async (req, res) => {
   }
 };
 
+const listarEventosPaginados = async (req, res) => {
+  try {
+    const params = {
+      page: parseInt(req.query.page) || 1,
+      limit: parseInt(req.query.limit) || 6,
+      search: req.query.search || '',
+      estado: req.query.estado || 'ativos',
+      sortBy: req.query.sortBy || 'date_asc',
+    };
+    
+    const userRole = req.user.id_tipo || req.user.role;
+    
+    // Se for Aluno, restringe aos seus eventos
+    if (userRole === 3) {
+      params.id_utilizador = req.user.id;
+      params.role = userRole;
+    }
+
+    const resultado = await eventService.listarEventosPaginados(params);
+    return res.status(200).json(resultado);
+  } catch (error) {
+    return res.status(500).json({ error: "Erro ao listar eventos paginados." });
+  }
+};
+
 
 const buscarEventoPorId = async (req, res) => {
   try {
-    const evento = await eventService.buscarEventoPorId(req.params.id);
+    // CORREÇÃO: ID do parâmetro não era validado antes de chamar o serviço
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "ID do evento inválido." });
+
+    const evento = await eventService.buscarEventoPorId(id);
     return res.status(200).json(evento);
   } catch (error) {
     return res.status(404).json({ error: error.message });
@@ -57,12 +93,12 @@ const buscarEventoPorId = async (req, res) => {
 
 const adicionarParticipante = async (req, res) => {
   try {
-    // id do evento vem na URL  → /eventos/5/participantes
     const { id } = req.params;
-
-    // id do utilizador e tipo vêm no body
-    // { "id_utilizador": 3, "tipo": 3 }
     const { codigo_username } = req.body;
+
+    // CORREÇÃO: ID do evento não era validado antes de chamar o serviço
+    const eventoId = parseInt(id);
+    if (isNaN(eventoId)) return res.status(400).json({ error: "ID do evento inválido." });
 
     if (!codigo_username) {
       return res.status(400).json({
@@ -71,9 +107,8 @@ const adicionarParticipante = async (req, res) => {
     }
 
     const resultado = await eventService.adicionarParticipante(
-      id,
+      eventoId,
       codigo_username,
-      //id_tipo
     );
 
     return res.status(201).json(resultado);
@@ -87,20 +122,34 @@ const editarEvento = async (req, res) => {
     const { id } = req.params;
     const { nome, descricao, data_de_realizacao } = req.body;
 
+    // CORREÇÃO: ID do evento não era validado antes de chamar o serviço
+    const eventoId = parseInt(id);
+    if (isNaN(eventoId)) return res.status(400).json({ error: "ID do evento inválido." });
+
     if (!nome && !descricao && !data_de_realizacao) {
       return res.status(400).json({
         error: "Pelo menos um campo deve ser fornecido para edição.",
       });
     }
 
-    const eventoAtualizado = await eventService.editarEvento(id, req.body);
+    // CORREÇÃO: data_de_realizacao não era validada quanto ao formato
+    if (data_de_realizacao && isNaN(new Date(data_de_realizacao).getTime())) {
+      return res.status(400).json({ error: "data_de_realizacao tem formato inválido." });
+    }
+    if (data_de_realizacao) {
+      const today = new Date().toISOString().split('T')[0];
+      if (new Date(data_de_realizacao).toISOString().split('T')[0] < today) {
+        return res.status(400).json({ error: "data de realizacao não pode ser no passado." });
+      }
+    }
+
+    const eventoAtualizado = await eventService.editarEvento(eventoId, req.body);
 
     return res.status(200).json({
       mensagem: "Evento atualizado com sucesso.",
       evento: eventoAtualizado,
     });
   } catch (error) {
-    console.error("Erro no editarEvento:", error.message);
     return res.status(error.message.includes("não encontrado") ? 404 : 400).json({
       error: error.message,
     });
@@ -126,7 +175,6 @@ const cancelarEvento = async (req, res) => {
 
     return res.status(200).json(resultado);
   } catch (error) {
-    console.error("Erro no cancelarEvento:", error.message);
 
     if (error.message.includes("não encontrado")) {
       return res.status(404).json({ error: error.message });
@@ -153,7 +201,6 @@ const concluirEvento = async (req, res) => {
     const resultado = await eventService.concluirEvento(id, id_coordenadora);
     return res.status(200).json(resultado);
   } catch (error) {
-    console.error("Erro no concluirEvento:", error.message);
 
     if (error.message.includes("não encontrado")) {
       return res.status(404).json({ error: error.message });
@@ -177,7 +224,13 @@ const listarParticipantes = async (req, res) => {
 
 const removerAlunoDoEvento = async (req, res) => {
   try {
-    const resultado = await eventService.removerAlunoDoEvento(req.params.id, req.params.id_aluno);
+    // CORREÇÃO: IDs dos parâmetros não eram validados antes de chamar o serviço
+    const eventoId = parseInt(req.params.id);
+    const alunoId  = parseInt(req.params.id_aluno);
+    if (isNaN(eventoId)) return res.status(400).json({ error: "ID do evento inválido." });
+    if (isNaN(alunoId))  return res.status(400).json({ error: "ID do aluno inválido." });
+
+    const resultado = await eventService.removerAlunoDoEvento(eventoId, alunoId);
     return res.status(200).json(resultado);
   } catch (error) {
     return res.status(400).json({ error: error.message });
@@ -186,7 +239,13 @@ const removerAlunoDoEvento = async (req, res) => {
 
 const removerDocenteDoEvento = async (req, res) => {
   try {
-    const resultado = await eventService.removerDocenteDoEvento(req.params.id, req.params.id_docente);
+    // CORREÇÃO: IDs dos parâmetros não eram validados antes de chamar o serviço
+    const eventoId   = parseInt(req.params.id);
+    const docenteId  = parseInt(req.params.id_docente);
+    if (isNaN(eventoId))  return res.status(400).json({ error: "ID do evento inválido." });
+    if (isNaN(docenteId)) return res.status(400).json({ error: "ID do docente inválido." });
+
+    const resultado = await eventService.removerDocenteDoEvento(eventoId, docenteId);
     return res.status(200).json(resultado);
   } catch (error) {
     return res.status(400).json({ error: error.message });
@@ -205,4 +264,5 @@ module.exports = {
   listarParticipantes,
   removerAlunoDoEvento,
   removerDocenteDoEvento,
+  listarEventosPaginados,
 };

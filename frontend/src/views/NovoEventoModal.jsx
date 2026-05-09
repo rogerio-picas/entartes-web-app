@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { X, Plus, ChevronRight, Check, AlertCircle, RefreshCw, Trash2 } from 'lucide-react'
 import { api } from '../services/api'
+import { formatTime, formatDateForInput, toWallClockISO } from '../utils/dateUtils'
 
-function Field({ label, value, onChange, type = 'text', placeholder, multiline = false }) {
-    const base = 'w-full bg-white border border-[#6F7978] rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] transition-colors'
+function Field({ label, value, onChange, type = 'text', placeholder, multiline = false, ...props }) {
+    const base = 'w-full bg-white border border-neutral-500 rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-brand-800 transition-colors'
 
     return (
         <div className="relative">
-            <label className="absolute -top-2.5 left-3 bg-[#F4FBF9] text-[11px] text-[#3F4948] font-medium px-1 z-10">
+            <label className="absolute -top-2.5 left-3 bg-brand-50 text-[11px] text-neutral-700 font-medium px-1 z-10">
                 {label}
             </label>
 
@@ -18,6 +19,7 @@ function Field({ label, value, onChange, type = 'text', placeholder, multiline =
                     placeholder={placeholder}
                     rows={3}
                     className={`${base} resize-none`}
+                    {...props}
                 />
             ) : (
                 <input
@@ -26,25 +28,51 @@ function Field({ label, value, onChange, type = 'text', placeholder, multiline =
                     onChange={e => onChange(e.target.value)}
                     placeholder={placeholder}
                     className={base}
+                    {...props}
                 />
             )}
         </div>
     )
 }
 
-export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
+export default function NovoEventoModal({ onClose, onSuccess, selectedDate, initialData }) {
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
 
-    const [nome, setNome] = useState('')
-    const [data, setData] = useState(selectedDate ? (typeof selectedDate === 'string' ? selectedDate : selectedDate.toISOString().split('T')[0]) : '')
-    const [hora, setHora] = useState('19:00')
-    const [descricao, setDescricao] = useState('')
-    const [whatsapp, setWhatsapp] = useState('')
-    const [local, setLocal] = useState('')
+    const [nome, setNome] = useState(initialData?.nome || '')
+    const [data, setData] = useState(() => {
+        if (initialData?.data_de_realizacao) return formatDateForInput(initialData.data_de_realizacao)
+        if (selectedDate) return formatDateForInput(selectedDate)
+        return formatDateForInput(new Date())
+    })
+
+    // Extrair hora do data_de_realizacao sem conversão de timezone
+    const [hora, setHora] = useState(initialData?.data_de_realizacao ? formatTime(initialData.data_de_realizacao) : '19:00')
+
+    // Duração decomposta em Horas e Minutos
+    const initialDuration = initialData?.duracao_minutos || 60
+    const [duracaoHoras, setDuracaoHoras] = useState(Math.floor(initialDuration / 60))
+    const [duracaoMinutos, setDuracaoMinutos] = useState(initialDuration % 60)
+    
+    let initialDescricao = initialData?.descricao || ''
+    let initialFaqsList = []
+    
+    if (initialDescricao.includes('---FAQS---')) {
+        const parts = initialDescricao.split('---FAQS---')
+        initialDescricao = parts[0].trim()
+        try {
+            initialFaqsList = JSON.parse(parts[1].trim())
+        } catch (e) {
+            console.error("Erro ao fazer parse dos FAQs:", e)
+        }
+    }
+
+    const [descricao, setDescricao] = useState(initialDescricao)
+    const [whatsapp, setWhatsapp] = useState(initialData?.link_whatsapp || '')
+    const [local, setLocal] = useState(initialData?.local || '')
 
     // FAQs
-    const [faqs, setFaqs] = useState([])
+    const [faqs, setFaqs] = useState(initialFaqsList)
     const [faqPergunta, setFaqPergunta] = useState('')
     const [faqResposta, setFaqResposta] = useState('')
     const [faqGeral, setFaqGeral] = useState(false)
@@ -80,49 +108,72 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
             return
         }
 
+        const todayStr = formatDateForInput(new Date())
+        const currentTimeStr = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
+        
+        if (data === todayStr && hora < currentTimeStr) {
+            setErro('A hora de início não pode ser no passado.')
+            return
+        }
+
         setLoading(true)
         setErro('')
 
         try {
-            await api.post('/evento', {
+            const totalMinutos = (Number(duracaoHoras) * 60) + Number(duracaoMinutos)
+            
+            let finalDescricao = descricao || ''
+            if (faqs && faqs.length > 0) {
+                finalDescricao += (finalDescricao ? '\n\n' : '') + '---FAQS---\n' + JSON.stringify(faqs)
+            }
+
+            const payload = {
                 nome: nome.trim(),
-                descricao: descricao || null,
-                data_de_realizacao: data ? new Date(data).toISOString() : null,
-                hora_inicio: hora || null,
+                descricao: finalDescricao || null,
+                data_de_realizacao: toWallClockISO(data, hora),
+                duracao_minutos: totalMinutos,
                 link_whatsapp: whatsapp || null,
-                local: local || null,
-                faqs: faqs // Enviando a lista de FAQs se a sua API suportar
-            })
+                local: local || null
+            }
+
+            if (initialData) {
+                await api.put(`/evento/${initialData.id_evento || initialData.id}`, payload)
+            } else {
+                await api.post('/evento', payload)
+            }
 
             onSuccess?.(nome)
-            onClose() // Fecha o modal após sucesso
+            onClose()
         } catch (e) {
-            setErro(e.response?.data?.message || e.message || 'Erro ao criar evento.')
+            setErro(e.response?.data?.message || e.message || 'Erro ao guardar evento.')
         } finally {
             setLoading(false)
         }
     }
+
+    const todayStr = formatDateForInput(new Date())
+    const currentTimeStr = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
 
             <div
-                className="relative bg-[#F4FBF9] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
+                className="relative bg-brand-50 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="px-8 pt-8 pb-0 shrink-0">
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-end mb-1">
                         <button
                             onClick={onClose}
-                            className="w-8 h-8 rounded-full hover:bg-[#CCE8E6] flex items-center justify-center text-[#4A6362]"
+                            className="w-8 h-8 rounded-full hover:bg-brand-200 flex items-center justify-center text-neutral-600"
                         >
                             <X size={17} />
                         </button>
                     </div>
-                    <h2 className="text-4xl font-bold text-[#00504E] text-center font-['Sora'] mb-4">
-                        Novo evento
+                    <h2 className="text-4xl font-bold text-brand-900 text-center font-['Sora'] mb-4">
+                        {initialData ? 'Editar evento' : 'Novo evento'}
                     </h2>
                 </div>
 
@@ -134,17 +185,48 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
                         </div>
                     )}
 
-                    <p className="text-sm font-medium text-[#000]">Detalhes</p>
+                    <p className="text-sm font-medium text-black">Detalhes</p>
 
                     <div className="flex gap-4 flex-wrap">
                         <div className="flex-1 min-w-[180px]">
                             <Field label="Nome" value={nome} onChange={setNome} placeholder="Nome do evento" />
                         </div>
                         <div className="flex-1 min-w-[150px]">
-                            <Field label="Data" value={data} onChange={setData} type="date" />
+                            <Field 
+                                label="Data" 
+                                value={data} 
+                                onChange={(val) => {
+                                    setData(val)
+                                    if (val === todayStr && hora < currentTimeStr) {
+                                        setHora(currentTimeStr)
+                                    }
+                                }} 
+                                type="date" 
+                                min={todayStr} 
+                            />
                         </div>
                         <div className="flex-1 min-w-[130px]">
-                            <Field label="Hora de início" value={hora} onChange={setHora} type="time" />
+                            <Field 
+                                label="Início" 
+                                value={hora} 
+                                onChange={(val) => {
+                                    if (data === todayStr && val < currentTimeStr) {
+                                        setHora(currentTimeStr)
+                                    } else {
+                                        setHora(val)
+                                    }
+                                }} 
+                                type="time" 
+                                min={data === todayStr ? currentTimeStr : undefined} 
+                            />
+                        </div>
+                        <div className="flex-1 min-w-[200px] flex gap-2">
+                            <div className="flex-1">
+                                <Field label="Dur. (Horas)" value={duracaoHoras} onChange={setDuracaoHoras} type="number" min="0" />
+                            </div>
+                            <div className="flex-1">
+                                <Field label="Dur. (Min)" value={duracaoMinutos} onChange={setDuracaoMinutos} type="number" min="0" max="59" />
+                            </div>
                         </div>
                     </div>
 
@@ -154,24 +236,24 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
 
                     {/* FAQs Section */}
                     <div>
-                        <p className="text-sm font-medium text-[#000] mb-3">FAQ's</p>
+                        <p className="text-sm font-medium text-black mb-3">FAQ's</p>
 
                         <div className="space-y-1 mb-3">
                             {faqs.map((faq) => (
                                 <div key={faq.id} className="flex flex-col">
-                                    <div 
-                                        className="flex items-center gap-2 px-3 py-2 hover:bg-[#CCE8E6]/50 rounded-lg cursor-pointer"
+                                    <div
+                                        className="flex items-center gap-2 px-3 py-2 hover:bg-brand-200/50 rounded-lg cursor-pointer"
                                         onClick={() => setExpandedFaq(expandedFaq === faq.id ? null : faq.id)}
                                     >
                                         <ChevronRight
                                             size={14}
                                             className={`transition-transform ${expandedFaq === faq.id ? 'rotate-90' : ''}`}
                                         />
-                                        <span className="flex-1 text-sm text-[#161D1C]">
+                                        <span className="flex-1 text-sm text-neutral-900">
                                             {faq.pergunta}
                                         </span>
                                         {faq.geral && (
-                                            <span className="text-[10px] bg-[#CCE8E6] text-[#006A68] px-1.5 py-0.5 rounded">Geral</span>
+                                            <span className="text-[10px] bg-brand-200 text-brand-800 px-1.5 py-0.5 rounded">Geral</span>
                                         )}
                                         <button
                                             onClick={(e) => { e.stopPropagation(); removeFaq(faq.id); }}
@@ -182,7 +264,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
                                     </div>
 
                                     {expandedFaq === faq.id && (
-                                        <div className="ml-6 px-3 py-2 text-sm text-[#4A6362] bg-white/60 rounded-lg mb-2">
+                                        <div className="ml-6 px-3 py-2 text-sm text-neutral-600 bg-white/60 rounded-lg mb-2">
                                             {faq.resposta || <span className="italic opacity-50">Sem resposta...</span>}
                                         </div>
                                     )}
@@ -194,22 +276,21 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
                             <button
                                 onClick={() => setShowFaqForm(true)}
                                 type="button"
-                                className="flex items-center gap-1.5 text-[#006A68] text-sm font-medium"
+                                className="flex items-center gap-1.5 text-brand-800 text-sm font-medium"
                             >
                                 <Plus size={16} /> Adicionar Pergunta
                             </button>
                         ) : (
-                            <div className="bg-white rounded-xl p-4 space-y-3 border border-[#BEC9C7]">
+                            <div className="bg-white rounded-xl p-4 space-y-3 border border-neutral-400">
                                 <Field label="Pergunta" value={faqPergunta} onChange={setFaqPergunta} placeholder="Escreve a pergunta" />
                                 <Field label="Resposta" value={faqResposta} onChange={setFaqResposta} placeholder="Escreve a resposta" multiline />
-                                
+
                                 <div className="flex items-center justify-between">
                                     <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                                         <div
                                             onClick={() => setFaqGeral(!faqGeral)}
-                                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                                                faqGeral ? 'bg-[#006A68] border-[#006A68]' : 'border-[#3F4948]'
-                                            }`}
+                                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${faqGeral ? 'bg-brand-800 border-brand-800' : 'border-neutral-700'
+                                                }`}
                                         >
                                             {faqGeral && <Check size={11} className="text-white" strokeWidth={3} />}
                                         </div>
@@ -217,7 +298,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
                                     </label>
                                     <div className="flex gap-3">
                                         <button onClick={() => setShowFaqForm(false)} className="text-sm text-gray-500 hover:underline">Cancelar</button>
-                                        <button onClick={addFaq} className="text-sm font-medium text-[#006A68] hover:underline">Guardar</button>
+                                        <button onClick={addFaq} className="text-sm font-medium text-brand-800 hover:underline">Guardar</button>
                                     </div>
                                 </div>
                             </div>
@@ -230,13 +311,14 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate }) {
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="flex items-center gap-2 px-8 py-4 bg-[#006A68] text-white font-semibold rounded-2xl hover:bg-[#00504E] transition-colors disabled:opacity-60 text-base"
+                        className="flex items-center gap-2 px-8 py-4 bg-brand-800 text-white font-semibold rounded-2xl hover:bg-brand-900 transition-colors disabled:opacity-60 text-base"
                     >
                         {loading ? <RefreshCw size={18} className="animate-spin" /> : <Check size={18} />}
-                        Criar Evento
+                        {initialData ? 'Guardar Alterações' : 'Criar Evento'}
                     </button>
                 </div>
             </div>
         </div>
     )
 }
+

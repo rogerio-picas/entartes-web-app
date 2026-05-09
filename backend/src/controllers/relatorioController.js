@@ -1,140 +1,138 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+// src/controllers/relatorio.controller.js
+// Módulo de Relatórios — Controller
+// Responsabilidade única: ler o req, chamar o service, devolver o res.
+// Nenhuma lógica de negócio ou acesso directo ao Prisma aqui.
 
+const relatorioService = require('../services/relatorioService');
+
+// ─────────────────────────────────────────────────────────────
+// 1. getSessoesRelatorio
+// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/relatorio/sessoes?from=YYYY-MM-DD&to=YYYY-MM-DD
+ * Devolve todas as sessões concluídas no intervalo pedido.
+ */
 const getSessoesRelatorio = async (req, res) => {
-    try {
-        const { from, to } = req.query
-        if (!from || !to) return res.status(400).json({ error: 'Parameters "from" and "to" are required' })
+  try {
+    const { from, to } = req.query;
 
-        const sessoes = await prisma.marcacao.findMany({
-            where: {
-                id_estado: 4,
-                data_a_realizar: { gte: new Date(from), lte: new Date(to) }
-            },
-            include: { docente: true, modalidade: true, sala: true, aluno_marcacao: { include: { aluno: true } } }
-        })
-        res.json(sessoes)
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' })
+    if (!from || !to) {
+      return res.status(400).json({ error: 'Os parâmetros "from" e "to" são obrigatórios.' });
     }
-}
 
+    const sessoes = await relatorioService.obterSessoes(from, to);
+    res.json(sessoes);
+
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor.' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// 2. getHorasDocente
+// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/relatorio/horas-docente?data_inicio=YYYY-MM-DD&data_fim=YYYY-MM-DD
+ * Devolve o total de sessões e minutos por docente (filtro de datas opcional).
+ */
 const getHorasDocente = async (req, res) => {
-    try {
-        const { data_inicio, data_fim } = req.query
-        const dateFilter = {}
-        if (data_inicio) dateFilter.gte = new Date(data_inicio)
-        if (data_fim)    dateFilter.lte = new Date(data_fim)
-        const marcacaoWhere = { id_estado: 4, ...(Object.keys(dateFilter).length && { data_a_realizar: dateFilter }) }
+  try {
+    const { data_inicio, data_fim } = req.query;
 
-        const docentes = await prisma.docente.findMany({
-            include: {
-                utilizador: { select: { nome: true, apelido: true } },
-                marcacao: { where: marcacaoWhere, include: { modalidade: { select: { nome: true } } } }
-            }
-        })
-        const result = docentes
-            .filter(d => d.marcacao.length > 0)
-            .map(d => ({
-                id_docente: d.id_utilizador,
-                nome: `${d.utilizador?.nome ?? ''} ${d.utilizador?.apelido ?? ''}`.trim(),
-                modalidades: [...new Set(d.marcacao.map(m => m.modalidade?.nome).filter(Boolean))],
-                _count: d.marcacao.length,
-                _sum: { duracao_minutos: d.marcacao.reduce((s, m) => s + (m.duracao_minutos ?? 0), 0) }
-            }))
-        res.json(result)
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' })
-    }
-}
+    const resultado = await relatorioService.obterHorasPorDocente(data_inicio, data_fim);
+    res.json(resultado);
 
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor.' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// 3. getAlunosRelatorio
+// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/relatorio/alunos?data_inicio=YYYY-MM-DD&data_fim=YYYY-MM-DD
+ * Devolve o total de sessões e minutos por aluno (filtro de datas opcional).
+ */
 const getAlunosRelatorio = async (req, res) => {
-    try {
-        const { data_inicio, data_fim } = req.query
-        const dateFilter = {}
-        if (data_inicio) dateFilter.gte = new Date(data_inicio)
-        if (data_fim)    dateFilter.lte = new Date(data_fim)
-        const marcacaoWhere = { id_estado: 4, ...(Object.keys(dateFilter).length && { data_a_realizar: dateFilter }) }
+  try {
+    const { data_inicio, data_fim } = req.query;
 
-        const alunos = await prisma.aluno.findMany({
-            include: {
-                utilizador: { select: { nome: true, apelido: true } },
-                aluno_marcacao: {
-                    where: { marcacao: marcacaoWhere },
-                    include: { marcacao: { include: { modalidade: { select: { nome: true } } } } }
-                }
-            }
-        })
-        const result = alunos
-            .filter(a => a.aluno_marcacao.length > 0)
-            .map(a => ({
-                id: a.id_utilizador,
-                nome: `${a.utilizador?.nome ?? ''} ${a.utilizador?.apelido ?? ''}`.trim(),
-                modalidades: [...new Set(a.aluno_marcacao.map(am => am.marcacao?.modalidade?.nome).filter(Boolean))],
-                totalSessoes: a.aluno_marcacao.length,
-                totalMinutos: a.aluno_marcacao.reduce((s, am) => s + (am.marcacao?.duracao_minutos ?? 0), 0)
-            }))
-        res.json(result)
-    } catch (error) {
-        console.error('getAlunosRelatorio:', error)
-        res.status(500).json({ error: 'Internal server error' })
-    }
-}
+    const resultado = await relatorioService.obterRelatorioAlunos(data_inicio, data_fim);
+    res.json(resultado);
 
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor.' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// 4. getDocentesRelatorio
+// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/relatorio/docentes
+ * Devolve o histórico completo de sessões concluídas por docente (sem filtro de datas).
+ */
 const getDocentesRelatorio = async (req, res) => {
-    try {
-        const docentes = await prisma.docente.findMany({
-            include: {
-                utilizador: { select: { nome: true, apelido: true } },
-                marcacao: {
-                    where: { id_estado: 4 },
-                    include: { modalidade: { select: { nome: true } } }
-                }
-            }
-        })
-        const result = docentes
-            .filter(d => d.marcacao.length > 0)
-            .map(d => ({
-                id: d.id_utilizador,
-                nome: `${d.utilizador?.nome ?? ''} ${d.utilizador?.apelido ?? ''}`.trim(),
-                modalidades: [...new Set(d.marcacao.map(m => m.modalidade?.nome).filter(Boolean))],
-                totalSessoes: d.marcacao.length,
-                totalMinutos: d.marcacao.reduce((s, m) => s + (m.duracao_minutos ?? 0), 0)
-            }))
-        res.json(result)
-    } catch (error) {
-        console.error('getDocentesRelatorio:', error)
-        res.status(500).json({ error: 'Internal server error' })
-    }
-}
+  try {
+    const resultado = await relatorioService.obterRelatorioDocentes();
+    res.json(resultado);
 
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor.' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// 5. exportCSV
+// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/relatorio/export-csv?from=YYYY-MM-DD&to=YYYY-MM-DD
+ * Devolve um ficheiro CSV com as sessões concluídas no intervalo pedido.
+ */
 const exportCSV = async (req, res) => {
-    try {
-        const { from, to } = req.query
-        if (!from || !to) return res.status(400).json({ error: 'Parameters "from" and "to" are required' })
+  try {
+    const { from, to } = req.query;
 
-        const sessoes = await prisma.marcacao.findMany({
-            where: { id_estado: 4, data_a_realizar: { gte: new Date(from), lte: new Date(to) } },
-            include: { docente: true, modalidade: true, sala: true }
-        })
-        const rows = sessoes.map(s => ({
-            id: s.id_marcacoes,
-            data: s.data_a_realizar?.toISOString().split('T')[0] || 'N/A',
-            hora: s.hora_inicio,
-            duracao_min: s.duracao_minutos,
-            docente: s.docente?.id_utilizador || 'N/A',
-            modalidade: s.modalidade?.nome || 'N/A',
-            sala: s.sala?.nome || 'N/A'
-        }))
-        const headers = Object.keys(rows[0] || {}).join(',')
-        const lines = rows.map(r => Object.values(r).join(','))
-        const csv = [headers, ...lines].join('\n')
-        res.setHeader('Content-Type', 'text/csv')
-        res.setHeader('Content-Disposition', 'attachment; filename="sessoes.csv"')
-        res.send(csv)
-    } catch (error) {
-        res.status(500).json({ error: 'CSV export failed' })
+    if (!from || !to) {
+      return res.status(400).json({ error: 'Os parâmetros "from" e "to" são obrigatórios.' });
     }
-}
 
-module.exports = { getSessoesRelatorio, getHorasDocente, getAlunosRelatorio, getDocentesRelatorio, exportCSV };
+    const csv = await relatorioService.gerarDadosCSV(from, to);
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="sessoes.csv"');
+    res.send(csv);
+
+  } catch (error) {
+    res.status(500).json({ error: 'Falha na exportação CSV.' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// 6. getOcupacaoSalas
+// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/relatorio/ocupacao-salas?data=YYYY-MM-DD
+ */
+const getOcupacaoSalas = async (req, res) => {
+  try {
+    const { data } = req.query;
+    const resultado = await relatorioService.obterOcupacaoSalas(data);
+    res.json(resultado);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor.' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// EXPORTAÇÕES
+// ─────────────────────────────────────────────────────────────
+module.exports = {
+  getSessoesRelatorio,
+  getHorasDocente,
+  getAlunosRelatorio,
+  getDocentesRelatorio,
+  exportCSV,
+  getOcupacaoSalas,
+};

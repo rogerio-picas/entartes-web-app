@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { X, Check, AlertCircle, RefreshCw, Eye, EyeOff, Plus, UserMinus } from 'lucide-react'
 import { utilizadorService } from '../services/utilizadorService'
 import { modalidadeService } from '../services/modalidadeService'
@@ -12,7 +12,7 @@ const USER_TYPES = [
 function Field({ label, error, children }) {
     return (
         <div className="relative">
-            <label className="absolute -top-2.5 left-3 bg-[#F4FBF9] text-[11px] text-[#3F4948] font-medium px-1 z-10">
+            <label className="absolute -top-2.5 left-3 bg-brand-50 text-[11px] text-neutral-700 font-medium px-1 z-10">
                 {label}
             </label>
             {children}
@@ -22,7 +22,7 @@ function Field({ label, error, children }) {
 }
 
 const inputCls = (hasError) =>
-    `w-full bg-white border ${hasError ? 'border-red-400' : 'border-[#6F7978]'} rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] transition-colors`
+    `w-full bg-white border ${hasError ? 'border-red-400' : 'border-neutral-500'} rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-brand-800 transition-colors`
 
 export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) {
     const isEdit = !!utilizador
@@ -40,6 +40,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
             ? utilizador.data_nascimento.split('T')[0]
             : '',
         descricao: utilizador?.descricao ?? '',
+        coaching: utilizador?.aluno?.coaching ?? false,
     })
     const [errors, setErrors] = useState({})
     const [loading, setLoading] = useState(false)
@@ -135,6 +136,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                 ...(form.nif && { nif: form.nif.trim() }),
                 data_nascimento: form.data_nascimento,
                 ...(form.descricao.trim() && { descricao: form.descricao.trim() }),
+                ...(parseInt(form.id_tipo) === 3 && { coaching: form.coaching }),
             }
             if (!isEdit) payload.password = form.password
             else if (form.password) payload.password = form.password
@@ -164,7 +166,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
             <div
-                className="relative bg-[#F4FBF9] rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]"
+                className="relative bg-brand-50 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
@@ -172,15 +174,15 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                     <div className="flex items-center justify-end mb-1">
                         <button
                             onClick={onClose}
-                            className="w-8 h-8 rounded-full hover:bg-[#CCE8E6] flex items-center justify-center text-[#4A6362]"
+                            className="w-8 h-8 rounded-full hover:bg-brand-200 flex items-center justify-center text-neutral-600"
                         >
                             <X size={17} />
                         </button>
                     </div>
-                    <h2 className="text-4xl font-bold text-[#00504E] text-center font-['Sora'] mb-4">
+                    <h2 className="text-4xl font-bold text-brand-900 text-center font-['Sora'] mb-4">
                         {isEdit ? 'Editar utilizador' : 'Novo utilizador'}
                     </h2>
-                    <div className="border-t border-[#006A68]" />
+                    <div className="border-t border-brand-800" />
                 </div>
 
                 {/* Body */}
@@ -270,7 +272,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(v => !v)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6362] hover:text-[#006A68]"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-brand-800"
                             >
                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
@@ -312,7 +314,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                     {/* Modalidades — apenas para Docente */}
                     {parseInt(form.id_tipo) === 2 && (
                         <div>
-                            <p className={`text-sm font-medium mb-3 ${errors.modalidades ? 'text-red-600' : 'text-[#000]'}`}>
+                            <p className={`text-sm font-medium mb-3 ${errors.modalidades ? 'text-red-600' : 'text-black'}`}>
                                 Modalidades *
                             </p>
 
@@ -321,7 +323,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                                     {selectedModalidades.map(m => (
                                         <span
                                             key={m.id_modalidade}
-                                            className="inline-flex items-center gap-1.5 text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full font-medium"
+                                            className="inline-flex items-center gap-1.5 text-xs bg-brand-200 text-brand-800 px-2.5 py-1 rounded-full font-medium"
                                         >
                                             {m.nome}
                                             <button
@@ -338,13 +340,13 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                             {availableModalidades.length > 0 && (
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
-                                        <label className="absolute -top-2.5 left-3 bg-[#F4FBF9] text-[11px] text-[#3F4948] font-medium px-1 z-10">
+                                        <label className="absolute -top-2.5 left-3 bg-brand-50 text-[11px] text-neutral-700 font-medium px-1 z-10">
                                             Adicionar modalidade
                                         </label>
                                         <select
                                             value={addingModalidadeId}
                                             onChange={e => setAddingModalidadeId(e.target.value)}
-                                            className="w-full bg-white border border-[#6F7978] rounded-lg px-4 py-3 text-sm text-[#161D1C] focus:outline-none focus:border-[#006A68] transition-colors appearance-none"
+                                            className="w-full bg-white border border-neutral-500 rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-brand-800 transition-colors appearance-none"
                                         >
                                             <option value="">Selecionar...</option>
                                             {availableModalidades.map(m => (
@@ -357,7 +359,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                                     <button
                                         onClick={addModalidade}
                                         disabled={!addingModalidadeId}
-                                        className="self-end w-11 h-11 rounded-xl bg-[#006A68] text-white flex items-center justify-center hover:bg-[#00504E] transition-colors disabled:opacity-40"
+                                        className="self-end w-11 h-11 rounded-xl bg-brand-800 text-white flex items-center justify-center hover:bg-brand-900 transition-colors disabled:opacity-40"
                                     >
                                         <Plus size={18} />
                                     </button>
@@ -369,14 +371,30 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                             )}
 
                             {availableModalidades.length === 0 && selectedModalidades.length === 0 && (
-                                <p className="text-xs text-[#4A6362]">Nenhuma modalidade disponível.</p>
+                                <p className="text-xs text-neutral-600">Nenhuma modalidade disponível.</p>
                             )}
+                        </div>
+                    )}
+
+                    {/* Coaching — apenas para Aluno */}
+                    {parseInt(form.id_tipo) === 3 && (
+                        <div className="flex items-center justify-between px-4 py-3 bg-white border border-neutral-500 rounded-lg">
+                            <span className="text-sm text-neutral-900">Coaching</span>
+                            <button
+                                type="button"
+                                onClick={() => set('coaching', !form.coaching)}
+                                className={`relative w-11 h-6 rounded-full transition-colors ${form.coaching ? 'bg-brand-800' : 'bg-neutral-500/40'}`}
+                            >
+                                <span
+                                    className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.coaching ? 'translate-x-5' : 'translate-x-0'}`}
+                                />
+                            </button>
                         </div>
                     )}
 
                     {/* Descrição */}
                     <div className="relative">
-                        <label className="absolute -top-2.5 left-3 bg-[#F4FBF9] text-[11px] text-[#3F4948] font-medium px-1 z-10">
+                        <label className="absolute -top-2.5 left-3 bg-brand-50 text-[11px] text-neutral-700 font-medium px-1 z-10">
                             Descrição
                         </label>
                         <textarea
@@ -392,7 +410,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                                 ? <p className="text-[11px] text-red-600">{errors.descricao}</p>
                                 : <span />
                             }
-                            <span className={`text-[11px] ${form.descricao.length > 180 ? 'text-amber-600' : 'text-[#4A6362]/50'}`}>
+                            <span className={`text-[11px] ${form.descricao.length > 180 ? 'text-amber-600' : 'text-neutral-600/50'}`}>
                                 {form.descricao.length}/200
                             </span>
                         </div>
@@ -404,7 +422,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="flex items-center gap-2 px-8 py-4 bg-[#006A68] text-white font-semibold rounded-2xl hover:bg-[#00504E] transition-colors disabled:opacity-60 text-base font-['Sora']"
+                        className="flex items-center gap-2 px-8 py-4 bg-brand-800 text-white font-semibold rounded-2xl hover:bg-brand-900 transition-colors disabled:opacity-60 text-base font-['Sora']"
                     >
                         {loading ? <RefreshCw size={18} className="animate-spin" /> : <Check size={18} />}
                         {isEdit ? 'Guardar' : 'Criar utilizador'}
@@ -414,3 +432,5 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
         </div>
     )
 }
+
+

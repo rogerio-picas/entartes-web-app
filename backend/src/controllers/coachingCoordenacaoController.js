@@ -15,16 +15,20 @@ function _handleError(res, error) {
   if (mensagem.includes('não encontrada') || mensagem.includes('não encontrado')) {
     return res.status(404).json({ message: mensagem });
   }
+  // CORREÇÃO: erros de permissão não tinham mapeamento para 403
+  if (mensagem.includes('não tem permissão') || mensagem.includes('Sem permissão')) {
+    return res.status(403).json({ message: mensagem });
+  }
   if (
     mensagem.includes('obrigatório') ||
     mensagem.includes('válido') ||
     mensagem.includes('Só é possível') ||
     mensagem.includes('já está') ||
+    mensagem.includes('já passou') ||
     mensagem.includes('Escolhe outra sala')
   ) {
     return res.status(400).json({ message: mensagem });
   }
-  console.error('[coordenacaoController]', error);
   return res.status(500).json({ message: 'Erro interno no servidor.', error: mensagem });
 }
 
@@ -32,7 +36,18 @@ const listarPedidosPendentes = async (req, res) => {
   try {
     const estados = _parseEstados(req.query.estados);
     const data_inicio = req.query.data_inicio || null;
-    const data_fim = req.query.data_fim || null;
+    const data_fim    = req.query.data_fim    || null;
+
+    // CORREÇÃO: datas não eram validadas quanto ao formato nem à ordem (fim >= início)
+    if (data_inicio && isNaN(new Date(data_inicio).getTime())) {
+      return res.status(400).json({ message: 'data_inicio tem formato inválido.' });
+    }
+    if (data_fim && isNaN(new Date(data_fim).getTime())) {
+      return res.status(400).json({ message: 'data_fim tem formato inválido.' });
+    }
+    if (data_inicio && data_fim && new Date(data_fim) <= new Date(data_inicio)) {
+      return res.status(400).json({ message: 'data_fim deve ser posterior a data_inicio.' });
+    }
 
     const pedidos = await coordenacaoService.listarPedidosPendentes({ estados, data_inicio, data_fim });
     return res.status(200).json(pedidos);
@@ -153,6 +168,11 @@ const consultarSalasDisponiveis = async (req, res) => {
       return res.status(400).json({ message: 'data_a_realizar, hora_inicio e duracao_minutos são obrigatórios.' });
     }
 
+    // CORREÇÃO: data_a_realizar não era validada quanto ao formato
+    if (isNaN(new Date(data_a_realizar).getTime())) {
+      return res.status(400).json({ message: 'data_a_realizar tem formato inválido.' });
+    }
+
     const salas = await coordenacaoService.consultarSalasDisponiveis(
       data_a_realizar,
       hora_inicio,
@@ -167,13 +187,13 @@ const consultarSalasDisponiveis = async (req, res) => {
 
 const consultarHistoricoMarcacao = async (req, res) => {
   try {
-    const { id_marcacao } = req.params;
-
-    if (!id_marcacao) {
-      return res.status(400).json({ message: 'id_marcacao é obrigatório.' });
+    // CORREÇÃO: id_marcacao existia no parâmetro de rota mas não era validado como inteiro
+    const id_marcacao = parseInt(req.params.id_marcacao);
+    if (isNaN(id_marcacao)) {
+      return res.status(400).json({ message: 'ID da marcação inválido.' });
     }
 
-    const historico = await coordenacaoService.consultarHistoricoMarcacao(Number(id_marcacao));
+    const historico = await coordenacaoService.consultarHistoricoMarcacao(id_marcacao);
     return res.status(200).json(historico);
   } catch (error) {
     return _handleError(res, error);

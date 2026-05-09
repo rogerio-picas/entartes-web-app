@@ -161,10 +161,15 @@ const adicionarDocenteAoGrupo = async (id_evento, id_grupo, id_docente) => {
   }
 
   // 2. Verificar se o docente existe
-  const docente = await prisma.docente.findUnique({ 
-    where: { id_utilizador: docenteId } 
+  const docente = await prisma.docente.findUnique({
+    where: { id_utilizador: docenteId }
   });
-  if (!docente) throw new Error("Docente não encontrado.");
+  if (!docente) {
+    const utilizador = await prisma.utilizador.findUnique({ where: { id_utilizador: docenteId } });
+    if (utilizador && utilizador.id_tipo === 2)
+      throw new Error("O utilizador tem tipo docente mas o perfil de docente está em falta na base de dados. Corrija a inconsistência antes de continuar.");
+    throw new Error("Docente não encontrado.");
+  }
 
   // 3. Verificar se o docente está associado ao evento pai
   const inscrito = await prisma.evento_docente.findUnique({
@@ -248,7 +253,6 @@ const removerDocenteDoGrupo = async (id_grupo, id_docente) => {
 // Editar grupo
 const editarGrupo = async (id_grupo, dados) => {
   const { nome, descricao, hora_atuacao } = dados;
-  console.log(id_grupo);
   const grupo = await prisma.grupo.findUnique({ 
     where: { id_grupo: parseInt(id_grupo) } 
   });

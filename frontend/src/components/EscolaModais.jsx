@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
+﻿import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
 import {
-    CalendarCheck, BookOpen, Clock, Coins,
-    ChevronRight, AlertCircle, RefreshCw,
+    BookOpen, Clock, Coins,
+    AlertCircle, RefreshCw,
     CheckCircle2, X, Check, ExternalLink,
     Search, Upload, Eye, ChevronDown
 } from 'lucide-react'
@@ -28,9 +28,9 @@ export function ModalWrapper({ title, onClose, children, wide = false, wider = f
                 className={`relative bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden w-full ${sizeClass} max-h-[85vh]`}
                 onClick={e => e.stopPropagation()}
             >
-                <div className="bg-[#EFF5F4] border-b-2 border-[#006A68] px-6 py-4 flex items-center justify-between shrink-0">
-                    <h3 className="font-bold text-[#006A68] text-lg font-['Sora']">{title}</h3>
-                    <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-[#CCE8E6] flex items-center justify-center text-[#4A6362] transition-colors">
+                <div className="bg-neutral-50 border-b-2 border-brand-800 px-6 py-4 flex items-center justify-between shrink-0">
+                    <h3 className="font-bold text-brand-800 text-lg font-['Sora']">{title}</h3>
+                    <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-brand-200 flex items-center justify-center text-neutral-600 transition-colors">
                         <X size={16} />
                     </button>
                 </div>
@@ -42,7 +42,7 @@ export function ModalWrapper({ title, onClose, children, wide = false, wider = f
 
 export function Spinner() {
     return (
-        <div className="flex items-center justify-center py-12 text-[#006A68]">
+        <div className="flex items-center justify-center py-12 text-brand-800">
             <RefreshCw size={24} className="animate-spin" />
         </div>
     )
@@ -51,8 +51,8 @@ export function Spinner() {
 export function EmptyState({ icon: Icon, msg }) {
     return (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Icon size={40} className="text-[#006A68]/20 mb-3" />
-            <p className="text-sm text-[#4A6362]">{msg}</p>
+            <Icon size={40} className="text-brand-800/20 mb-3" />
+            <p className="text-sm text-neutral-600">{msg}</p>
         </div>
     )
 }
@@ -104,20 +104,20 @@ export function ValidacaoModal({ onClose }) {
             {loading ? <Spinner /> : pendentes.length === 0 ? (
                 <EmptyState icon={CheckCircle2} msg="Nenhuma aula pendente de validação." />
             ) : (
-                <ul className="divide-y divide-[#4a6362]/10">
+                <ul className="divide-y divide-neutral-600/10">
                     {pendentes.map(a => (
                         <li key={a.id_marcacoes} className="py-3.5 flex items-center justify-between gap-4">
                             <div>
-                                <p className="font-semibold text-[#324B4A] text-sm">{a.modalidade?.nome ?? '—'}</p>
-                                <p className="text-xs text-[#4A6362] mt-0.5">
+                                <p className="font-semibold text-neutral-800 text-sm">{a.modalidade?.nome ?? '—'}</p>
+                                <p className="text-xs text-neutral-600 mt-0.5">
                                     {formatDate(a.data_a_realizar)} · {formatTime(a.hora_inicio)} · {formatDuration(a.duracao_minutos)}
                                 </p>
-                                <p className="text-xs text-[#4A6362]">{a.sala?.nome ?? '—'}</p>
+                                <p className="text-xs text-neutral-600">{a.sala?.nome ?? '—'}</p>
                             </div>
                             <button
                                 onClick={() => handleConfirm(a.id_marcacoes)}
                                 disabled={confirming === a.id_marcacoes}
-                                className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 bg-[#006A68] text-white text-xs font-bold rounded-xl hover:bg-[#00504E] transition-colors disabled:opacity-50"
+                                className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-800 text-white text-xs font-bold rounded-xl hover:bg-brand-900 transition-colors disabled:opacity-50"
                             >
                                 {confirming === a.id_marcacoes ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
                                 Confirmar
@@ -134,9 +134,9 @@ export function ValidacaoModal({ onClose }) {
 // ─── Modal: Histórico de Aulas ────────────────────────────────────────────────
 const ESTADO_CFG = {
     1: { label: 'Pendente',   color: 'text-amber-600   bg-amber-50   border-amber-200' },
-    2: { label: 'Confirmada', color: 'text-[#006A68]   bg-[#EFF5F4]  border-[#80D5D2]' },
+    2: { label: 'Confirmada', color: 'text-brand-800   bg-neutral-50  border-brand-500' },
     3: { label: 'Cancelada',  color: 'text-red-600     bg-red-50     border-red-200' },
-    4: { label: 'Finalizado', color: 'text-[#006A68]   bg-[#CCE8E6]  border-[#006A68]' },
+    4: { label: 'Finalizado', color: 'text-brand-800   bg-brand-200  border-brand-800' },
 }
 
 export function HistoricoModal({ onClose }) {
@@ -155,9 +155,9 @@ export function HistoricoModal({ onClose }) {
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="bg-[#EFF5F4] border-b border-[#4a6362]/20">
+                            <tr className="bg-neutral-50 border-b border-neutral-600/20">
                                 {['Modalidade', 'Data', 'Hora', 'Duração', 'Sala', 'Estado'].map(col => (
-                                    <th key={col} className="px-3 py-2.5 text-left text-xs font-bold text-[#006A68] uppercase tracking-wide whitespace-nowrap">{col}</th>
+                                    <th key={col} className="px-3 py-2.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wide whitespace-nowrap">{col}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -166,8 +166,8 @@ export function HistoricoModal({ onClose }) {
                                 const id_e = a.estado_marcacao?.id_estado
                                 const cfg = ESTADO_CFG[id_e] ?? { label: a.estado_marcacao?.nome ?? '—', color: 'text-gray-500 bg-gray-50 border-gray-200' }
                                 return (
-                                    <tr key={a.id_marcacoes} className="border-b border-[#4a6362]/10 hover:bg-[#F4FBF9] transition-colors">
-                                        <td className="px-3 py-3 font-semibold text-[#324B4A]">{a.modalidade?.nome ?? '—'}</td>
+                                    <tr key={a.id_marcacoes} className="border-b border-neutral-600/10 hover:bg-brand-50 transition-colors">
+                                        <td className="px-3 py-3 font-semibold text-neutral-800">{a.modalidade?.nome ?? '—'}</td>
                                         <td className="px-3 py-3 text-gray-600 whitespace-nowrap">{formatDate(a.data_a_realizar)}</td>
                                         <td className="px-3 py-3 text-gray-600 whitespace-nowrap">{formatTime(a.hora_inicio)}</td>
                                         <td className="px-3 py-3 text-gray-600">{formatDuration(a.duracao_minutos)}</td>
@@ -207,28 +207,28 @@ export function CoachingModal({ onClose }) {
             ) : (
                 <div>
                     <div className="grid grid-cols-2 gap-3 mb-5">
-                        <div className="bg-[#EFF5F4] rounded-xl p-4 text-center">
-                            <p className="text-2xl font-bold text-[#006A68]">{formatDuration(totalMin)}</p>
-                            <p className="text-xs text-[#4A6362] font-medium mt-1">Total de horas</p>
+                        <div className="bg-neutral-50 rounded-xl p-4 text-center">
+                            <p className="text-2xl font-bold text-brand-800">{formatDuration(totalMin)}</p>
+                            <p className="text-xs text-neutral-600 font-medium mt-1">Total de horas</p>
                         </div>
-                        <div className="bg-[#EFF5F4] rounded-xl p-4 text-center">
-                            <p className="text-2xl font-bold text-[#006A68]">{totalSessoes}</p>
-                            <p className="text-xs text-[#4A6362] font-medium mt-1">Sessões concluídas</p>
+                        <div className="bg-neutral-50 rounded-xl p-4 text-center">
+                            <p className="text-2xl font-bold text-brand-800">{totalSessoes}</p>
+                            <p className="text-xs text-neutral-600 font-medium mt-1">Sessões concluídas</p>
                         </div>
                     </div>
-                    <ul className="divide-y divide-[#4a6362]/10">
+                    <ul className="divide-y divide-neutral-600/10">
                         {data.map((d, i) => (
                             <li key={i} className="py-3 flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-full bg-[#CCE8E6] flex items-center justify-center">
-                                        <span className="text-[#006A68] text-[11px] font-bold">D{i + 1}</span>
+                                    <div className="w-7 h-7 rounded-full bg-brand-200 flex items-center justify-center">
+                                        <span className="text-brand-800 text-[11px] font-bold">D{i + 1}</span>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-[#324B4A]">Docente #{d.id_docente}</p>
-                                        <p className="text-xs text-[#4A6362]">{d._count ?? 0} sessões</p>
+                                        <p className="text-sm font-semibold text-neutral-800">Docente #{d.id_docente}</p>
+                                        <p className="text-xs text-neutral-600">{d._count ?? 0} sessões</p>
                                     </div>
                                 </div>
-                                <span className="text-sm font-bold text-[#006A68]">{formatDuration(d._sum?.duracao_minutos)}</span>
+                                <span className="text-sm font-bold text-brand-800">{formatDuration(d._sum?.duracao_minutos)}</span>
                             </li>
                         ))}
                     </ul>
@@ -276,26 +276,26 @@ export function ExtratoModal({ onClose }) {
 
     return (
         <ModalWrapper title="Extrato Mensal" onClose={onClose} wide>
-            <div className="flex flex-wrap items-end gap-3 mb-5 p-4 bg-[#EFF5F4] rounded-xl">
+            <div className="flex flex-wrap items-end gap-3 mb-5 p-4 bg-neutral-50 rounded-xl">
                 <div>
-                    <label className="text-[10px] font-bold text-[#4A6362] uppercase tracking-wider mb-1 block">De</label>
+                    <label className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-1 block">De</label>
                     <input
                         type="date" value={from}
                         onChange={e => setFrom(e.target.value)}
-                        className="text-sm border border-[#4a6362]/25 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#006A68] bg-white"
+                        className="text-sm border border-neutral-600/25 rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-800 bg-white"
                     />
                 </div>
                 <div>
-                    <label className="text-[10px] font-bold text-[#4A6362] uppercase tracking-wider mb-1 block">Até</label>
+                    <label className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-1 block">Até</label>
                     <input
                         type="date" value={to}
                         onChange={e => setTo(e.target.value)}
-                        className="text-sm border border-[#4a6362]/25 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#006A68] bg-white"
+                        className="text-sm border border-neutral-600/25 rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-800 bg-white"
                     />
                 </div>
                 <button
                     onClick={fetchExtrato}
-                    className="px-4 py-1.5 bg-[#006A68] text-white text-xs font-bold rounded-xl hover:bg-[#00504E] transition-colors"
+                    className="px-4 py-1.5 bg-brand-800 text-white text-xs font-bold rounded-xl hover:bg-brand-900 transition-colors"
                 >
                     Consultar
                 </button>
@@ -308,27 +308,27 @@ export function ExtratoModal({ onClose }) {
             ) : (
                 <>
                     <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-[#EFF5F4] rounded-xl p-4 text-center">
-                            <p className="text-2xl font-bold text-[#006A68]">{data.length}</p>
-                            <p className="text-xs text-[#4A6362] font-medium mt-1">Sessões</p>
+                        <div className="bg-neutral-50 rounded-xl p-4 text-center">
+                            <p className="text-2xl font-bold text-brand-800">{data.length}</p>
+                            <p className="text-xs text-neutral-600 font-medium mt-1">Sessões</p>
                         </div>
-                        <div className="bg-[#EFF5F4] rounded-xl p-4 text-center">
-                            <p className="text-2xl font-bold text-[#006A68]">{formatDuration(totalMin)}</p>
-                            <p className="text-xs text-[#4A6362] font-medium mt-1">Total de horas</p>
+                        <div className="bg-neutral-50 rounded-xl p-4 text-center">
+                            <p className="text-2xl font-bold text-brand-800">{formatDuration(totalMin)}</p>
+                            <p className="text-xs text-neutral-600 font-medium mt-1">Total de horas</p>
                         </div>
                     </div>
                     <div className="overflow-x-auto mb-4">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="bg-[#EFF5F4] border-b border-[#4a6362]/20">
+                                <tr className="bg-neutral-50 border-b border-neutral-600/20">
                                     {['Data', 'Hora', 'Duração', 'Modalidade', 'Sala'].map(c => (
-                                        <th key={c} className="px-3 py-2.5 text-left text-xs font-bold text-[#006A68] uppercase tracking-wide">{c}</th>
+                                        <th key={c} className="px-3 py-2.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wide">{c}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
                                 {data.map(s => (
-                                    <tr key={s.id_marcacoes} className="border-b border-[#4a6362]/10 hover:bg-[#F4FBF9]">
+                                    <tr key={s.id_marcacoes} className="border-b border-neutral-600/10 hover:bg-brand-50">
                                         <td className="px-3 py-2.5 whitespace-nowrap">{formatDate(s.data_a_realizar)}</td>
                                         <td className="px-3 py-2.5 whitespace-nowrap">{formatTime(s.hora_inicio)}</td>
                                         <td className="px-3 py-2.5">{formatDuration(s.duracao_minutos)}</td>
@@ -341,7 +341,7 @@ export function ExtratoModal({ onClose }) {
                     </div>
                     <button
                         onClick={handleExportCSV}
-                        className="flex items-center gap-2 text-xs font-bold text-[#006A68] hover:text-[#00504E] transition-colors"
+                        className="flex items-center gap-2 text-xs font-bold text-brand-800 hover:text-brand-900 transition-colors"
                     >
                         <ExternalLink size={13} /> Exportar CSV
                     </button>
@@ -377,6 +377,12 @@ export function HorasCoachingModal({
     const [from, setFrom]             = useState('')
     const [to, setTo]                 = useState('')
     const [activeEndpoint, setActiveEndpoint] = useState(endpoint)
+    const [toast, setToast]           = useState(null)
+
+    function showToast(msg, type = 'success') {
+        setToast({ msg, type })
+        setTimeout(() => setToast(null), 3000)
+    }
 
     useEffect(() => { setActiveEndpoint(endpoint) }, [endpoint])
 
@@ -401,6 +407,7 @@ export function HorasCoachingModal({
         setLoading(true)
         api.get(activeEndpoint)
             .then(d => setRawData(Array.isArray(d) ? d : []))
+            .catch(err => showToast(err.response?.data?.error || err.message || 'Erro ao carregar dados.', 'error'))
             .finally(() => setLoading(false))
     }, [activeEndpoint])
 
@@ -454,33 +461,33 @@ export function HorasCoachingModal({
     return (
         <ModalWrapper title={title} onClose={onClose} wider>
             {showDateFilter && (
-                <div className="flex flex-wrap items-end gap-3 mb-5 p-4 bg-[#EFF5F4] rounded-xl">
+                <div className="flex flex-wrap items-end gap-3 mb-5 p-4 bg-neutral-50 rounded-xl">
                     <div>
-                        <label className="text-[10px] font-bold text-[#4A6362] uppercase tracking-wider mb-1 block">De</label>
+                        <label className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-1 block">De</label>
                         <input
                             type="date" value={from}
                             onChange={e => setFrom(e.target.value)}
-                            className="text-sm border border-[#4a6362]/25 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#006A68] bg-white"
+                            className="text-sm border border-neutral-600/25 rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-800 bg-white"
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] font-bold text-[#4A6362] uppercase tracking-wider mb-1 block">Até</label>
+                        <label className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-1 block">Até</label>
                         <input
                             type="date" value={to}
                             onChange={e => setTo(e.target.value)}
-                            className="text-sm border border-[#4a6362]/25 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#006A68] bg-white"
+                            className="text-sm border border-neutral-600/25 rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-800 bg-white"
                         />
                     </div>
                     <button
                         onClick={aplicarFiltro}
-                        className="px-4 py-1.5 bg-[#006A68] text-white text-xs font-bold rounded-xl hover:bg-[#00504E] transition-colors"
+                        className="px-4 py-1.5 bg-brand-800 text-white text-xs font-bold rounded-xl hover:bg-brand-900 transition-colors"
                     >
                         Filtrar
                     </button>
                     <button
                         onClick={limparFiltro}
                         disabled={!from && !to}
-                        className="px-4 py-1.5 border border-[#4a6362]/30 text-[#4A6362] text-xs font-bold rounded-xl hover:bg-white transition-colors disabled:opacity-30"
+                        className="px-4 py-1.5 border border-neutral-600/30 text-neutral-600 text-xs font-bold rounded-xl hover:bg-white transition-colors disabled:opacity-30"
                     >
                         Limpar filtro
                     </button>
@@ -488,19 +495,19 @@ export function HorasCoachingModal({
             )}
             <div className="flex items-center gap-3 mb-5">
                 <div className="relative flex-1">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A6362]" />
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" />
                     <input
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Pesquisar..."
-                        className="w-full pl-9 pr-4 py-2 text-sm border border-[#4a6362]/25 rounded-xl focus:outline-none focus:border-[#006A68] bg-white"
+                        className="w-full pl-9 pr-4 py-2 text-sm border border-neutral-600/25 rounded-xl focus:outline-none focus:border-brand-800 bg-white"
                     />
                 </div>
                 {!hideExport && (
                     <button
                         onClick={handleExport}
                         disabled={rows.length === 0}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#006A68] text-white text-sm font-bold rounded-xl hover:bg-[#00504E] transition-colors disabled:opacity-40 shrink-0"
+                        className="flex items-center gap-2 px-4 py-2 bg-brand-800 text-white text-sm font-bold rounded-xl hover:bg-brand-900 transition-colors disabled:opacity-40 shrink-0"
                     >
                         <Upload size={14} /> Exportar Relatório
                     </button>
@@ -513,15 +520,15 @@ export function HorasCoachingModal({
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="border-b-2 border-[#4a6362]/15">
+                            <tr className="border-b-2 border-neutral-600/15">
                                 {cols.map(col => (
                                     <th
                                         key={col.key}
                                         onClick={() => toggleSort(col.key)}
-                                        className="px-3 py-2.5 text-left text-sm font-medium text-[#4A6362] cursor-pointer hover:text-[#006A68] select-none whitespace-nowrap"
+                                        className="px-3 py-2.5 text-left text-sm font-medium text-neutral-600 cursor-pointer hover:text-brand-800 select-none whitespace-nowrap"
                                     >
                                         {col.label}
-                                        <ChevronDown size={12} className={`inline ml-1 transition-transform ${sortCol === col.key ? 'text-[#006A68]' : 'opacity-30'} ${sortCol === col.key && sortDir === 'desc' ? 'rotate-180' : ''}`} />
+                                        <ChevronDown size={12} className={`inline ml-1 transition-transform ${sortCol === col.key ? 'text-brand-800' : 'opacity-30'} ${sortCol === col.key && sortDir === 'desc' ? 'rotate-180' : ''}`} />
                                     </th>
                                 ))}
                                 {!hideActions && <th className="w-16" />}
@@ -530,9 +537,9 @@ export function HorasCoachingModal({
                         <tbody>
                             {rows.map(r => (
                                 <Fragment key={r.id}>
-                                    <tr className="border-b border-[#4a6362]/10 hover:bg-[#F4FBF9] transition-colors">
+                                    <tr className="border-b border-neutral-600/10 hover:bg-brand-50 transition-colors">
                                         {cols.map(col => (
-                                            <td key={col.key} className="px-3 py-3.5 text-[#324B4A]">
+                                            <td key={col.key} className="px-3 py-3.5 text-neutral-800">
                                                 {col.render ? col.render(r) : (r[col.key] ?? '—')}
                                             </td>
                                         ))}
@@ -541,7 +548,7 @@ export function HorasCoachingModal({
                                                 {renderActions ? renderActions(r, load) : (
                                                     <button
                                                         onClick={() => setExpanded(expanded === r.id ? null : r.id)}
-                                                        className="w-8 h-8 rounded-full bg-[#006A68] flex items-center justify-center text-white hover:bg-[#00504E] transition-colors mx-auto"
+                                                        className="w-8 h-8 rounded-full bg-brand-800 flex items-center justify-center text-white hover:bg-brand-900 transition-colors mx-auto"
                                                     >
                                                         <Eye size={13} />
                                                     </button>
@@ -550,20 +557,20 @@ export function HorasCoachingModal({
                                         )}
                                     </tr>
                                     {!renderActions && expanded === r.id && (
-                                        <tr className="bg-[#F4FBF9]">
+                                        <tr className="bg-brand-50">
                                             <td colSpan={cols.length + 1} className="px-6 py-3">
                                                 <div className="flex flex-wrap gap-6 text-sm">
                                                     <div>
-                                                        <p className="text-[10px] font-bold text-[#4A6362] uppercase tracking-wider mb-1">Modalidades</p>
-                                                        <p className="text-[#324B4A]">{(r.modalidades ?? []).join(', ') || '—'}</p>
+                                                        <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-1">Modalidades</p>
+                                                        <p className="text-neutral-800">{(r.modalidades ?? []).join(', ') || '—'}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[10px] font-bold text-[#4A6362] uppercase tracking-wider mb-1">Total de Presenças</p>
-                                                        <p className="text-[#324B4A] font-semibold">{r.totalSessoes} sessões</p>
+                                                        <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-1">Total de Presenças</p>
+                                                        <p className="text-neutral-800 font-semibold">{r.totalSessoes} sessões</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[10px] font-bold text-[#4A6362] uppercase tracking-wider mb-1">Total de Horas</p>
-                                                        <p className="text-[#324B4A] font-semibold">{formatDuration(r.totalMinutos)}</p>
+                                                        <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-1">Total de Horas</p>
+                                                        <p className="text-neutral-800 font-semibold">{formatDuration(r.totalMinutos)}</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -575,6 +582,7 @@ export function HorasCoachingModal({
                     </table>
                 </div>
             )}
+            {toast && <Toast {...toast} />}
         </ModalWrapper>
     )
 }
@@ -590,7 +598,7 @@ const VALIDACAO_COLS = [
     {
         key: 'estado', label: 'Estado',
         render: r => r.id_estado >= 3
-            ? <span className="flex items-center gap-1 text-[#006A68] font-bold text-xs whitespace-nowrap"><Check size={12} /> Confirmado</span>
+            ? <span className="flex items-center gap-1 text-brand-800 font-bold text-xs whitespace-nowrap"><Check size={12} /> Confirmado</span>
             : <span className="flex items-center gap-1 text-amber-600 font-bold text-xs whitespace-nowrap"><AlertCircle size={12} /> Pendente</span>
     },
 ]
@@ -636,8 +644,8 @@ export function ValidacaoCoachingModal({ onClose }) {
 
     async function handleStartConfirm(row, refetch) {
         try {
-            const dataStr = new Date(row._data_raw).toISOString().split('T')[0]
-            const horaStr = new Date(row._hora_raw).toISOString().substring(11, 19)
+            const dataStr = row._data_raw ? row._data_raw.split('T')[0] : ''
+            const horaStr = row._hora_raw ? (row._hora_raw.includes('T') ? row._hora_raw.split('T')[1].substring(0, 8) : row._hora_raw.substring(0, 8)) : ''
             const salas = await api.get(`/coaching/salas-disponiveis?data_a_realizar=${dataStr}&hora_inicio=${horaStr}&duracao_minutos=${row._duracao}`)
             setConfirmCtx({ row, salas: Array.isArray(salas) ? salas.filter(s => s.disponivel) : [], refetch })
             setSelectedSala('')
@@ -671,7 +679,7 @@ export function ValidacaoCoachingModal({ onClose }) {
                 <button
                     disabled={!isPendente || busy}
                     onClick={() => handleStartConfirm(row, refetch)}
-                    className="w-8 h-8 rounded-full border-2 border-[#006A68] text-[#006A68] flex items-center justify-center hover:bg-[#EFF5F4] transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                    className="w-8 h-8 rounded-full border-2 border-brand-800 text-brand-800 flex items-center justify-center hover:bg-neutral-50 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
                 >
                     <Check size={13} />
                 </button>
@@ -698,8 +706,8 @@ export function ValidacaoCoachingModal({ onClose }) {
                 <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={() => setConfirmCtx(null)}>
                     <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
                     <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm font-['Sora']" onClick={e => e.stopPropagation()}>
-                        <h4 className="font-bold text-[#006A68] text-base mb-1">Confirmar Coaching</h4>
-                        <p className="text-sm text-[#4A6362] mb-4">
+                        <h4 className="font-bold text-brand-800 text-base mb-1">Confirmar Coaching</h4>
+                        <p className="text-sm text-neutral-600 mb-4">
                             {confirmCtx.row.professor} · {confirmCtx.row.data} às {confirmCtx.row.hora}
                         </p>
                         {confirmCtx.salas.length === 0 ? (
@@ -708,20 +716,20 @@ export function ValidacaoCoachingModal({ onClose }) {
                             <select
                                 value={selectedSala}
                                 onChange={e => setSelectedSala(e.target.value)}
-                                className="w-full border border-[#4a6362]/25 rounded-xl px-3 py-2 text-sm mb-4 focus:outline-none focus:border-[#006A68]"
+                                className="w-full border border-neutral-600/25 rounded-xl px-3 py-2 text-sm mb-4 focus:outline-none focus:border-brand-800"
                             >
                                 <option value="">Selecionar sala...</option>
                                 {confirmCtx.salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
                             </select>
                         )}
                         <div className="flex gap-2">
-                            <button onClick={() => setConfirmCtx(null)} className="flex-1 py-2.5 text-sm border border-[#4a6362]/25 rounded-xl text-[#4A6362] hover:bg-[#F4FBF9] transition-colors">
+                            <button onClick={() => setConfirmCtx(null)} className="flex-1 py-2.5 text-sm border border-neutral-600/25 rounded-xl text-neutral-600 hover:bg-brand-50 transition-colors">
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleConfirm}
                                 disabled={!selectedSala || actioning === confirmCtx.row.id}
-                                className="flex-1 py-2.5 text-sm bg-[#006A68] text-white font-bold rounded-xl hover:bg-[#00504E] transition-colors disabled:opacity-50"
+                                className="flex-1 py-2.5 text-sm bg-brand-800 text-white font-bold rounded-xl hover:bg-brand-900 transition-colors disabled:opacity-50"
                             >
                                 Confirmar
                             </button>
@@ -737,7 +745,7 @@ export function ValidacaoCoachingModal({ onClose }) {
 
 // ─── Modal: Listagem de Coaching ──────────────────────────────────────────────
 const ValIcon = ({ val }) => val
-    ? <span className="flex items-center gap-1 text-[#006A68] font-bold text-xs whitespace-nowrap"><Check size={12} /> Sim</span>
+    ? <span className="flex items-center gap-1 text-brand-800 font-bold text-xs whitespace-nowrap"><Check size={12} /> Sim</span>
     : <span className="flex items-center gap-1 text-red-500 font-bold text-xs whitespace-nowrap"><X size={12} /> Não</span>
 
 const LISTAGEM_COLS = [
@@ -779,3 +787,4 @@ export function ListagemCoachingModal({ onClose }) {
         />
     )
 }
+

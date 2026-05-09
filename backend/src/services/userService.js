@@ -2,17 +2,60 @@ const bcrypt = require('bcrypt');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+const getUsers = async (options) => {
+    return await prisma.utilizador.findMany(options);
+};
+
+const getUser = async (options) => {
+    return await prisma.utilizador.findUnique(options);
+};
+
+const deleteUser = async (id_utilizador) => {
+    const userId = parseInt(id_utilizador);
+
+    // Buscar o utilizador para verificar em quais tabelas está
+    const utilizador = await prisma.utilizador.findUnique({
+        where: { id_utilizador: userId },
+        include: {
+            aluno: true,
+            docente: true,
+            coordenadora: true,
+        },
+    });
+
+    if (!utilizador) {
+        throw new Error('Utilizador não encontrado');
+    }
+
+    // Remover das tabelas específicas primeiro
+    return await prisma.$transaction(async (tx) => {
+        if (utilizador.aluno) {
+            await tx.aluno.delete({ where: { id_utilizador: userId } });
+        }
+        if (utilizador.docente) {
+            await tx.docente.delete({ where: { id_utilizador: userId } });
+        }
+        if (utilizador.coordenadora) {
+            await tx.coordenadora.delete({ where: { id_utilizador: userId } });
+        }
+
+        // Remover da tabela principal
+        await tx.utilizador.delete({ where: { id_utilizador: userId } });
+    });
+};
+
 const criarUtilizador = async (dados) => {
-    const { 
-        codigo_username, 
-        password, 
-        id_tipo, 
-        nome, 
-        apelido, 
-        data_nascimento, 
-        email, 
-        telemovel, 
-        nif 
+    const {
+        codigo_username,
+        password,
+        id_tipo,
+        nome,
+        apelido,
+        data_nascimento,
+        email,
+        telemovel,
+        nif,
+        coaching,
     } = dados;
 
     const salt = await bcrypt.genSalt(10);
@@ -20,10 +63,29 @@ const criarUtilizador = async (dados) => {
 
     const tipoInt = id_tipo ? parseInt(id_tipo) : null;
 
+    // Verificar duplicados em paralelo antes de tentar inserir, para que a mensagem de erro
+    // liste todos os campos em conflito de uma vez (o P2002 do Prisma só reporta um de cada vez)
+    const [usernameTaken, emailTaken, nifTaken] = await Promise.all([
+        codigo_username ? prisma.utilizador.findFirst({ where: { codigo_username } }) : null,
+        email           ? prisma.utilizador.findFirst({ where: { email } })           : null,
+        nif             ? prisma.utilizador.findFirst({ where: { nif } })             : null,
+    ]);
+    const duplicados = [
+        usernameTaken && 'nome de utilizador',
+        emailTaken    && 'e-mail',
+        nifTaken      && 'NIF',
+    ].filter(Boolean);
+    if (duplicados.length > 0) {
+        throw Object.assign(
+            new Error(`Já existe um utilizador registado com este(s) campo(s): ${duplicados.join(', ')}.`),
+            { code: 'DUPLICATE', fields: duplicados }
+        );
+    }
+
     // 3. Iniciar Transação Atómica
     // Garantimos que o utilizador só é criado se o perfil (aluno/docente/coord) também for.
     return await prisma.$transaction(async (tx) => {
-        
+
         const novoUtilizador = await tx.utilizador.create({
             data: {
                 codigo_username: codigo_username,
@@ -46,17 +108,18 @@ const criarUtilizador = async (dados) => {
             await tx.aluno.create({
                 data: {
                     id_utilizador: novoUtilizador.id_utilizador,
+                    coaching: coaching ?? false,
                 }
             });
-        } 
+        }
         else if (tipoInt === 2) { // DOCENTE
             await tx.docente.create({
                 data: {
                     id_utilizador: novoUtilizador.id_utilizador,
-                    estado_atividade: true 
+                    estado_atividade: true
                 }
             });
-        } 
+        }
         else if (tipoInt === 1) {
             await tx.coordenadora.create({
                 data: {
@@ -81,7 +144,8 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
         email,
         telemovel,
         nif,
-        estado
+        estado,
+        coaching,
     } = dados;
 
     const userId = parseInt(id_utilizador);
@@ -120,51 +184,61 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
     const novoTipo = id_tipo !== undefined ? parseInt(id_tipo) : utilizadorAtual.id_tipo;
     const tipoAtual = utilizadorAtual.id_tipo;
 
-    return await prisma.$transaction(async (tx) => {
-        // Atualizar a tabela principal
-        const utilizadorAtualizado = await tx.utilizador.update({
-            where: { id_utilizador: userId },
-            data: dataToUpdate,
+    try {
+        return await prisma.$transaction(async (tx) => {
+            // Atualizar a tabela principal
+            const utilizadorAtualizado = await tx.utilizador.update({
+                where: { id_utilizador: userId },
+                data: dataToUpdate,
+            });
+
+            // Atualizar coaching no aluno se o tipo é/continua a ser aluno
+            if (novoTipo === 3 && coaching !== undefined && novoTipo === tipoAtual) {
+                await tx.aluno.update({
+                    where: { id_utilizador: userId },
+                    data: { coaching },
+                });
+            }
+
+            // Se o tipo mudou, gerenciar as tabelas específicas
+            if (novoTipo !== tipoAtual) {
+                // Remover da tabela antiga
+                if (tipoAtual === 3 && utilizadorAtual.aluno) {
+                    await tx.aluno.delete({ where: { id_utilizador: userId } });
+                } else if (tipoAtual === 2 && utilizadorAtual.docente) {
+                    await tx.docente.delete({ where: { id_utilizador: userId } });
+                } else if (tipoAtual === 1 && utilizadorAtual.coordenadora) {
+                    await tx.coordenadora.delete({ where: { id_utilizador: userId } });
+                }
+
+                // Adicionar na nova tabela
+                if (novoTipo === 3) {
+                    await tx.aluno.create({ data: { id_utilizador: userId } });
+                } else if (novoTipo === 2) {
+                    await tx.docente.create({ data: { id_utilizador: userId, estado_atividade: true } });
+                } else if (novoTipo === 1) {
+                    await tx.coordenadora.create({ data: { id_utilizador: userId } });
+                }
+            }
+            // CORREÇÃO: switch duplicado removido — o if/else if acima já trata a criação na nova tabela;
+            // o switch ficou por engano após refactor e deixava o bloco if sem fechar, causando SyntaxError.
+
+            return utilizadorAtualizado;
         });
-
-        // Se o tipo mudou, gerenciar as tabelas específicas
-        if (novoTipo !== tipoAtual) {
-            // Remover da tabela antiga
-            if (tipoAtual === 3 && utilizadorAtual.aluno) { // Era aluno
-                await tx.aluno.delete({
-                    where: { id_utilizador: userId },
-                });
-            } else if (tipoAtual === 2 && utilizadorAtual.docente) { // Era docente
-                await tx.docente.delete({
-                    where: { id_utilizador: userId },
-                });
-            } else if (tipoAtual === 1 && utilizadorAtual.coordenadora) { // Era coordenadora
-                await tx.coordenadora.delete({
-                    where: { id_utilizador: userId },
-                });
-            }
-
-            // Adicionar na nova tabela
-            if (novoTipo === 3) { // Novo aluno
-                await tx.aluno.create({
-                    data: { id_utilizador: userId },
-                });
-            } else if (novoTipo === 2) { // Novo docente
-                await tx.docente.create({
-                    data: {
-                        id_utilizador: userId,
-                        estado_atividade: true,
-                    },
-                });
-            } else if (novoTipo === 1) { // Nova coordenadora
-                await tx.coordenadora.create({
-                    data: { id_utilizador: userId },
-                });
-            }
+    } catch (error) {
+        if (error.code === 'P2002') {
+            const campoLabels = {
+                nif:              'NIF',
+                email:            'endereço de e-mail',
+                codigo_username:  'nome de utilizador',
+                telemovel:        'número de telemóvel',
+            };
+            const campo = error.meta?.target?.[0];
+            const label = campoLabels[campo] ?? campo ?? 'campo';
+            throw new Error(`Já existe um utilizador registado com este ${label}. Por favor, verifique os dados introduzidos.`);
         }
-
-        return utilizadorAtualizado;
-    });
+        throw error;
+    }
 };
 
-module.exports = { criarUtilizador, atualizarUtilizador };
+module.exports = { criarUtilizador, atualizarUtilizador, getUsers, getUser, deleteUser };

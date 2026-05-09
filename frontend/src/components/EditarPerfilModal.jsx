@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import {
     X, User, Mail, Phone, Lock, Eye, EyeOff,
     Check, RefreshCw, AlertCircle, ShieldCheck, Calendar
@@ -10,8 +10,8 @@ import { authService } from '../services/authService'
 function Field({ label, icon: Icon, error, children }) {
     return (
         <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold text-[#4A6362] uppercase tracking-wider flex items-center gap-1.5">
-                {Icon && <Icon size={12} className="text-[#006A68]" />}
+            <label className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider flex items-center gap-1.5">
+                {Icon && <Icon size={12} className="text-brand-800" />}
                 {label}
             </label>
             {children}
@@ -25,16 +25,16 @@ function Field({ label, icon: Icon, error, children }) {
 }
 
 const inputCls = (hasError) =>
-    `w-full bg-white border rounded-xl px-4 py-3 text-sm text-[#161D1C] focus:outline-none transition-colors font-['Sora'] placeholder:text-gray-300
+    `w-full bg-white border rounded-xl px-4 py-3 text-sm text-neutral-900 focus:outline-none transition-colors font-['Sora'] placeholder:text-gray-300
      ${hasError
         ? 'border-red-300 focus:border-red-500'
-        : 'border-[#BEC9C7] focus:border-[#006A68]'}`
+        : 'border-neutral-400 focus:border-brand-800'}`
 
 // ─── Password strength meter ──────────────────────────────────────────────────
 function PasswordStrength({ password }) {
     if (!password) return null
     const checks = [
-        password.length >= 8,
+        password.length >= 6,
         /[A-Z]/.test(password),
         /[0-9]/.test(password),
         /[^A-Za-z0-9]/.test(password),
@@ -162,7 +162,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
         const e = {}
         if (!passForm.password_atual) e.password_atual = 'Insere a password atual'
         if (!passForm.nova_password) e.nova_password = 'Insere a nova password'
-        else if (passForm.nova_password.length < 8) e.nova_password = 'Mínimo 8 caracteres'
+        else if (passForm.nova_password.length < 6) e.nova_password = 'Mínimo 6 caracteres'
         if (passForm.nova_password !== passForm.confirmar_password) e.confirmar_password = 'As passwords não coincidem'
         return e
     }
@@ -238,21 +238,21 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
             {/* Side panel */}
             <aside
                 ref={panelRef}
-                className="fixed top-0 right-0 h-full z-50 w-[520px] max-w-[95vw] bg-[#F4FBF9] shadow-2xl flex flex-col font-['Sora']"
+                className="fixed top-0 right-0 h-full z-50 w-[520px] max-w-[95vw] bg-brand-50 shadow-2xl flex flex-col font-['Sora']"
                 style={{ borderLeft: '3px solid #006A68' }}
             >
                 {/* Header */}
-                <div className="bg-[#EFF5F4] px-8 pt-8 pb-0 shrink-0">
+                <div className="bg-neutral-50 px-8 pt-8 pb-0 shrink-0">
                     <div className="flex items-start justify-between mb-5">
                         <div>
-                            <p className="text-xs font-semibold text-[#4A6362] uppercase tracking-widest mb-1">
+                            <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest mb-1">
                                 Configurações de Conta
                             </p>
-                            <h2 className="text-2xl font-bold text-[#006A68]">Editar Perfil</h2>
+                            <h2 className="text-2xl font-bold text-brand-800">Editar Perfil</h2>
                         </div>
                         <button
                             onClick={onClose}
-                            className="w-9 h-9 rounded-full hover:bg-[#CCE8E6] flex items-center justify-center text-[#4A6362] transition-colors mt-1"
+                            className="w-9 h-9 rounded-full hover:bg-brand-200 flex items-center justify-center text-neutral-600 transition-colors mt-1"
                         >
                             <X size={18} />
                         </button>
@@ -260,21 +260,21 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
 
                     {/* Avatar + nome */}
                     <div className="flex items-center gap-4 mb-6">
-                        <div className="w-14 h-14 rounded-full bg-[#006A68] flex items-center justify-center shrink-0 shadow-md">
-                            <span className="text-[#9CF1EE] text-xl font-bold">
+                        <div className="w-14 h-14 rounded-full bg-brand-800 flex items-center justify-center shrink-0 shadow-md">
+                            <span className="text-brand-500 text-xl font-bold">
                                 {(form.nome || user?.nome || '?')[0]?.toUpperCase()}
                             </span>
                         </div>
                         <div>
-                            <p className="font-bold text-[#324B4A] text-base leading-tight">
+                            <p className="font-bold text-neutral-800 text-base leading-tight">
                                 {`${form.nome} ${form.apelido}`.trim() || user?.nome}
                             </p>
-                            <p className="text-xs text-[#4A6362] mt-0.5">{form.email || '—'}</p>
+                            <p className="text-xs text-neutral-600 mt-0.5">{form.email || '—'}</p>
                         </div>
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex border-b border-[#BEC9C7]">
+                    <div className="flex border-b border-neutral-400">
                         {TABS.map(t => {
                             const Icon = t.icon
                             const active = tab === t.key
@@ -284,8 +284,8 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                     onClick={() => { setTab(t.key); setSuccessMsg(''); setErrors({}); setPassErrors({}) }}
                                     className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all -mb-px
                                         ${active
-                                            ? 'border-[#006A68] text-[#006A68]'
-                                            : 'border-transparent text-[#4A6362] hover:text-[#006A68]'}`}
+                                            ? 'border-brand-800 text-brand-800'
+                                            : 'border-transparent text-neutral-600 hover:text-brand-800'}`}
                                 >
                                     <Icon size={14} />
                                     {t.label}
@@ -306,7 +306,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
 
                     {loading ? (
                         <div className="flex items-center justify-center py-16">
-                            <RefreshCw size={24} className="text-[#006A68] animate-spin" />
+                            <RefreshCw size={24} className="text-brand-800 animate-spin" />
                         </div>
                     ) : loadError ? (
                         <div className="flex items-center gap-2 bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl border border-red-200">
@@ -383,9 +383,9 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                 />
                             </Field>
 
-                            <div className="flex items-start gap-2.5 bg-[#CCE8E6]/50 border border-[#80D5D2] rounded-xl px-4 py-3">
-                                <ShieldCheck size={15} className="text-[#006A68] shrink-0 mt-0.5" />
-                                <p className="text-xs text-[#324B4A] leading-relaxed">
+                            <div className="flex items-start gap-2.5 bg-brand-200/50 border border-brand-500 rounded-xl px-4 py-3">
+                                <ShieldCheck size={15} className="text-brand-800 shrink-0 mt-0.5" />
+                                <p className="text-xs text-neutral-800 leading-relaxed">
                                     Podes alterar o nome, apelido e telemóvel. Email, NIF e data de nascimento são dados fixos do sistema.
                                     Os teus dados são protegidos e nunca partilhados com terceiros.
                                 </p>
@@ -413,15 +413,15 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                     />
                                     <button type="button"
                                         onClick={() => setShowPass(s => ({ ...s, atual: !s.atual }))}
-                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4A6362] hover:text-[#006A68] transition-colors"
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-brand-800 transition-colors"
                                     >
                                         {showPass.atual ? <EyeOff size={16} /> : <Eye size={16} />}
                                     </button>
                                 </div>
                             </Field>
 
-                            <div className="border-t border-dashed border-[#BEC9C7] pt-5 space-y-4">
-                                <p className="text-xs font-bold text-[#4A6362] uppercase tracking-wider">Nova password</p>
+                            <div className="border-t border-dashed border-neutral-400 pt-5 space-y-4">
+                                <p className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Nova password</p>
 
                                 <Field label="Nova Password" error={passErrors.nova_password}>
                                     <div className="relative">
@@ -429,12 +429,12 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                             type={showPass.nova ? 'text' : 'password'}
                                             value={passForm.nova_password}
                                             onChange={e => setPass('nova_password', e.target.value)}
-                                            placeholder="Mínimo 8 caracteres"
+                                            placeholder="Mínimo 6 caracteres"
                                             className={`${inputCls(passErrors.nova_password)} pr-11`}
                                         />
                                         <button type="button"
                                             onClick={() => setShowPass(s => ({ ...s, nova: !s.nova }))}
-                                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4A6362] hover:text-[#006A68] transition-colors"
+                                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-brand-800 transition-colors"
                                         >
                                             {showPass.nova ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
@@ -453,7 +453,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                         />
                                         <button type="button"
                                             onClick={() => setShowPass(s => ({ ...s, confirmar: !s.confirmar }))}
-                                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4A6362] hover:text-[#006A68] transition-colors"
+                                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-brand-800 transition-colors"
                                         >
                                             {showPass.confirmar ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
@@ -466,10 +466,10 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                 </Field>
                             </div>
 
-                            <div className="bg-[#CCE8E6]/40 border border-[#80D5D2] rounded-xl px-4 py-3 space-y-1.5">
-                                <p className="text-[11px] font-bold text-[#4A6362] uppercase tracking-wider mb-2">Requisitos</p>
+                            <div className="bg-brand-200/40 border border-brand-500 rounded-xl px-4 py-3 space-y-1.5">
+                                <p className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider mb-2">Requisitos</p>
                                 {[
-                                    ['Mínimo 8 caracteres', passForm.nova_password.length >= 8],
+                                    ['Mínimo 6 caracteres', passForm.nova_password.length >= 6],
                                     ['Pelo menos uma maiúscula', /[A-Z]/.test(passForm.nova_password)],
                                     ['Pelo menos um número', /[0-9]/.test(passForm.nova_password)],
                                     ['Pelo menos um símbolo', /[^A-Za-z0-9]/.test(passForm.nova_password)],
@@ -478,7 +478,7 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-colors ${met ? 'bg-emerald-500' : 'bg-gray-200'}`}>
                                             {met && <Check size={9} className="text-white" strokeWidth={3} />}
                                         </div>
-                                        <span className={`text-xs ${met ? 'text-emerald-700 font-medium' : 'text-[#4A6362]'}`}>{label}</span>
+                                        <span className={`text-xs ${met ? 'text-emerald-700 font-medium' : 'text-neutral-600'}`}>{label}</span>
                                     </div>
                                 ))}
                             </div>
@@ -488,17 +488,17 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
 
                 {/* Footer */}
                 {!loading && (
-                    <div className="px-8 py-6 border-t border-[#BEC9C7] shrink-0 flex gap-3">
+                    <div className="px-8 py-6 border-t border-neutral-400 shrink-0 flex gap-3">
                         <button
                             onClick={onClose}
-                            className="flex-1 py-3.5 rounded-2xl border border-[#BEC9C7] text-[#4A6362] font-semibold text-sm hover:bg-[#EFF5F4] transition-colors"
+                            className="flex-1 py-3.5 rounded-2xl border border-neutral-400 text-neutral-600 font-semibold text-sm hover:bg-neutral-50 transition-colors"
                         >
                             Cancelar
                         </button>
                         <button
                             onClick={tab === 'dados' ? handleSaveDados : handleSavePassword}
                             disabled={saving}
-                            className="flex-1 py-3.5 rounded-2xl bg-[#006A68] text-white font-bold text-sm hover:bg-[#00504E] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                            className="flex-1 py-3.5 rounded-2xl bg-brand-800 text-white font-bold text-sm hover:bg-brand-900 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                         >
                             {saving
                                 ? <><RefreshCw size={16} className="animate-spin" /> A guardar...</>
@@ -511,3 +511,4 @@ export default function EditarPerfilModal({ onClose, onSuccess }) {
         </>
     )
 }
+

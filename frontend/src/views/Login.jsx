@@ -2,48 +2,26 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 
-const TEAL = '#3d7272'
+const TEAL = '#006A68' // brand-800
 
 function DancerLogo() {
   return (
     <div className="flex flex-col items-center mb-10">
       {/* Dancer silhouette */}
-      <svg
-        viewBox="0 0 120 130"
-        width="110"
-        height="110"
-        fill="none"
-        stroke="#444"
-        strokeWidth="1.1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {/* Head */}
-        <ellipse cx="72" cy="14" rx="7" ry="7.5" />
-        {/* Neck + body */}
-        <path d="M72 21.5 C70 32 63 46 52 60" />
-        {/* Right arm — flows up-right with ribbon curl */}
-        <path d="M69 30 C79 24 91 19 100 15 C107 12 111 8 109 3" />
-        {/* Left arm — extends left */}
-        <path d="M67 34 C56 28 40 23 22 18" />
-        {/* Front leg — down */}
-        <path d="M52 60 C46 72 41 84 38 98" />
-        {/* Back leg — extends right */}
-        <path d="M52 60 C65 55 79 53 92 52 C101 51 107 49 109 45" />
-      </svg>
+      <img src="src/logo.png" alt="Dancer Logo" height="300" width="300" />
 
       {/* Brand name */}
       <div className="text-center leading-tight">
         <div
           className="text-2xl tracking-widest"
-          style={{ fontWeight: 300, color: '#555', letterSpacing: '0.15em' }}
+          style={{ fontWeight: 300, color: '#6F7978', letterSpacing: '0.15em' }}
         >
-          en&apos;artes
+          ent&apos;artes
           <sup className="text-xs align-super" style={{ fontWeight: 400 }}>®</sup>
         </div>
         <div
           className="text-xs tracking-widest mt-0.5"
-          style={{ color: '#aaa', letterSpacing: '0.25em', fontWeight: 300 }}
+          style={{ color: '#BEC9C7', letterSpacing: '0.25em', fontWeight: 300 }}
         >
           escola de dança
         </div>
@@ -145,7 +123,7 @@ export default function Login() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-6 py-12"
-      style={{ backgroundColor: '#f2f2f2' }}
+      style={{ backgroundColor: '#EFF5F4' }}
     >
       <DancerLogo />
 
@@ -164,7 +142,7 @@ export default function Login() {
           <FloatingInput
             id="username"
             name="codigo_username"
-            label="E-mail"
+            label="Código username"
             value={form.codigo_username}
             onChange={handleChange}
             autoComplete="username"
@@ -205,7 +183,7 @@ export default function Login() {
         </form>
       </div>
 
-      <p className="mt-12 text-xs text-center" style={{ color: '#bbb' }}>
+      <p className="mt-12 text-xs text-center text-neutral-400">
         © Copyright 2026 En&apos;tartes® – Marca registada Nacional 577041 | Todos os direitos reservados
       </p>
     </div>

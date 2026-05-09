@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const coachingController = require('../controllers/coachingController');
 const coachingAlunoController = require('../controllers/coachingAlunoController');
 const coachingCoordenacaoController = require('../controllers/coachingCoordenacaoController');
 const coachingDocenteController = require('../controllers/coachingDocenteController');
@@ -55,6 +54,11 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *                 type: integer
  *               numero_alunos_pretendidos:
  *                 type: integer
+ *               outros_alunos:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: IDs dos colegas convidados (para grupo)
  *     responses:
  *       201:
  *         description: Pedido de marcação enviado com sucesso
@@ -260,6 +264,25 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *       200:
  *         description: Lista de salas disponíveis
  *
+ * /api/coaching/concluir-marcacao:
+ *   post:
+ *     summary: Conclui uma marcação (coordenadora)
+ *     tags: [Coaching - Coordenadora]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id_marcacao:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Marcação concluída com sucesso
+ *
  * /api/coaching/historico-marcacao/{id_marcacao}:
  *   get:
  *     summary: Consulta histórico de uma marcação
@@ -338,14 +361,17 @@ const authorize = require('../middlewares/roleCheckMiddleware');
  *     responses:
  *       200:
  *         description: Sessão cancelada com sucesso
+ *
+ * /api/coaching/colegas:
+ *   get:
+ *     summary: Lista colegas disponíveis para convite de coaching (aluno)
+ *     tags: [Coaching - Aluno]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de colegas (alunos com coaching ativo)
  */
-
-// ========== ROTAS GENÉRICAS (coordenador) ==========
-// router.post('/', tokenValidation, authorize([1]), coachingController.createNewCoaching);
-// router.get('/', tokenValidation, authorize([1]), coachingController.getAllCoachings);
-// router.get('/:id_utilizador', tokenValidation, authorize([1,2,3]), coachingController.getCoachingById);
-// router.put('/:id_utilizador', tokenValidation, authorize([1]), coachingController.updateCoaching);
-// router.delete('/:id_utilizador', tokenValidation, authorize([1]), coachingController.deleteCoaching);
 
 // ========== ROTAS DO ALUNO ==========
 router.get('/disponibilidades/consultar', tokenValidation, authorize([3]), coachingAlunoController.consultarDisponibilidades);
@@ -354,6 +380,7 @@ router.get('/meus-pedidos', tokenValidation, authorize([3]), coachingAlunoContro
 router.delete('/pedido/:id_marcacao/cancelar', tokenValidation, authorize([3]), coachingAlunoController.cancelarPedidoPendente);
 router.post('/presenca-grupo', tokenValidation, authorize([3]), coachingAlunoController.confirmarPresencaGrupo);
 router.post('/aluno/conclusao-sessao/:id_marcacao', tokenValidation, authorize([3]), coachingAlunoController.validarConclusaoSessao);
+router.get('/colegas', tokenValidation, authorize([3]), coachingAlunoController.listarColegas);
 
 // ========== ROTAS DA COORDENADORA ==========
 router.get('/pedidos-pendentes', tokenValidation, authorize([1]), coachingCoordenacaoController.listarPedidosPendentes);

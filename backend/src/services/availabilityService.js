@@ -22,8 +22,40 @@ const validarParametrosCreate = (dia_semana, data_especifica, hora_inicio, hora_
     throw new Error("É obrigatório definir dia_semana ou data_especifica.");
   }
 
+  if (data_especifica) {
+    const selected = new Date(data_especifica);
+    selected.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selected < today) {
+      throw new Error("A data específica não pode ser inferior à data atual.");
+    }
+
+    if (selected.getTime() === today.getTime()) {
+      const now = new Date();
+      const start = parseHoraTime(hora_inicio);
+      // Garantir que comparamos com o dia de hoje
+      start.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
+      if (start < now) {
+        throw new Error("Para o dia de hoje, a hora de início não pode ser inferior à hora atual.");
+      }
+    }
+  }
+
   if (!hora_inicio || !hora_fim) {
     throw new Error("Horários de início e fim são obrigatórios.");
+  }
+
+  if (data_especifica) {
+    const today = new Date().toISOString().split('T')[0];
+    if (new Date(data_especifica).toISOString().split('T')[0] < today) {
+      throw new Error("A Data de realização não pode ser no passado.");
+    }
+  }
+
+  if (parseHoraTime(hora_fim) <= parseHoraTime(hora_inicio)) {
+    throw new Error("A hora de fim tem de ser posterior à hora de início.");
   }
 };
 
@@ -125,8 +157,7 @@ const criarDisponibilidade = async (id_docente, dados) => {
   // Verificar sobreposição
   await verificarSobreposicao(id_docente, dia_semana, data_especifica, hora_inicio, hora_fim);
 
-  // Criar
-  const novaDisponibilidade = await prisma.disponibilidade.create({
+  const nova = await prisma.disponibilidade.create({
     data: {
       id_docente,
       dia_semana: dia_semana !== undefined && dia_semana !== null ? parseInt(dia_semana) : null,
@@ -136,7 +167,7 @@ const criarDisponibilidade = async (id_docente, dados) => {
     },
   });
 
-  return novaDisponibilidade;
+  return nova;
 };
 
 /**
@@ -146,9 +177,9 @@ const listarDisponibilidades = async (id_docente) => {
   const disponibilidades = await prisma.disponibilidade.findMany({
     where: { id_docente },
     orderBy: [
-      { dia_semana: "asc" },
-      { data_especifica: "asc" },
-      { hora_inicio: "asc" },
+      { data_especifica: 'asc' },
+      { dia_semana: 'asc' },
+      { hora_inicio: 'asc' },
     ],
   });
 
@@ -175,6 +206,10 @@ const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) =
   const novaHoraInicio = hora_inicio ? parseHoraTime(hora_inicio) : existente.hora_inicio;
   const novaHoraFim = hora_fim ? parseHoraTime(hora_fim) : existente.hora_fim;
 
+  if (novaHoraFim <= novaHoraInicio) {
+    throw new Error("A hora de fim tem de ser posterior à hora de início.");
+  }
+
   // Garantir que diaSemana é um número ou null (evitar NaN)
   const diaSemana = dia_semana !== undefined
     ? (dia_semana === null ? null : parseInt(dia_semana))
@@ -184,15 +219,15 @@ const atualizarDisponibilidade = async (id_disponibilidade, id_docente, dados) =
     ? (data_especifica === null ? null : new Date(data_especifica))
     : existente.data_especifica;
 
+  if (data_especifica !== undefined && data_especifica !== null) {
+    const today = new Date().toISOString().split('T')[0];
+    if (new Date(data_especifica).toISOString().split('T')[0] < today) {
+      throw new Error("A Data não pode ser no passado.");
+    }
+  }
+
   // 3. Verificar sobreposição
-  await verificarSobreposicao(
-    id_docente,
-    diaSemana,
-    dataEspecifica,
-    novaHoraInicio,
-    novaHoraFim,
-    parseInt(id_disponibilidade)
-  );
+  await verificarSobreposicao(id_docente, diaSemana, dataEspecifica, novaHoraInicio, novaHoraFim, id_disponibilidade);
 
   // 4. Atualizar
   return await prisma.disponibilidade.update({

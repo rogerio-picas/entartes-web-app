@@ -16,41 +16,42 @@ import {
   User, Star, Megaphone
 } from 'lucide-react'
 
-// Widgets Extracted
 import {
-  StatCard, ModalityChart, CoachingHoursChart, EnrollmentChart,
+  StatCard,
   LiveClassCard, CoachingCard, ConfirmedCard, RequisicaoCard, PresencaDocenteCard,
+  RoomOccupancyWidget,
   PerfilModal, SectionHeader, ScrollRow, Toast
 } from '../components/HomeWidgets'
+import ItemDetailModal from '../components/ItemDetailModal'
 
 // ── Presence confirmation card (aluno confirma a SUA presença) ──
 function PresencaAlunoCard({ item, onConfirm, onReject, loading }) {
   return (
-    <div className="bg-brand-bg border border-brand-dark rounded-xl p-4 flex relative min-w-[340px]">
+    <div className="bg-brand-50 border border-brand-800 rounded-xl p-4 flex relative min-w-[340px]">
       <div className="flex-1 flex flex-col gap-1.5">
-        <p className="text-sm"><span className="text-brand-darkest font-medium">Modalidade: </span>
-          <span className="text-brand-dark">{item.modalidade}</span></p>
-        <p className="text-sm"><span className="text-brand-darkest font-medium">Data: </span>
-          <span className="text-brand-dark">{item.data}</span></p>
-        <p className="text-sm"><span className="text-brand-darkest font-medium">Hora início: </span>
-          <span className="text-brand-dark">{item.hora}</span></p>
-        <p className="text-sm"><span className="text-brand-darkest font-medium">Duração: </span>
-          <span className="text-brand-dark">{item.duracao}</span></p>
-        <p className="text-sm"><span className="text-brand-darkest font-medium">Docente: </span>
-          <span className="text-brand-dark">{item.docente}</span></p>
+        <p className="text-sm"><span className="text-brand-900 font-medium">Modalidade: </span>
+          <span className="text-brand-800">{item.modalidade}</span></p>
+        <p className="text-sm"><span className="text-brand-900 font-medium">Data: </span>
+          <span className="text-brand-800">{item.data}</span></p>
+        <p className="text-sm"><span className="text-brand-900 font-medium">Hora início: </span>
+          <span className="text-brand-800">{item.hora}</span></p>
+        <p className="text-sm"><span className="text-brand-900 font-medium">Duração: </span>
+          <span className="text-brand-800">{item.duracao}</span></p>
+        <p className="text-sm"><span className="text-brand-900 font-medium">Docente: </span>
+          <span className="text-brand-800">{item.docente}</span></p>
         <div className="flex items-center gap-1.5 mt-1">
-          <Clock size={13} className="text-brand-dark" />
+          <Clock size={15} className="text-brand-800" />
           <span className="text-xs font-semibold text-black">{item.tempoRestante || 'Nas próximas 48h'}</span>
         </div>
       </div>
       <div className="flex flex-col items-end justify-end gap-2">
         <div className="flex gap-2">
           <button onClick={() => onReject(item.id)} disabled={loading === item.id}
-            className="w-12 h-12 bg-[#BA1A1A] border border-[#93000A] rounded-xl flex items-center justify-center hover:opacity-90">
+            className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90">
             <X size={22} strokeWidth={3} className="text-white" />
           </button>
           <button onClick={() => onConfirm(item.id)} disabled={loading === item.id}
-            className="w-12 h-12 bg-[#049A59] border border-brand-dark rounded-xl flex items-center justify-center hover:opacity-90">
+            className="w-12 h-12 bg-feedback-success border border-brand-800 rounded-xl flex items-center justify-center hover:opacity-90">
             <Check size={22} strokeWidth={3} className="text-white" />
           </button>
         </div>
@@ -62,8 +63,8 @@ function PresencaAlunoCard({ item, onConfirm, onReject, loading }) {
 // ── Botão "Ver mais" para as listagens limitadas a 3 cards ──
 function ViewMoreCard({ onClick, label = "Ver mais" }) {
   return (
-    <button onClick={onClick} className="min-w-[200px] h-auto min-h-[180px] bg-[#F4FBF9]/50 border-2 border-dashed border-[#006A68]/30 rounded-xl p-4 flex flex-col items-center justify-center gap-3 hover:bg-[#CCE8E6] transition-colors text-[#006A68] shrink-0">
-      <div className="w-12 h-12 rounded-full bg-[#006A68] text-white flex items-center justify-center shadow-sm">
+    <button onClick={onClick} className="min-w-[200px] h-auto min-h-[180px] bg-brand-50/50 border-2 border-dashed border-brand-800/30 rounded-xl p-4 flex flex-col items-center justify-center gap-3 hover:bg-brand-200 transition-colors text-brand-800 shrink-0">
+      <div className="w-12 h-12 rounded-full bg-brand-800 text-white flex items-center justify-center shadow-sm">
         <Plus size={24} />
       </div>
       <span className="text-sm font-bold text-center">{label}</span>
@@ -87,6 +88,7 @@ export default function Home() {
   const [selectedEventId, setSelectedEventId] = useState(null)
   const [perfilAluno, setPerfilAluno] = useState(null)
   const [showNovoEvento, setShowNovoEvento] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
 
   // Shared Data
   const [eventos, setEventos] = useState([])
@@ -95,8 +97,7 @@ export default function Home() {
   // Admin Data
   const [stats, setStats] = useState({ hoje: 0, porValidar: 0, concluidas: 0 })
   const [liveAulas, setLiveAulas] = useState([])
-  const [horasData, setHorasData] = useState([])
-  const [alunosData, setAlunosData] = useState([])
+  const [ocupacaoSalas, setOcupacaoSalas] = useState([])
 
   // Admin/Docente Shared
   const [coachings48h, setCoachings48h] = useState([]) // For Docente: means Requisições
@@ -123,7 +124,22 @@ export default function Home() {
       } else {
         evRes = await eventService.getMyEvents().catch(() => []);
       }
-      const evs = Array.isArray(evRes) ? evRes : []
+      const evs = (Array.isArray(evRes) ? evRes : []).map(e => ({
+        ...e,
+        id: e.id_evento,
+        _isEvent: true,
+        data: formatDate(e.data_de_realizacao),
+        hora: formatTime(e.data_de_realizacao),
+        duracao: e.duracao_minutos ? `${e.duracao_minutos} min` : '—',
+        // Outros campos já existem no objeto
+      })).filter(e => {
+        if (e.id_evento_estado === 5) return false;
+        const eventDate = new Date(e.data_de_realizacao);
+        const today = new Date(now);
+        eventDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        return eventDate >= today;
+      })
       setEventos(evs)
 
       const normalizeAula = (m) => {
@@ -143,6 +159,10 @@ export default function Home() {
           else if (estadoStr.includes('cancel')) resolvedIdEstado = 5;
         }
 
+        // Extrair nomes se forem objetos
+        const modalidadeNome = typeof m.modalidade === 'object' ? m.modalidade.nome : (m.modalidade || '—');
+        const docenteNome = typeof m.docente === 'object' ? m.docente.nome : (m.docente || '—');
+
         return {
           ...m,
           id: m.id_marcacao || m.id,
@@ -150,31 +170,33 @@ export default function Home() {
           data: formatDate(m.data),
           hora: formatTime(m.hora_inicio),
           duracao: m.duracao_minutos ? `${m.duracao_minutos} min` : '—',
+          modalidade: modalidadeNome,
           docente: role === 2
-            ? (m.alunos?.length > 0 ? m.alunos.map(a => a.nome).join(', ') : 'A aguardar aluno(s)')
-            : (m.docente || '—'),
+            ? (m.alunos?.length > 0 ? m.alunos.map(a => typeof a === 'object' ? a.nome : a).join(', ') : 'A aguardar aluno(s)')
+            : docenteNome,
+          sala: m.sala_atual || (typeof m.sala === 'object' ? m.sala.nome : (m.sala || '—')),
+          tipo: m.numero_alunos_pretendidos > 1 ? 'Grupo' : 'Individual',
+          alunos: m.alunos?.map(a => typeof a === 'object' ? a.nome : a) || [],
           ja_validou: m.ja_validou,
           id_estado: resolvedIdEstado,
           estado_nome: m.estado || m.estado_nome || '—',
+          _type: 'aula',
         };
       }
 
       if (isAdmin) {
-        const [pendentes, todasRes, horasRes, alunosRes] = await Promise.allSettled([
+        const [pendentes, todasRes, ocupacaoSalasRes] = await Promise.allSettled([
           coachingService.listarPedidosPendentes({ estados: '1,2' }),
           coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' }),
-          api.get('/relatorio/horas-docente'),
-          api.get('/relatorio/alunos'),
+          api.get('/relatorio/ocupacao-salas'),
         ])
         const rawPendentes = pendentes.status === 'fulfilled' ? (Array.isArray(pendentes.value) ? pendentes.value : (pendentes.value?.data || [])) : []
         const rawTodas = todasRes.status === 'fulfilled' ? (Array.isArray(todasRes.value) ? todasRes.value : (todasRes.value?.data || [])) : []
         const pedPendentes = rawPendentes.map(normalizeAula)
         const todas = rawTodas.map(normalizeAula)
-        const horas = horasRes.status === 'fulfilled' && Array.isArray(horasRes.value) ? horasRes.value : []
-        const alunos = alunosRes.status === 'fulfilled' && Array.isArray(alunosRes.value) ? alunosRes.value : []
+        const ocupacao = ocupacaoSalasRes.status === 'fulfilled' && Array.isArray(ocupacaoSalasRes.value) ? ocupacaoSalasRes.value : []
 
-        setHorasData(horas)
-        setAlunosData(alunos)
+        setOcupacaoSalas(ocupacao)
         const limite48h = new Date(now.getTime() + 48 * 60 * 60 * 1000)
         const pendentes48h = pedPendentes.filter(a => {
           const dataAula = new Date(a._data_raw)
@@ -208,9 +230,11 @@ export default function Home() {
 
         // Aulas que o docente tem de "concluir" (validar presença pós-aula)
         // Só marcacoes CONFIRMADA mas no passado (aulas dadas recentement). Ou seja, < now
+        // Apenas mostramos se for nas últimas 48h
+        const limit48h = new Date(now.getTime() - 48 * 60 * 60 * 1000)
         setPresencasDocente(minhasAulas.filter(a => {
           const d = new Date(a._data_raw)
-          return a.id_estado === 3 && d < now
+          return a.id_estado === 3 && d < now && d >= limit48h
         }))
 
       } else if (isAluno) {
@@ -229,9 +253,11 @@ export default function Home() {
         }).sort(sortAsc))
 
         // Aulas dadas, à espera da validação dupla (CONFIRMADAS no passado)
+        // Apenas mostramos se for nas últimas 48h
+        const limit48h = new Date(now.getTime() - 48 * 60 * 60 * 1000)
         setPresencasAluno(meusPedidos.filter(a => {
           const d = new Date(a._data_raw)
-          return a.id_estado === 3 && d < now
+          return a.id_estado === 3 && d < now && d >= limit48h
         }))
       }
 
@@ -256,7 +282,7 @@ export default function Home() {
       await api.post('/coaching/confirmar-marcacao', { id_marcacao, id_sala })
       setCoachings48h(prev => prev.filter(a => a.id !== id_marcacao))
       setStats(s => ({ ...s, porValidar: Math.max(0, s.porValidar - 1) }))
-      showToast('Coaching confirmado. A sala foi alocada!', 'success')
+      showToast('Coaching confirmado. A sala foi atribuída!', 'success')
       loadData()
     } catch (err) { showToast(err.response?.data?.message || 'Erro ao confirmar.', 'error') }
     finally { setLoadingAction(null) }
@@ -283,6 +309,17 @@ export default function Home() {
       showToast('Sessão validada com sucesso!', 'success')
       loadData()
     } catch (err) { showToast(err.response?.data?.message || 'Erro ao validar a sessão.', 'error') }
+    finally { setLoadingAction(null) }
+  }
+
+  async function handleRejectDocente(id_marcacao) {
+    setLoadingAction(id_marcacao)
+    try {
+      await api.post(`/coaching/cancelar-marcacao/${id_marcacao}`, { motivo: 'Cancelado via Dashboard (Docente)' })
+      setPresencasDocente(prev => prev.filter(a => a.id !== id_marcacao))
+      showToast('Presença rejeitada.', 'success')
+      loadData()
+    } catch (err) { showToast(err.response?.data?.message || 'Erro ao rejeitar.', 'error') }
     finally { setLoadingAction(null) }
   }
 
@@ -316,7 +353,7 @@ export default function Home() {
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center py-24 text-[#006A68]">
+    <div className="flex items-center justify-center py-24 text-brand-800">
       <RefreshCw size={32} className="animate-spin" />
     </div>
   )
@@ -328,66 +365,49 @@ export default function Home() {
         {/* Header Conditional Render */}
         {isDocente && (
           <div className="mb-2">
-            <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Painel Docente</p>
-            <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
-              O teu <span className="text-[#006A68] font-semibold">Resumo</span>
+            <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">Painel Docente</p>
+            <h1 className="text-neutral-800 font-normal text-4xl leading-tight tracking-tight">
+              O teu <span className="text-brand-800 font-semibold">Resumo</span>
             </h1>
           </div>
         )}
 
         {/* ── ADMIN: Stats Row + Charts + Buttons ──────────────── */}
         {isAdmin && (
-          <div className="flex flex-wrap gap-4 items-start">
+          <div className="flex flex-wrap gap-4 items-start justify-between">
             <div className="flex flex-wrap gap-3">
-              <StatCard count={stats.hoje} label="aulas hoje" color="text-[#324B4A]" bg="bg-[#CCE8E6]" border="border-[#006A68]" />
-              <StatCard count={stats.porValidar} label="por validar" color="text-[#324863]" bg="bg-[#D2E4FF]" border="border-[#324863]" />
-              <StatCard count={stats.concluidas} label="concluída" color="text-[#93000A]" bg="bg-[#FFDAD6]" border="border-[#93000A]" />
+              <StatCard count={stats.hoje} label="aulas hoje" color="text-neutral-800" bg="bg-brand-200" border="border-brand-800" />
+              <StatCard count={stats.porValidar} label="por validar" color="text-feedback-info" bg="bg-feedback-info-light" border="border-feedback-info" />
+              <StatCard count={stats.concluidas} label="concluída" color="text-feedback-error-dark" bg="bg-feedback-error-light" border="border-feedback-error-dark" />
             </div>
-
-            <div className="flex gap-4 flex-wrap flex-1">
-              <div className="border border-[#006A68] rounded-xl p-4 bg-white flex-1 min-w-[200px] max-w-[250px]">
-                <ModalityChart data={horasData} />
-              </div>
-              <div className="border border-[#006A68] rounded-xl p-3 bg-white flex-1 min-w-[200px] max-w-[260px]">
-                <p className="text-xs font-bold text-[#006A68] mb-1">Média de horas</p>
-                <CoachingHoursChart data={horasData} />
-              </div>
-              <div className="border border-[#006A68] rounded-xl p-3 bg-white flex-1 min-w-[200px] max-w-[260px]">
-                <p className="text-xs font-bold text-[#006A68] mb-1">Inscrições</p>
-                <EnrollmentChart data={alunosData} />
-              </div>
-            </div>
-
             <div className="flex flex-col gap-2 shrink-0">
               <button onClick={() => navigate('/aulas')}
-                className="px-4 py-2.5 border border-[#006A68] text-[#006A68] text-sm font-semibold rounded-xl hover:bg-[#EFF5F4] transition-colors whitespace-nowrap">
+                className="px-4 py-2.5 border border-brand-800 text-brand-800 text-sm font-semibold rounded-xl hover:bg-neutral-50 transition-colors whitespace-nowrap">
                 Consultar Coachings
               </button>
               <button onClick={() => setShowNovoEvento(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#006A68] text-white text-sm font-semibold rounded-xl hover:bg-[#00504E] transition-colors">
+                className="flex items-center gap-2 px-4 py-2.5 bg-brand-800 text-white text-sm font-semibold rounded-xl hover:bg-brand-900 transition-colors">
                 <Plus size={16} /> Novo evento
               </button>
             </div>
           </div>
         )}
 
-        {/* ── ADMIN: Live Aulas ──────────────── */}
-        {isAdmin && liveAulas.length > 0 && (
-          <section>
-            <SectionHeader icon={Star} title="Aulas a decorrer" action="Ver todas" onAction={() => navigate('/aulas')} />
-            <ScrollRow>
-              {liveAulas.slice(0, 3).map((a, i) => <LiveClassCard key={a.id} aula={a} idx={i} />)}
-              {liveAulas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais aulas" />}
-            </ScrollRow>
-          </section>
+        {isAdmin && (
+          <div className="flex gap-4 flex-wrap flex-1">
+            <div className="border border-brand-800 rounded-xl p-4 bg-white flex-1 min-w-[300px]">
+              <p className="text-xs font-bold text-brand-800 mb-3">Ocupação de Salas (Hoje)</p>
+              <RoomOccupancyWidget data={ocupacaoSalas} />
+            </div>
+          </div>
         )}
 
         {/* ── ADMIN/DOCENTE: pending requests 48h ──────────────── */}
         {(isAdmin || isDocente) && (
           <section>
-            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Requisições a expirar em 48h"} action="Ver todas" onAction={() => navigate('/aulas')} />
+            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Coachings pendentes a expirar em 48h"} action="Ver todas" onAction={() => navigate('/coaching')} />
             {coachings48h.length === 0 ? (
-              <p className="text-sm text-[#4A6362] italic">Sem pendentes nas próximas 48h.</p>
+              <p className="text-sm text-neutral-600 italic">Sem coachings pendentes nas próximas 48h.</p>
             ) : (
               <ScrollRow>
                 {coachings48h.slice(0, 3).map(a => (
@@ -410,9 +430,9 @@ export default function Home() {
             ) : (
               <ScrollRow>
                 {presencasDocente.slice(0, 3).map(item => (
-                  <PresencaDocenteCard key={item.id} item={item} onConfirm={handleConfirmPresencaDocente} onReject={handleRejectAdminDocente} loading={loadingAction} />
+                  <PresencaDocenteCard key={item.id} item={item} onConfirm={handleConfirmPresencaDocente} onReject={handleRejectDocente} loading={loadingAction} />
                 ))}
-                {presencasDocente.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais" />}
+                {presencasDocente.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais presenças" />}
               </ScrollRow>
             )}
           </section>
@@ -426,25 +446,24 @@ export default function Home() {
               {presencasAluno.slice(0, 3).map(item => (
                 <PresencaAlunoCard key={item.id} item={item} onConfirm={handleConfirmarPresencaAluno} onReject={handleRecusarPresencaAluno} loading={loadingAction} />
               ))}
-              {presencasAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais" />}
+              {presencasAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais presenças" />}
             </ScrollRow>
           </section>
         )}
 
         {/* ── ALUNO/DOCENTE: Aulas confirmadas using ClassCard, ADMIN: ConfirmedCard ──────────────── */}
         <section>
-          <SectionHeader icon={CalendarCheck} title={isAluno ? "As minhas aulas" : "Próximas aulas confirmadas"} action="Ver todas" onAction={() => navigate('/aulas', { state: { filtroEstado: '3' } })} />
+          <SectionHeader icon={CalendarCheck} title={isAluno ? "Os meus coachings" : "Próximos coachings confirmados"} action="Ver todas" onAction={() => navigate('/aulas', { state: { filtroEstado: '3' } })} />
           {aulasConfirmadas.length === 0 ? (
-            <p className="text-sm text-[#4A6362] italic">Sem aulas confirmadas agendadas.</p>
+            <p className="text-sm text-neutral-600 italic">Sem coachings confirmados.</p>
           ) : (
             <ScrollRow>
               {aulasConfirmadas.slice(0, 3).map(a => (
-                isAdmin
-                  ? <ConfirmedCard key={a.id} aula={a} />
-                  : <ClassCard key={a.id} item={a} statusType="confirmada" />
+                (isAdmin || isDocente)
+                  ? <ConfirmedCard key={a.id} aula={a} onOpen={() => setSelectedItem(a)} role={role} />
+                  : <ClassCard key={a.id} item={a} statusType="confirmada" onOpen={() => setSelectedItem(a)} />
               ))}
-              {aulasConfirmadas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas', { state: { filtroEstado: '3' } })} label="Ver mais aulas" />}
-            </ScrollRow>
+              {aulasConfirmadas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas', { state: { filtroEstado: '3' } })} label="Ver mais coachings" />}            </ScrollRow>
           )}
         </section>
 
@@ -454,9 +473,9 @@ export default function Home() {
             <SectionHeader icon={CalendarCheck} title="Inscrições pendentes" action="Ver todas" onAction={() => navigate('/aulas')} />
             <ScrollRow>
               {inscricoesAluno.slice(0, 3).map((item, idx) => (
-                <ClassCard key={item.id || idx} item={item} statusType="pendente" />
+                <ClassCard key={item.id || idx} item={item} statusType="pendente" onOpen={() => setSelectedItem(item)} />
               ))}
-              {inscricoesAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais" />}
+              {inscricoesAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais inscrições" />}
             </ScrollRow>
           </section>
         )}
@@ -470,11 +489,11 @@ export default function Home() {
             onAction={() => navigate('/eventos')}
           />
           {eventos.length === 0 ? (
-            <p className="text-sm text-[#4A6362] italic">Sem eventos agendados.</p>
+            <p className="text-sm text-neutral-600 italic">Sem eventos agendados.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {eventos.slice(0, 3).map(item => (
-                <SimpleEventCard key={item.id_evento} event={item} onOpen={() => setSelectedEventId(item.id_evento)} />
+                <SimpleEventCard key={item.id_evento} event={item} onOpen={() => setSelectedItem(item)} />
               ))}
               {eventos.length > 3 && <ViewMoreCard onClick={() => navigate('/eventos')} label="Ver todos os eventos" />}
             </div>
@@ -489,11 +508,7 @@ export default function Home() {
           onSuccess={(nome) => {
             setShowNovoEvento(false)
             showToast(`Evento "${nome}" criado com sucesso!`)
-            if (isAdmin || isDocente) {
-              eventService.getAll().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
-            } else {
-              eventService.getMyEvents().then(d => setEventos(Array.isArray(d) ? d.slice(0, 3) : []))
-            }
+            loadData()
           }}
         />
       )}
@@ -504,6 +519,21 @@ export default function Home() {
 
       {perfilAluno && (
         <PerfilModal aluno={perfilAluno} onClose={() => setPerfilAluno(null)} />
+      )}
+
+      {selectedItem && (
+        <ItemDetailModal
+          item={selectedItem}
+          role={role}
+          onClose={() => setSelectedItem(null)}
+          onNavigate={(item) => {
+            if (item.id_evento || item._isEvent || item._type === 'evento') {
+              navigate(`/eventos/${item.id}`);
+            } else {
+              navigate('/aulas');
+            }
+          }}
+        />
       )}
 
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}

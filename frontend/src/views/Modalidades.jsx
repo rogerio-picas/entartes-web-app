@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Music, Plus, RefreshCw, ArrowUpDown, Pencil, Trash2, X, Check, AlertCircle } from 'lucide-react'
 import { modalidadeService } from '../services/modalidadeService'
@@ -7,7 +7,7 @@ import NovaModalidadeModal from './NovaModalidadeModal'
 
 function SkeletonRow({ cols }) {
     return (
-        <tr className="animate-pulse border-b border-[#4a6362]/10">
+        <tr className="animate-pulse border-b border-neutral-600/10">
             {[...Array(cols)].map((_, i) => (
                 <td key={i} className="px-4 py-4">
                     <div className="h-4 bg-gray-100 rounded-lg" style={{ width: `${60 + (i % 3) * 15}%` }} />
@@ -92,8 +92,8 @@ export default function Modalidades() {
                 {/* Cabeçalho */}
                 <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
                     <div>
-                        <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">Gestão de Conteúdo</p>
-                        <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
+                        <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">Gestão de Conteúdo</p>
+                        <h1 className="text-neutral-800 font-normal text-4xl leading-tight tracking-tight">
                             Modalidades
                         </h1>
                     </div>
@@ -101,7 +101,7 @@ export default function Modalidades() {
                         {isAdmin && (
                             <button
                                 onClick={() => { setEditTarget(null); setShowModal(true) }}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-[#006A68] text-white rounded-xl text-sm font-bold hover:bg-[#00504E] transition-colors shadow-sm"
+                                className="flex items-center gap-2 px-5 py-2.5 bg-brand-800 text-white rounded-xl text-sm font-bold hover:bg-brand-900 transition-colors shadow-sm"
                             >
                                 <Plus size={16} />
                                 Nova Modalidade
@@ -111,9 +111,9 @@ export default function Modalidades() {
                             onClick={fetchModalidades}
                             disabled={loading}
                             title="Atualizar"
-                            className="w-9 h-9 rounded-full border border-[#4a6362]/30 flex items-center justify-center hover:bg-[#EFF5F4] transition-colors disabled:opacity-40"
+                            className="w-9 h-9 rounded-full border border-neutral-600/30 flex items-center justify-center hover:bg-neutral-50 transition-colors disabled:opacity-40"
                         >
-                            <RefreshCw size={15} className={`text-[#4A6362] ${loading ? 'animate-spin' : ''}`} />
+                            <RefreshCw size={15} className={`text-neutral-600 ${loading ? 'animate-spin' : ''}`} />
                         </button>
                     </div>
                 </div>
@@ -128,19 +128,19 @@ export default function Modalidades() {
                 )}
 
                 {/* Tabela */}
-                <div className="rounded-2xl border border-[#4a6362]/20 overflow-hidden shadow-sm bg-white">
+                <div className="rounded-2xl border border-neutral-600/20 overflow-hidden shadow-sm bg-white">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="bg-[#EFF5F4] border-b-2 border-[#4a6362]/20">
+                            <tr className="bg-neutral-50 border-b-2 border-neutral-600/20">
                                 {['Nome', ...(isAdmin ? ['Docentes', ''] : [])].map((col, i) => (
                                     <th
                                         key={i}
-                                        className="px-4 py-3.5 text-left text-xs font-bold text-[#006A68] uppercase tracking-wider whitespace-nowrap"
+                                        className="px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap"
                                     >
                                         {col && (
                                             <span className="flex items-center gap-1">
                                                 {col}
-                                                {col !== '' && <ArrowUpDown size={10} className="text-[#006A68]/30" />}
+                                                {col !== '' && <ArrowUpDown size={10} className="text-brand-800/30" />}
                                             </span>
                                         )}
                                     </th>
@@ -153,20 +153,20 @@ export default function Modalidades() {
                             ) : modalidades.length === 0 ? (
                                 <tr>
                                     <td colSpan={colCount} className="py-20 text-center">
-                                        <Music size={40} className="mx-auto text-[#006A68]/15 mb-3" />
-                                        <p className="text-sm text-[#4A6362] font-medium">Não existem modalidades registadas.</p>
+                                        <Music size={40} className="mx-auto text-brand-800/15 mb-3" />
+                                        <p className="text-sm text-neutral-600 font-medium">Não existem modalidades registadas.</p>
                                     </td>
                                 </tr>
                             ) : (
                                 modalidades.map((m, idx) => (
                                     <tr
                                         key={m.id_modalidade}
-                                        className={`border-b border-[#4a6362]/10 hover:bg-[#F4FBF9] transition-colors ${idx % 2 === 0 ? '' : 'bg-[#FAFFFE]'}`}
+                                        className={`border-b border-neutral-600/10 hover:bg-brand-50 transition-colors ${idx % 2 === 0 ? '' : 'bg-brand-50'}`}
                                     >
                                         <td className="px-4 py-4">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-1.5 h-8 rounded-full bg-[#80D5D2] shrink-0" />
-                                                <span className="font-semibold text-[#324B4A]">{m.nome}</span>
+                                                <div className="w-1.5 h-8 rounded-full bg-brand-500 shrink-0" />
+                                                <span className="font-semibold text-neutral-800">{m.nome}</span>
                                             </div>
                                         </td>
                                         {isAdmin && (
@@ -177,7 +177,7 @@ export default function Modalidades() {
                                                             {m.docente_modalidade.map(d => (
                                                                 <span
                                                                     key={d.id_docente}
-                                                                    className="text-xs bg-[#CCE8E6] text-[#006A68] px-2.5 py-1 rounded-full font-medium"
+                                                                    className="text-xs bg-brand-200 text-brand-800 px-2.5 py-1 rounded-full font-medium"
                                                                 >
                                                                     {[d.nome, d.apelido].filter(Boolean).join(' ') || d.codigo_username}
                                                                 </span>
@@ -194,7 +194,7 @@ export default function Modalidades() {
                                                             <button
                                                                 onClick={() => handleDelete(m.id_modalidade)}
                                                                 disabled={deletingId === m.id_modalidade}
-                                                                className="w-7 h-7 bg-[#BA1A1A] border border-[#93000A] rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95 disabled:opacity-50"
+                                                                className="w-7 h-7 bg-feedback-error border border-feedback-error-dark rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95 disabled:opacity-50"
                                                             >
                                                                 {deletingId === m.id_modalidade
                                                                     ? <RefreshCw size={12} className="text-white animate-spin" />
@@ -213,7 +213,7 @@ export default function Modalidades() {
                                                             <button
                                                                 onClick={() => { setEditTarget(m); setShowModal(true) }}
                                                                 title="Editar"
-                                                                className="px-3.5 py-1.5 rounded-lg bg-[#CCE8E6] text-[#006A68] text-xs font-bold hover:bg-[#006A68] hover:text-white transition-colors flex items-center gap-1.5"
+                                                                className="px-3.5 py-1.5 rounded-lg bg-brand-200 text-brand-800 text-xs font-bold hover:bg-brand-800 hover:text-white transition-colors flex items-center gap-1.5"
                                                             >
                                                                 <Pencil size={12} /> Editar
                                                             </button>
@@ -239,7 +239,7 @@ export default function Modalidades() {
                 {/* Resumo */}
                 {!loading && modalidades.length > 0 && (
                     <div className="mt-5">
-                        <span className="text-xs text-[#4A6362]">
+                        <span className="text-xs text-neutral-600">
                             {modalidades.length} modalidade{modalidades.length !== 1 ? 's' : ''}
                         </span>
                     </div>
@@ -267,3 +267,4 @@ export default function Modalidades() {
         </>
     )
 }
+
