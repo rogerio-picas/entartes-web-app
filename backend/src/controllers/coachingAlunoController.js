@@ -32,6 +32,7 @@ function _handleError(res, error) {
     mensagemMinuscula.includes('não está aberta') ||
     mensagemMinuscula.includes('não está aberto') ||
     mensagemMinuscula.includes('ano letivo') ||
+    mensagemMinuscula.includes('não existe') ||
     mensagemMinuscula.includes('não tem permissão de coaching') ||
     mensagemMinuscula.includes('dentro da disponibilidade')
   ) {
