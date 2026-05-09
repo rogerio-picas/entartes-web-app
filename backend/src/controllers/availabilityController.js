@@ -25,7 +25,6 @@ const criarDisponibilidade = async (req, res) => {
       data: novaDisponibilidade,
     });
   } catch (error) {
-    console.error("Erro a criar disponibilidade:", error.message);
     res.status(error.message.includes("Apenas docentes") ? 403 : 400).json({
       message: error.message,
     });
@@ -48,7 +47,6 @@ const listarDisponibilidades = async (req, res) => {
       data: disponibilidades,
     });
   } catch (error) {
-    console.error("Erro no listarDisponibilidades:", error.message);
     res.status(403).json({
       message: error.message,
     });
@@ -76,7 +74,6 @@ const updateAvailability = async (req, res) => {
       data: disponibilidadeAtualizada,
     });
   } catch (error) {
-    console.error("Erro no updateAvailability:", error.message);
 
     if (error.message.includes("Apenas docentes")) {
       return res.status(403).json({ message: error.message });
@@ -106,7 +103,6 @@ const deleteAvailability = async (req, res) => {
 
     res.status(200).json(resultado);
   } catch (error) {
-    console.error("Erro no deleteAvailability:", error.message);
 
     if (error.message.includes("Apenas docentes")) {
       return res.status(403).json({ message: error.message });

@@ -1,12 +1,12 @@
 ﻿import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
 import {
-    CalendarCheck, BookOpen, Clock, Coins,
-    ChevronRight, AlertCircle, RefreshCw,
+    BookOpen, Clock, Coins,
+    AlertCircle, RefreshCw,
     CheckCircle2, X, Check, ExternalLink,
     Search, Upload, Eye, ChevronDown
 } from 'lucide-react'
 import { api } from '../services/api'
-import { formatDate, formatTime, toWallClockISO } from '../utils/dateUtils'
+import { formatDate, formatTime } from '../utils/dateUtils'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 export { formatDate, formatTime }
@@ -377,6 +377,12 @@ export function HorasCoachingModal({
     const [from, setFrom]             = useState('')
     const [to, setTo]                 = useState('')
     const [activeEndpoint, setActiveEndpoint] = useState(endpoint)
+    const [toast, setToast]           = useState(null)
+
+    function showToast(msg, type = 'success') {
+        setToast({ msg, type })
+        setTimeout(() => setToast(null), 3000)
+    }
 
     useEffect(() => { setActiveEndpoint(endpoint) }, [endpoint])
 
@@ -401,6 +407,7 @@ export function HorasCoachingModal({
         setLoading(true)
         api.get(activeEndpoint)
             .then(d => setRawData(Array.isArray(d) ? d : []))
+            .catch(err => showToast(err.response?.data?.error || err.message || 'Erro ao carregar dados.', 'error'))
             .finally(() => setLoading(false))
     }, [activeEndpoint])
 
@@ -575,6 +582,7 @@ export function HorasCoachingModal({
                     </table>
                 </div>
             )}
+            {toast && <Toast {...toast} />}
         </ModalWrapper>
     )
 }

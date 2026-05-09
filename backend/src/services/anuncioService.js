@@ -16,8 +16,8 @@ const INCLUDE_ANUNCIO_COMPLETO = {
       utilizador: { select: { nome: true, apelido: true } },
     },
   },
-  evento: { select: { nome_evento: true } },
-  grupo:  { select: { nome_grupo: true } },
+  evento: { select: { nome: true } },
+  grupo:  { select: { nome: true } },
 };
 
 // ─────────────────────────────────────────────────────────────

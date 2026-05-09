@@ -28,7 +28,6 @@ const createSala = async (req, res) => {
         const newRoom = await salaService.createSala(nome, descricao);
         res.status(201).json(newRoom);
     } catch (error) {
-        console.error('[salaController.createSala]', error);
         if (error.message === 'Nome da sala é obrigatório' ||
             error.message === 'Já existe uma sala com esse nome') {
             return res.status(400).json({ error: error.message });
@@ -49,7 +48,6 @@ const updateSala = async (req, res) => {
         const updatedRoom = await salaService.updateSala(id, nome, descricao);
         res.json(updatedRoom);
     } catch (error) {
-        console.error('[salaController.updateSala]', error);
         if (error.message === 'Já existe uma outra sala com esse nome') {
             return res.status(400).json({ error: error.message });
         }

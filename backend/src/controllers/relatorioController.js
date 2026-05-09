@@ -24,7 +24,6 @@ const getSessoesRelatorio = async (req, res) => {
     res.json(sessoes);
 
   } catch (error) {
-    console.error('getSessoesRelatorio:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
@@ -44,7 +43,6 @@ const getHorasDocente = async (req, res) => {
     res.json(resultado);
 
   } catch (error) {
-    console.error('getHorasDocente:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
@@ -64,7 +62,6 @@ const getAlunosRelatorio = async (req, res) => {
     res.json(resultado);
 
   } catch (error) {
-    console.error('getAlunosRelatorio:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
@@ -82,7 +79,6 @@ const getDocentesRelatorio = async (req, res) => {
     res.json(resultado);
 
   } catch (error) {
-    console.error('getDocentesRelatorio:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
@@ -109,7 +105,6 @@ const exportCSV = async (req, res) => {
     res.send(csv);
 
   } catch (error) {
-    console.error('exportCSV:', error);
     res.status(500).json({ error: 'Falha na exportação CSV.' });
   }
 };
@@ -126,7 +121,6 @@ const getOcupacaoSalas = async (req, res) => {
     const resultado = await relatorioService.obterOcupacaoSalas(data);
     res.json(resultado);
   } catch (error) {
-    console.error('getOcupacaoSalas:', error);
     res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };

@@ -73,7 +73,6 @@ const listarEventosPaginados = async (req, res) => {
     const resultado = await eventService.listarEventosPaginados(params);
     return res.status(200).json(resultado);
   } catch (error) {
-    console.error("Erro ao listar eventos paginados:", error);
     return res.status(500).json({ error: "Erro ao listar eventos paginados." });
   }
 };
@@ -151,7 +150,6 @@ const editarEvento = async (req, res) => {
       evento: eventoAtualizado,
     });
   } catch (error) {
-    console.error("Erro no editarEvento:", error.message);
     return res.status(error.message.includes("não encontrado") ? 404 : 400).json({
       error: error.message,
     });
@@ -177,7 +175,6 @@ const cancelarEvento = async (req, res) => {
 
     return res.status(200).json(resultado);
   } catch (error) {
-    console.error("Erro no cancelarEvento:", error.message);
 
     if (error.message.includes("não encontrado")) {
       return res.status(404).json({ error: error.message });
@@ -204,7 +201,6 @@ const concluirEvento = async (req, res) => {
     const resultado = await eventService.concluirEvento(id, id_coordenadora);
     return res.status(200).json(resultado);
   } catch (error) {
-    console.error("Erro no concluirEvento:", error.message);
 
     if (error.message.includes("não encontrado")) {
       return res.status(404).json({ error: error.message });

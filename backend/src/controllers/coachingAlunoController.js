@@ -31,7 +31,6 @@ function _handleError(res, error) {
   ) {
     return res.status(400).json({ message: mensagemOriginal });
   }
-  console.error('[coachingAlunoController]', error);
   return res.status(500).json({ message: 'Erro interno no servidor.', error: mensagemOriginal });
 }
 

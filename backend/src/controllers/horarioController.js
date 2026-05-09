@@ -14,7 +14,6 @@ const getMinhasAulas = async (req, res) => {
         const marcacoes = await horarioService.getMinhasAulas(id_utilizador, role);
         res.status(200).json(marcacoes);
     } catch (error) {
-        console.error('Erro ao buscar horário:', error);
         res.status(500).json({ message: 'Erro ao carregar horário.', error: error.message });
     }
 };
@@ -33,7 +32,6 @@ const getAulaDetalhe = async (req, res) => {
         const marcacao = await horarioService.getAulaDetalhe(id, id_utilizador, role);
         res.status(200).json(marcacao);
     } catch (error) {
-        console.error('Erro ao buscar detalhe da aula:', error);
         if (error.message === 'NOT_FOUND') {
             return res.status(404).json({ message: 'Aula não encontrada.' });
         }
@@ -56,7 +54,6 @@ const inscreverEmAula = async (req, res) => {
         const inscricao = await horarioService.inscreverEmAula(id_utilizador, role, id_marcacoes);
         res.status(201).json({ message: 'Inscrição realizada com sucesso!', inscricao });
     } catch (error) {
-        console.error('Erro ao inscrever em aula:', error);
         if (error.message === 'FORBIDDEN') {
             return res.status(403).json({ message: 'Apenas alunos podem inscrever-se em aulas.' });
         }
@@ -86,7 +83,6 @@ const getAulasDisponiveis = async (req, res) => {
         const resultado = await horarioService.getAulasDisponiveis(id_utilizador, role);
         res.status(200).json(resultado);
     } catch (error) {
-        console.error('Erro ao listar aulas disponíveis:', error);
         res.status(500).json({ message: 'Erro ao carregar aulas.', error: error.message });
     }
 };

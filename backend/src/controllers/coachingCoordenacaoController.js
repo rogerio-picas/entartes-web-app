@@ -29,7 +29,6 @@ function _handleError(res, error) {
   ) {
     return res.status(400).json({ message: mensagem });
   }
-  console.error('[coordenacaoController]', error);
   return res.status(500).json({ message: 'Erro interno no servidor.', error: mensagem });
 }
 

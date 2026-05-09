@@ -128,7 +128,6 @@ const relController = require('../controllers/relatorioController');
  *           text/csv:
  *             schema:
  *               type: string
- *     responses:
  *       400:
  *         description: Parâmetros em falta
  */

@@ -317,7 +317,6 @@ async function solicitarMarcacao(id_aluno, dados) {
     return resultado;
 
   } catch (error) {
-    console.error("[ERRO CRÍTICO NO PRISMA AO CRIAR MARCAÇÃO]:", error);
     throw new Error(`Erro na base de dados ao criar marcação: ${error.message}`);
   }
 }
