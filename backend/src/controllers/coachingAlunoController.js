@@ -27,6 +27,11 @@ function _handleError(res, error) {
     mensagemMinuscula.includes('já não está disponível') ||
     mensagemMinuscula.includes('conflito') ||
     mensagemMinuscula.includes('só é possível') ||
+    mensagemMinuscula.includes('só podem') ||
+    mensagemMinuscula.includes('só são') ||
+    mensagemMinuscula.includes('não está aberta') ||
+    mensagemMinuscula.includes('não está aberto') ||
+    mensagemMinuscula.includes('ano letivo') ||
     mensagemMinuscula.includes('não tem permissão de coaching')
   ) {
     return res.status(400).json({ message: mensagemOriginal });
