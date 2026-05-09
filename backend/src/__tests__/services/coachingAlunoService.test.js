@@ -234,6 +234,24 @@ describe('consultarDisponibilidades', () => {
 // 2. solicitarMarcacao
 // ═════════════════════════════════════════════════════════════
 describe('solicitarMarcacao', () => {
+  const realDate = global.Date;
+
+  beforeAll(() => {
+    const mockDate = new realDate('2026-05-01T00:00:00Z');
+    global.Date = class extends realDate {
+      constructor(...args) {
+        if (args.length === 0) {
+          return mockDate;
+        }
+        return new realDate(...args);
+      }
+    };
+    global.Date.now = () => mockDate.getTime();
+  });
+
+  afterAll(() => {
+    global.Date = realDate;
+  });
 
   // Helper — configura todos os mocks para o "caminho feliz"
   function setupCaminhoFeliz() {

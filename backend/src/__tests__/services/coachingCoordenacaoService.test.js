@@ -31,9 +31,10 @@ const prisma = new PrismaClient();
 
 describe('Coaching Coordenacao Service - Testes Unitários', () => {
 
-  // Limpa o estado dos mocks após cada teste
-  afterEach(() => {
+  beforeEach(() => {
     jest.clearAllMocks();
+    prisma.marcacao.findMany.mockResolvedValue([]);
+    prisma.sala.findMany.mockResolvedValue([]);
   });
 
   // ---------------------------------------------------------

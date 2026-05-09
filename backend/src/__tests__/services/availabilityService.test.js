@@ -9,6 +9,11 @@ const mockPrisma = {
     update: jest.fn(),
     delete: jest.fn(),
   },
+  horario_letivo: {
+    findMany: jest.fn().mockResolvedValue([]),
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+  },
 };
 
 jest.mock('@prisma/client', () => ({
@@ -17,6 +22,12 @@ jest.mock('@prisma/client', () => ({
 
 jest.mock('../../services/horarioEscolaService', () => ({
   validarHorarioDisponibilidade: jest.fn().mockResolvedValue(true),
+  obterHorarioEscola: jest.fn().mockResolvedValue({
+    data_inicio: '2026-01-01',
+    data_fim: '2026-12-31',
+    hora_fim: '22:00',
+    dias_semana: [1,2,3,4,5],
+  }),
 }));
 
 const {
