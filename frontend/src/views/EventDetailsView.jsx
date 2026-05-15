@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
-import { ArrowLeft, Loader2, AlertCircle, Plus, Megaphone, Send, Users, Clock, Trash2, Calendar, MapPin, Edit2, X, UserPlus, MessageCircle, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Loader2, AlertCircle, Plus, Megaphone, Send, Users, Clock, Trash2, Calendar, MapPin, Edit2, X, UserPlus, MessageCircle, ChevronRight, Lock } from 'lucide-react'
 import CriarGrupoPanel from '../components/CriarGrupoPanel'
 import EditEventPanel from '../components/EditEventPanel'
 import AddEventMemberPanel from '../components/AddEventMemberPanel'
@@ -214,6 +214,11 @@ export default function EventDetailsView() {
     }
 
     const isPastOrCancelled = event?.id_evento_estado === 4 || event?.id_evento_estado === 5 || (event?.data_de_realizacao && new Date(event.data_de_realizacao) < new Date());
+
+    const isMemberOfSelectedGroup = isAdmin || (selectedGroup && (
+        selectedGroup.aluno_grupo?.some(ag => ag.id_aluno === user?.id_utilizador) ||
+        selectedGroup.docente_grupo?.some(dg => dg.id_docente === user?.id_utilizador)
+    ));
 
     let cleanDescricao = event?.descricao || ''
     let faqsList = []
@@ -538,7 +543,12 @@ export default function EventDetailsView() {
                             )}
 
                             <div className="flex flex-col gap-4">
-                                {groupAnnouncements.length === 0 ? (
+                                {!isMemberOfSelectedGroup ? (
+                                    <div className="flex flex-col items-center justify-center py-10 gap-3">
+                                        <Lock className="text-brand-800/50" size={40} />
+                                        <p className="text-center text-neutral-600 font-medium px-6">Os anúncios deste grupo são exclusivos para os seus membros.</p>
+                                    </div>
+                                ) : groupAnnouncements.length === 0 ? (
                                     <p className="text-center text-neutral-600 italic py-8">Nenhum aviso restrito circulou neste grupo.</p>
                                 ) : (
                                     groupAnnouncements.map((anuncio, idx) => {
