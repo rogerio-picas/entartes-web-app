@@ -179,7 +179,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                             <X size={17} />
                         </button>
                     </div>
-                    <h2 className="text-4xl font-bold text-brand-900 text-center font-['Sora'] mb-4">
+                    <h2 className="text-3xl font-bold text-brand-900 text-center font-['Sora'] mb-4">
                         {isEdit ? 'Editar utilizador' : 'Novo utilizador'}
                     </h2>
                     <div className="border-t border-brand-800" />

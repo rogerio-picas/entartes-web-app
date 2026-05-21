@@ -93,7 +93,7 @@ export default function Modalidades() {
                 <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
                     <div>
                         <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">Gestão de Conteúdo</p>
-                        <h1 className="text-neutral-800 font-normal text-4xl leading-tight tracking-tight">
+                        <h1 className="text-neutral-800 font-normal text-3xl leading-tight tracking-tight">
                             Modalidades
                         </h1>
                     </div>

@@ -366,7 +366,7 @@ export default function Home() {
         {isDocente && (
           <div className="mb-2">
             <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">Painel Docente</p>
-            <h1 className="text-neutral-800 font-normal text-4xl leading-tight tracking-tight">
+            <h1 className="text-neutral-800 font-normal text-3xl leading-tight tracking-tight">
               O teu <span className="text-brand-800 font-semibold">Resumo</span>
             </h1>
           </div>

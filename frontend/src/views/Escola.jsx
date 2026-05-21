@@ -1,20 +1,16 @@
 ﻿import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import {
-    CalendarCheck, BookOpen, Clock, Coins
-} from 'lucide-react'
-import { api } from '../services/api'
-import {
-    ValidacaoModal, HistoricoModal, CoachingModal, ExtratoModal, formatDate
-} from '../components/EscolaModais'
+import { CalendarCheck, BookOpen, Clock, Coins } from 'lucide-react'
+import { ValidacaoModal, HistoricoModal, CoachingModal, ExtratoModal } from '../components/EscolaModais'
 import ActionCard from '../components/ActionCard'
+import { authService } from '../services/authService'
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Escola() {
     const [modal, setModal] = useState(null)
+    const role = authService.getUser()?.role ?? 3
 
     const cards = [
-        { key: 'validacao', label: 'Validação de Aulas', icon: CalendarCheck, description: 'Confirma as aulas pendentes das próximas 48h' },
+        ...(role === 1 ? [{ key: 'validacao', label: 'Validação de Aulas', icon: CalendarCheck, description: 'Confirma as aulas pendentes das próximas 48h' }] : []),
         { key: 'historico', label: 'Histórico de Aulas', icon: BookOpen, description: 'Consulta o historial completo de marcações' },
         { key: 'coaching', label: 'Consultar Horas de Coaching', icon: Clock, description: 'Total de horas e sessões por docente' },
         { key: 'extrato', label: 'Consultar Extrato Mensal', icon: Coins, description: 'Sessões concluídas num intervalo de datas' },
@@ -26,7 +22,7 @@ export default function Escola() {
                 {/* Header */}
                 <div className="mb-8">
                     <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">Serviços & Documentação</p>
-                    <h1 className="text-neutral-800 font-normal text-4xl leading-tight tracking-tight flex items-center gap-3">
+                    <h1 className="text-neutral-800 font-normal text-3xl leading-tight tracking-tight flex items-center gap-3">
                         <span className="w-10 h-10 bg-brand-800 rounded-xl flex items-center justify-center shrink-0">
                             <BookOpen size={20} className="text-white" />
                         </span>

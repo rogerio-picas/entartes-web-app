@@ -105,7 +105,7 @@ export default function NovaModalidadeModal({ onClose, onSuccess, modalidade }) 
                             <X size={17} />
                         </button>
                     </div>
-                    <h2 className="text-4xl font-bold text-brand-900 text-center font-['Sora'] mb-4">
+                    <h2 className="text-3xl font-bold text-brand-900 text-center font-['Sora'] mb-4">
                         {isEdit ? 'Editar modalidade' : 'Nova modalidade'}
                     </h2>
                     <div className="border-t border-brand-800" />

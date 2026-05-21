@@ -6,26 +6,10 @@ const TEAL = '#006A68' // brand-800
 
 function DancerLogo() {
   return (
-    <div className="flex flex-col items-center mb-10">
+    <div className="w-full flex flex-col items-center mb-10">
       {/* Dancer silhouette */}
-      <img src="src/logo.png" alt="Dancer Logo" height="300" width="300" />
+      <img src="src/logo.png" alt="Dancer Logo" height="300" width="300" className="mx-auto block" />
 
-      {/* Brand name */}
-      <div className="text-center leading-tight">
-        <div
-          className="text-2xl tracking-widest"
-          style={{ fontWeight: 300, color: '#6F7978', letterSpacing: '0.15em' }}
-        >
-          ent&apos;artes
-          <sup className="text-xs align-super" style={{ fontWeight: 400 }}>®</sup>
-        </div>
-        <div
-          className="text-xs tracking-widest mt-0.5"
-          style={{ color: '#BEC9C7', letterSpacing: '0.25em', fontWeight: 300 }}
-        >
-          escola de dança
-        </div>
-      </div>
     </div>
   )
 }
@@ -125,9 +109,8 @@ export default function Login() {
       className="min-h-screen flex flex-col items-center justify-center px-6 py-12"
       style={{ backgroundColor: '#EFF5F4' }}
     >
-      <DancerLogo />
-
       <div className="w-full max-w-sm">
+        <DancerLogo />
         <h1
           className="text-2xl font-bold text-center mb-2"
           style={{ color: TEAL }}

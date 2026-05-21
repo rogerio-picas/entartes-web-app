@@ -65,7 +65,7 @@ export default function PainelGestao() {
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-8">
                     <Network size={36} className="text-brand-800" />
-                    <h1 className="text-brand-900 font-normal text-4xl leading-tight tracking-tight">
+                    <h1 className="text-brand-900 font-normal text-3xl leading-tight tracking-tight">
                         Painel de Gestão
                     </h1>
                 </div>

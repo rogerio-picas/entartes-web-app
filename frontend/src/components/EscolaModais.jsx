@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { api } from '../services/api'
 import { formatDate, formatTime } from '../utils/dateUtils'
+import { authService } from '../services/authService'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 export { formatDate, formatTime }
@@ -75,7 +76,7 @@ export function ValidacaoModal({ onClose }) {
     const [toast, setToast] = useState(null)
 
     useEffect(() => {
-        api.get('/aulas').then(data => setAulas(Array.isArray(data) ? data : [])).finally(() => setLoading(false))
+        api.get('/coaching/pedidos-pendentes').then(data => setAulas(Array.isArray(data) ? data : [])).finally(() => setLoading(false))
     }, [])
 
     function showToast(msg, type = 'success') {
@@ -83,21 +84,19 @@ export function ValidacaoModal({ onClose }) {
         setTimeout(() => setToast(null), 3000)
     }
 
-    async function handleConfirm(id) {
-        setConfirming(id)
+    async function handleConfirm(id_marcacao) {
+        const salaId = window.prompt('Introduza o ID da Sala (ex: 1):')
+        if (!salaId) return
+        setConfirming(id_marcacao)
         try {
-            await fetch(`/api/aulas/${id}/estado`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-                body: JSON.stringify({ id_estado: 2 })
-            })
-            setAulas(prev => prev.map(a => a.id_marcacoes === id ? { ...a, estado_marcacao: { id_estado: 2, nome: 'Confirmada' } } : a))
+            await api.post('/coaching/confirmar-marcacao', { id_marcacao, id_sala: parseInt(salaId) })
+            setAulas(prev => prev.filter(a => a.id_marcacao !== id_marcacao))
             showToast('Aula confirmada!')
         } catch { showToast('Erro ao confirmar.', 'error') }
         finally { setConfirming(null) }
     }
 
-    const pendentes = aulas.filter(a => a.estado_marcacao?.id_estado === 1)
+    const pendentes = aulas.filter(a => a.id_estado === 1)
 
     return (
         <ModalWrapper title="Validação de Aulas" onClose={onClose}>
@@ -106,20 +105,20 @@ export function ValidacaoModal({ onClose }) {
             ) : (
                 <ul className="divide-y divide-neutral-600/10">
                     {pendentes.map(a => (
-                        <li key={a.id_marcacoes} className="py-3.5 flex items-center justify-between gap-4">
+                        <li key={a.id_marcacao} className="py-3.5 flex items-center justify-between gap-4">
                             <div>
-                                <p className="font-semibold text-neutral-800 text-sm">{a.modalidade?.nome ?? '—'}</p>
+                                <p className="font-semibold text-neutral-800 text-sm">{a.modalidade ?? '—'}</p>
                                 <p className="text-xs text-neutral-600 mt-0.5">
-                                    {formatDate(a.data_a_realizar)} · {formatTime(a.hora_inicio)} · {formatDuration(a.duracao_minutos)}
+                                    {formatDate(a.data)} · {formatTime(a.hora_inicio)} · {formatDuration(a.duracao_minutos)}
                                 </p>
-                                <p className="text-xs text-neutral-600">{a.sala?.nome ?? '—'}</p>
+                                <p className="text-xs text-neutral-600">{a.sala_atual ?? '—'}</p>
                             </div>
                             <button
-                                onClick={() => handleConfirm(a.id_marcacoes)}
-                                disabled={confirming === a.id_marcacoes}
+                                onClick={() => handleConfirm(a.id_marcacao)}
+                                disabled={confirming === a.id_marcacao}
                                 className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-800 text-white text-xs font-bold rounded-xl hover:bg-brand-900 transition-colors disabled:opacity-50"
                             >
-                                {confirming === a.id_marcacoes ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
+                                {confirming === a.id_marcacao ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
                                 Confirmar
                             </button>
                         </li>
@@ -133,23 +132,49 @@ export function ValidacaoModal({ onClose }) {
 
 // ─── Modal: Histórico de Aulas ────────────────────────────────────────────────
 const ESTADO_CFG = {
-    1: { label: 'Pendente',   color: 'text-amber-600   bg-amber-50   border-amber-200' },
-    2: { label: 'Confirmada', color: 'text-brand-800   bg-neutral-50  border-brand-500' },
-    3: { label: 'Cancelada',  color: 'text-red-600     bg-red-50     border-red-200' },
-    4: { label: 'Finalizado', color: 'text-brand-800   bg-brand-200  border-brand-800' },
+    1: { label: 'Pendente',     color: 'text-amber-600  bg-amber-50   border-amber-200' },
+    2: { label: 'Em Validação', color: 'text-blue-600   bg-blue-50    border-blue-200'  },
+    3: { label: 'Confirmada',   color: 'text-brand-800  bg-neutral-50 border-brand-500' },
+    4: { label: 'Concluída',    color: 'text-brand-800  bg-brand-200  border-brand-800' },
+    5: { label: 'Cancelada',    color: 'text-red-600    bg-red-50     border-red-200'   },
 }
 
 export function HistoricoModal({ onClose }) {
     const [aulas, setAulas] = useState([])
     const [loading, setLoading] = useState(true)
+    const [filtroEstado, setFiltroEstado] = useState('todos')
+    const role = authService.getUser()?.role ?? 3
 
     useEffect(() => {
-        api.get('/aulas/todas').then(data => setAulas(Array.isArray(data) ? data : [])).finally(() => setLoading(false))
-    }, [])
+        const endpoint = role === 1
+            ? '/coaching/pedidos-pendentes?estados=1,2,3,4,5'
+            : role === 2 ? '/coaching/minhas-aulas' : '/coaching/meus-pedidos'
+        api.get(endpoint).then(data => setAulas(Array.isArray(data) ? data : [])).finally(() => setLoading(false))
+    }, [role])
+
+    const filtered = (filtroEstado === 'todos'
+        ? aulas
+        : aulas.filter(a => String(a.id_estado) === filtroEstado)
+    ).sort((a, b) => new Date(b.data ?? 0) - new Date(a.data ?? 0))
 
     return (
         <ModalWrapper title="Histórico de Aulas" onClose={onClose} wide>
-            {loading ? <Spinner /> : aulas.length === 0 ? (
+            {!loading && aulas.length > 0 && (
+                <div className="flex items-center gap-3 mb-4">
+                    <select
+                        value={filtroEstado}
+                        onChange={e => setFiltroEstado(e.target.value)}
+                        className="text-xs border border-neutral-600/25 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-brand-800"
+                    >
+                        <option value="todos">Todos os estados</option>
+                        {Object.entries(ESTADO_CFG).map(([id, cfg]) => (
+                            <option key={id} value={id}>{cfg.label}</option>
+                        ))}
+                    </select>
+                    <span className="text-xs text-neutral-500">{filtered.length} registo{filtered.length !== 1 ? 's' : ''}</span>
+                </div>
+            )}
+            {loading ? <Spinner /> : filtered.length === 0 ? (
                 <EmptyState icon={BookOpen} msg="Nenhuma aula registada." />
             ) : (
                 <div className="overflow-x-auto">
@@ -162,16 +187,15 @@ export function HistoricoModal({ onClose }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {aulas.map(a => {
-                                const id_e = a.estado_marcacao?.id_estado
-                                const cfg = ESTADO_CFG[id_e] ?? { label: a.estado_marcacao?.nome ?? '—', color: 'text-gray-500 bg-gray-50 border-gray-200' }
+                            {filtered.map(a => {
+                                const cfg = ESTADO_CFG[a.id_estado] ?? { label: a.estado ?? '—', color: 'text-gray-500 bg-gray-50 border-gray-200' }
                                 return (
-                                    <tr key={a.id_marcacoes} className="border-b border-neutral-600/10 hover:bg-brand-50 transition-colors">
-                                        <td className="px-3 py-3 font-semibold text-neutral-800">{a.modalidade?.nome ?? '—'}</td>
-                                        <td className="px-3 py-3 text-gray-600 whitespace-nowrap">{formatDate(a.data_a_realizar)}</td>
+                                    <tr key={a.id_marcacao} className="border-b border-neutral-600/10 hover:bg-brand-50 transition-colors">
+                                        <td className="px-3 py-3 font-semibold text-neutral-800">{a.modalidade ?? '—'}</td>
+                                        <td className="px-3 py-3 text-gray-600 whitespace-nowrap">{formatDate(a.data)}</td>
                                         <td className="px-3 py-3 text-gray-600 whitespace-nowrap">{formatTime(a.hora_inicio)}</td>
                                         <td className="px-3 py-3 text-gray-600">{formatDuration(a.duracao_minutos)}</td>
-                                        <td className="px-3 py-3 text-gray-600">{a.sala?.nome ?? '—'}</td>
+                                        <td className="px-3 py-3 text-gray-600">{a.sala_atual ?? a.sala ?? '—'}</td>
                                         <td className="px-3 py-3">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${cfg.color}`}>
                                                 {cfg.label}
@@ -192,13 +216,27 @@ export function HistoricoModal({ onClose }) {
 export function CoachingModal({ onClose }) {
     const [data, setData] = useState([])
     const [loading, setLoading] = useState(true)
+    const role = authService.getUser()?.role ?? 3
 
     useEffect(() => {
-        api.get('/relatorio/horas-docente').then(d => setData(Array.isArray(d) ? d : [])).finally(() => setLoading(false))
-    }, [])
+        if (role === 1) {
+            api.get('/relatorio/horas-docente').then(d => setData(Array.isArray(d) ? d : [])).finally(() => setLoading(false))
+        } else {
+            const endpoint = role === 2 ? '/coaching/minhas-aulas' : '/coaching/meus-pedidos'
+            api.get(endpoint).then(raw => {
+                const concluded = (Array.isArray(raw) ? raw : []).filter(m => m.id_estado === 4)
+                const user = authService.getUser()
+                setData([{
+                    nome: [user?.nome, user?.apelido].filter(Boolean).join(' ') || 'Eu',
+                    totalSessoes: concluded.length,
+                    totalMinutos: concluded.reduce((s, m) => s + (m.duracao_minutos ?? 0), 0),
+                }])
+            }).finally(() => setLoading(false))
+        }
+    }, [role])
 
-    const totalMin = data.reduce((acc, d) => acc + (d._sum?.duracao_minutos ?? 0), 0)
-    const totalSessoes = data.reduce((acc, d) => acc + (d._count ?? 0), 0)
+    const totalMin = data.reduce((acc, d) => acc + (d.totalMinutos ?? 0), 0)
+    const totalSessoes = data.reduce((acc, d) => acc + (d.totalSessoes ?? 0), 0)
 
     return (
         <ModalWrapper title="Horas de Coaching" onClose={onClose}>
@@ -224,11 +262,11 @@ export function CoachingModal({ onClose }) {
                                         <span className="text-brand-800 text-[11px] font-bold">D{i + 1}</span>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-neutral-800">Docente #{d.id_docente}</p>
-                                        <p className="text-xs text-neutral-600">{d._count ?? 0} sessões</p>
+                                        <p className="text-sm font-semibold text-neutral-800">{d.nome}</p>
+                                        <p className="text-xs text-neutral-600">{d.totalSessoes ?? 0} sessões</p>
                                     </div>
                                 </div>
-                                <span className="text-sm font-bold text-brand-800">{formatDuration(d._sum?.duracao_minutos)}</span>
+                                <span className="text-sm font-bold text-brand-800">{formatDuration(d.totalMinutos)}</span>
                             </li>
                         ))}
                     </ul>
@@ -245,11 +283,25 @@ export function ExtratoModal({ onClose }) {
     const [to, setTo] = useState(now.toISOString().split('T')[0])
     const [data, setData] = useState(null)
     const [loading, setLoading] = useState(false)
+    const role = authService.getUser()?.role ?? 3
 
     async function fetchExtrato() {
         setLoading(true)
         try {
-            const result = await api.get(`/relatorio/sessoes?from=${from}&to=${to}`)
+            let result
+            if (role === 1) {
+                result = await api.get(`/relatorio/sessoes?from=${from}&to=${to}`)
+            } else {
+                const endpoint = role === 2 ? '/coaching/minhas-aulas' : '/coaching/meus-pedidos'
+                const all = await api.get(endpoint)
+                const fromDate = new Date(from)
+                const toDate = new Date(to); toDate.setHours(23, 59, 59)
+                result = (Array.isArray(all) ? all : []).filter(m => {
+                    if (m.id_estado !== 4) return false
+                    const d = new Date(m.data)
+                    return d >= fromDate && d <= toDate
+                })
+            }
             setData(Array.isArray(result) ? result : [])
         } catch {
             setData([])
@@ -327,24 +379,26 @@ export function ExtratoModal({ onClose }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.map(s => (
-                                    <tr key={s.id_marcacoes} className="border-b border-neutral-600/10 hover:bg-brand-50">
-                                        <td className="px-3 py-2.5 whitespace-nowrap">{formatDate(s.data_a_realizar)}</td>
+                                {data.map((s, i) => (
+                                    <tr key={s.id_marcacoes ?? s.id_marcacao ?? i} className="border-b border-neutral-600/10 hover:bg-brand-50">
+                                        <td className="px-3 py-2.5 whitespace-nowrap">{formatDate(s.data_a_realizar ?? s.data)}</td>
                                         <td className="px-3 py-2.5 whitespace-nowrap">{formatTime(s.hora_inicio)}</td>
                                         <td className="px-3 py-2.5">{formatDuration(s.duracao_minutos)}</td>
-                                        <td className="px-3 py-2.5">{s.modalidade?.nome ?? '—'}</td>
-                                        <td className="px-3 py-2.5">{s.sala?.nome ?? '—'}</td>
+                                        <td className="px-3 py-2.5">{s.modalidade?.nome ?? s.modalidade ?? '—'}</td>
+                                        <td className="px-3 py-2.5">{s.sala?.nome ?? s.sala ?? '—'}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                    <button
-                        onClick={handleExportCSV}
-                        className="flex items-center gap-2 text-xs font-bold text-brand-800 hover:text-brand-900 transition-colors"
-                    >
-                        <ExternalLink size={13} /> Exportar CSV
-                    </button>
+                    {role === 1 && (
+                        <button
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-2 text-xs font-bold text-brand-800 hover:text-brand-900 transition-colors"
+                        >
+                            <ExternalLink size={13} /> Exportar CSV
+                        </button>
+                    )}
                 </>
             )}
         </ModalWrapper>
@@ -531,7 +585,7 @@ export function HorasCoachingModal({
                                         <ChevronDown size={12} className={`inline ml-1 transition-transform ${sortCol === col.key ? 'text-brand-800' : 'opacity-30'} ${sortCol === col.key && sortDir === 'desc' ? 'rotate-180' : ''}`} />
                                     </th>
                                 ))}
-                                {!hideActions && <th className="w-16" />}
+                                {!hideActions && <th className="w-24" />}
                             </tr>
                         </thead>
                         <tbody>
@@ -544,7 +598,7 @@ export function HorasCoachingModal({
                                             </td>
                                         ))}
                                         {!hideActions && (
-                                            <td className="px-3 py-3.5">
+                                            <td className="px-3 py-3.5 whitespace-nowrap">
                                                 {renderActions ? renderActions(r, load) : (
                                                     <button
                                                         onClick={() => setExpanded(expanded === r.id ? null : r.id)}
@@ -597,9 +651,10 @@ const VALIDACAO_COLS = [
     { key: 'tipo',       label: 'Tipo' },
     {
         key: 'estado', label: 'Estado',
-        render: r => r.id_estado >= 3
-            ? <span className="flex items-center gap-1 text-brand-800 font-bold text-xs whitespace-nowrap"><Check size={12} /> Confirmado</span>
-            : <span className="flex items-center gap-1 text-amber-600 font-bold text-xs whitespace-nowrap"><AlertCircle size={12} /> Pendente</span>
+        render: r => {
+            const cfg = ESTADO_CFG[r.id_estado] ?? { label: r.estado ?? '—', color: 'text-gray-500 bg-gray-50 border-gray-200' }
+            return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${cfg.color}`}>{cfg.label}</span>
+        },
     },
 ]
 

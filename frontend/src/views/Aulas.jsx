@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { formatDate, formatTime } from '../utils/dateUtils'
 import { useLocation } from 'react-router-dom'
 import {
-  CalendarDays, Clock, User, MapPin, Music, CheckCircle2,
+  Clock, CheckCircle2,
   XCircle, AlertCircle, RefreshCw, Plus, X, BookOpen, ArrowUpDown, Check
 } from 'lucide-react'
 import coachingService from '../services/coachingService'
@@ -71,7 +71,7 @@ export default function Aulas() {
   const [toast, setToast] = useState(null)
   const [showAll, setShowAll] = useState(false)
   const [modalAula, setModalAula] = useState(null)
-  const [filtroEstado, setFiltroEstado] = useState(location.state?.filtroEstado || 'todos')
+  const [filtroEstado, setFiltroEstado] = useState(location.state?.filtroEstado || (role === 1 ? '1' : 'todos'))
   const [filtroModalidade, setFiltroModalidade] = useState('todas')
   const [showNovaDisponibilidade, setShowNovaDisponibilidade] = useState(false)
   const [showNovaMarcacao, setShowNovaMarcacao] = useState(false)
@@ -116,7 +116,9 @@ export default function Aulas() {
           estado_nome: m.estado || '—',
           alunos: m.alunos?.map(a => typeof a === 'object' ? a.nome : a) || [],
           numero_alunos_pretendidos: m.numero_alunos_pretendidos,
-          ja_validou: m.ja_validou
+          ja_validou: m.ja_validou,
+          _data_raw: m.data,
+          duracao_min: m.duracao_minutos
         }
       })
       setMarcacoes(formatadas)
@@ -220,12 +222,16 @@ export default function Aulas() {
   const modalidades = ['todas', ...new Set(marcacoes.map(a => a.modalidade).filter(Boolean))]
 
   const marcacoesFiltradas = marcacoes.filter(a => {
-    if (!showAll && [4, 5].includes(a.id_estado)) return false // Se o histórico estiver oculto (só pendentes/confirmadas)
+    // Explicit filters always take precedence
     if (filtroEstado !== 'todos' && String(a.id_estado) !== String(filtroEstado)) return false
     if (filtroModalidade !== 'todas' && a.modalidade !== filtroModalidade) return false
-    if (!showAll && role === 1 && a.id_estado !== 1 && a.id_estado !== 2) return false
-    // Oculta canceladas por omissao em todos os roles — só aparecem com "Ver todas" ou filtro explícito
-    if (!showAll && a.id_estado === 5 && filtroEstado === 'todos') return false
+
+    // Default visibility rules only when no explicit estado filter and not showing all
+    if (filtroEstado === 'todos' && !showAll) {
+      if (role === 1 && a.id_estado !== 1 && a.id_estado !== 2) return false
+      if ([4, 5].includes(a.id_estado)) return false
+    }
+
     return true
   })
 
@@ -247,7 +253,7 @@ export default function Aulas() {
             <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">
               {role === 1 ? 'Gestão de Coachings' : 'Gestão de Presenças'}
             </p>
-            <h1 className="text-neutral-800 font-normal text-4xl leading-tight tracking-tight">
+            <h1 className="text-neutral-800 font-normal text-3xl leading-tight tracking-tight">
               {showAll ? 'Todos os Coachings' : 'Confirmação de Coachings'}
             </h1>
           </div>
@@ -456,8 +462,6 @@ export default function Aulas() {
                 </tr>
               ) : (
                 marcacoesFiltradas.map((row, idx) => {
-                  const cfg = getStatusCfg(row.id_estado, row.estado_nome)
-                  const StatusIcon = cfg.icon
                   const isLoading = loadingId === row.id
                   const isPendente = row.id_estado === 1 || row.id_estado === 2
 
@@ -501,16 +505,16 @@ export default function Aulas() {
                         ) : role === 1 && isPendente ? (
                           <div className="flex gap-2">
                             <button onClick={() => handleConfirm(row.id)} title="Confirmar"
-                              className="w-8 h-8 bg-feedback-success border border-feedback-success-dark rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
-                              <Check size={15} strokeWidth={3} className="text-white" />
+                              className="w-8 h-8 rounded-full border-2 border-brand-800 text-brand-800 flex items-center justify-center hover:bg-neutral-50 transition-colors active:scale-95">
+                              <Check size={13} />
                             </button>
                             <button onClick={() => {
                               if (window.confirm('Tem a certeza que deseja rejeitar esta marcação?')) {
                                 handleReject(row.id)
                               }
                             }} title="Rejeitar"
-                              className="w-8 h-8 bg-feedback-error border border-feedback-error-dark rounded-lg flex items-center justify-center hover:brightness-95 transition-all active:scale-95">
-                              <X size={15} strokeWidth={3} className="text-white" />
+                              className="w-8 h-8 rounded-full border-2 border-red-400 text-red-500 flex items-center justify-center hover:bg-red-50 transition-colors active:scale-95">
+                              <X size={13} />
                             </button>
                           </div>
                         ) : (role === 2 || role === 3) && isPendente ? (

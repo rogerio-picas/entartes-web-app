@@ -107,7 +107,7 @@ export default function Events() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
           <div>
             <p className="text-neutral-600 text-sm mb-1">Agenda Cultural & Académica</p>
-            <h1 className="text-neutral-800 text-4xl">
+            <h1 className="text-neutral-800 text-3xl">
               Próximos <span className="text-brand-800 font-semibold">Eventos</span>
             </h1>
           </div>

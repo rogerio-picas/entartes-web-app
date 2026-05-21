@@ -49,7 +49,7 @@ export default function ProfileManagement() {
         <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">
           Configurações de Conta
         </p>
-        <h1 className="text-neutral-800 font-normal text-4xl leading-tight tracking-tight">
+        <h1 className="text-neutral-800 font-normal text-3xl leading-tight tracking-tight">
           Gestão de <span className="text-brand-800 font-semibold">Perfil</span>
         </h1>
       </div>

@@ -829,7 +829,7 @@ export default function Horario() {
                         <p className="text-[#4A6362] text-sm font-medium tracking-wide mb-1">
                             {role === 1 ? 'Gestão de Horários' : role === 2 ? 'As minhas sessões' : 'O meu plano de aulas'}
                         </p>
-                        <h1 className="text-[#324B4A] font-normal text-4xl leading-tight tracking-tight">
+                        <h1 className="text-[#324B4A] font-normal text-3xl leading-tight tracking-tight">
                             Horário <span className="text-[#006A68] font-semibold">
                                 {role === 1 ? 'Geral' : role === 2 ? 'do Docente' : 'do Aluno'}
                             </span>

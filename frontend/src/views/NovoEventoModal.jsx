@@ -172,7 +172,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
                             <X size={17} />
                         </button>
                     </div>
-                    <h2 className="text-4xl font-bold text-brand-900 text-center font-['Sora'] mb-4">
+                    <h2 className="text-3xl font-bold text-brand-900 text-center font-['Sora'] mb-4">
                         {initialData ? 'Editar evento' : 'Novo evento'}
                     </h2>
                 </div>
