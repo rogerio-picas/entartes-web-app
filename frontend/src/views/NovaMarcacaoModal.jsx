@@ -354,7 +354,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                     const proximaData = proximaDataDoSlot(slot)
                     const dataOuDia = slot.data_especifica
                       ? formatDate(slot.data_especifica)
-                      : (slot.dia_semana != null ? DIAS[slot.dia_semana] : 'â€”')
+                      : (slot.dia_semana != null ? DIAS[slot.dia_semana] : '–')
 
                     return (
                       <button
@@ -377,7 +377,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                               <CalendarDays size={12} /> {dataOuDia}
                             </span>
                             <span className="flex items-center gap-1 text-xs text-gray-500">
-                              <Clock size={12} /> {formatTime(slot.hora_inicio)} â€“ {formatTime(slot.hora_fim)}
+                              <Clock size={12} /> {formatTime(slot.hora_inicio)} – {formatTime(slot.hora_fim)}
                             </span>
                           </div>
                         </div>
@@ -412,7 +412,7 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                 <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wide mb-1.5">Data da sessão</label>
                 <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-brand-800/30 bg-neutral-50 text-sm text-neutral-800 font-semibold">
                   <CalendarDays size={15} className="text-brand-800 shrink-0" />
-                  {data ? new Date(data + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'â€”'}
+                  {data ? new Date(data + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '–'}
                 </div>
                 <p className="text-[10px] text-neutral-600 mt-1">Data preenchida automaticamente com base na disponibilidade selecionada.</p>
               </div>

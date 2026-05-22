@@ -107,7 +107,7 @@ function EditSalaModal({ item, salas, onClose, onSuccess }) {
             await coachingService.reatribuirSala(item.id, Number(idSala))
             onSuccess()
         } catch (e) {
-            alert(e.response?.data?.message || 'Erro ao mudar sala')
+            setErro(e.response?.data?.message || 'Erro ao mudar sala')
         } finally {
             setLoading(false)
         }
@@ -401,6 +401,7 @@ export default function Horario() {
     const [itemToEdit, setItemToEdit] = useState(null)
     const [showEditSala, setShowEditSala] = useState(false)
     const [toast, setToast] = useState(null)
+    const [pendingDeleteItem, setPendingDeleteItem] = useState(null)
 
     function showToast(msg, type = 'success') {
         setToast({ msg, type })
@@ -666,8 +667,12 @@ export default function Horario() {
         }
     }
 
-    const handleDeleteItem = async (item) => {
-        if (!window.confirm(`Tem a certeza que deseja ${item._type === 'aula' ? 'cancelar' : 'eliminar'} este registo?`)) return
+    const handleDeleteItem = (item) => {
+        setPendingDeleteItem(item)
+    }
+
+    const executeDeleteItem = async (item) => {
+        setPendingDeleteItem(null)
         try {
             if (item._type === 'disponibilidade') {
                 await disponibilidadeService.eliminar(item.id_disponibilidade)
@@ -675,7 +680,6 @@ export default function Horario() {
                 if (role === 2) {
                     await coachingService.cancelarMarcacaoDocente(item.id, 'Cancelado pelo docente')
                 } else if (role === 1) {
-                    // Admin: Se estiver confirmada, cancela. Se estiver pendente, rejeita.
                     if (item.id_estado === 3) {
                         await coachingService.cancelarMarcacaoConfirmada(item.id, 'Cancelado pelo administrador')
                     } else {
@@ -687,6 +691,7 @@ export default function Horario() {
             } else if (item._type === 'evento') {
                 await eventService.delete(item.id_evento)
             }
+            setSelectedItem(null)
             showToast('Operação realizada com sucesso!')
             fetchAll()
         } catch (e) {
@@ -1112,6 +1117,26 @@ export default function Horario() {
                 />
             )}
 
+
+            {pendingDeleteItem && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4" onClick={() => setPendingDeleteItem(null)}>
+                    <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+                    <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm font-['Sora']" onClick={e => e.stopPropagation()}>
+                        <p className="font-semibold text-neutral-800 text-base mb-1">
+                            {pendingDeleteItem._type === 'aula' ? 'Cancelar marcação?' : 'Eliminar registo?'}
+                        </p>
+                        <p className="text-sm text-neutral-500 mb-5">Esta ação não pode ser desfeita.</p>
+                        <div className="flex gap-2">
+                            <button onClick={() => setPendingDeleteItem(null)} className="flex-1 py-2.5 text-sm border border-neutral-600/25 rounded-xl text-neutral-600 hover:bg-neutral-50 transition-colors">
+                                Cancelar
+                            </button>
+                            <button onClick={() => executeDeleteItem(pendingDeleteItem)} className="flex-1 py-2.5 text-sm bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors">
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {toast && <Toast {...toast} onClose={() => setToast(null)} />}
         </>

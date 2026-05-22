@@ -72,7 +72,10 @@ export function Toast({ msg, type }) {
 export function ValidacaoModal({ onClose }) {
     const [aulas, setAulas] = useState([])
     const [loading, setLoading] = useState(true)
-    const [confirming, setConfirming] = useState(null)
+    const [confirmCtx, setConfirmCtx] = useState(null)
+    const [salas, setSalas] = useState([])
+    const [selectedSala, setSelectedSala] = useState('')
+    const [actioning, setActioning] = useState(null)
     const [toast, setToast] = useState(null)
 
     useEffect(() => {
@@ -84,49 +87,98 @@ export function ValidacaoModal({ onClose }) {
         setTimeout(() => setToast(null), 3000)
     }
 
-    async function handleConfirm(id_marcacao) {
-        const salaId = window.prompt('Introduza o ID da Sala (ex: 1):')
-        if (!salaId) return
-        setConfirming(id_marcacao)
+    async function handleStartConfirm(a) {
         try {
-            await api.post('/coaching/confirmar-marcacao', { id_marcacao, id_sala: parseInt(salaId) })
-            setAulas(prev => prev.filter(a => a.id_marcacao !== id_marcacao))
+            const dataStr = a.data ? a.data.split('T')[0] : ''
+            const horaStr = a.hora_inicio ? (a.hora_inicio.includes('T') ? a.hora_inicio.split('T')[1].substring(0, 8) : a.hora_inicio.substring(0, 8)) : ''
+            const salasDisp = await api.get(`/coaching/salas-disponiveis?data_a_realizar=${dataStr}&hora_inicio=${horaStr}&duracao_minutos=${a.duracao_minutos}`)
+            setSalas(Array.isArray(salasDisp) ? salasDisp.filter(s => s.disponivel) : [])
+            setSelectedSala('')
+            setConfirmCtx(a)
+        } catch { showToast('Erro ao carregar salas.', 'error') }
+    }
+
+    async function handleConfirm() {
+        if (!selectedSala || !confirmCtx) return
+        setActioning(confirmCtx.id_marcacao)
+        try {
+            await api.post('/coaching/confirmar-marcacao', { id_marcacao: confirmCtx.id_marcacao, id_sala: Number(selectedSala) })
+            setAulas(prev => prev.filter(a => a.id_marcacao !== confirmCtx.id_marcacao))
+            setConfirmCtx(null)
             showToast('Aula confirmada!')
         } catch { showToast('Erro ao confirmar.', 'error') }
-        finally { setConfirming(null) }
+        finally { setActioning(null) }
     }
 
     const pendentes = aulas.filter(a => a.id_estado === 1)
 
     return (
-        <ModalWrapper title="Validação de Aulas" onClose={onClose}>
-            {loading ? <Spinner /> : pendentes.length === 0 ? (
-                <EmptyState icon={CheckCircle2} msg="Nenhuma aula pendente de validação." />
-            ) : (
-                <ul className="divide-y divide-neutral-600/10">
-                    {pendentes.map(a => (
-                        <li key={a.id_marcacao} className="py-3.5 flex items-center justify-between gap-4">
-                            <div>
-                                <p className="font-semibold text-neutral-800 text-sm">{a.modalidade ?? '—'}</p>
-                                <p className="text-xs text-neutral-600 mt-0.5">
-                                    {formatDate(a.data)} · {formatTime(a.hora_inicio)} · {formatDuration(a.duracao_minutos)}
-                                </p>
-                                <p className="text-xs text-neutral-600">{a.sala_atual ?? '—'}</p>
-                            </div>
-                            <button
-                                onClick={() => handleConfirm(a.id_marcacao)}
-                                disabled={confirming === a.id_marcacao}
-                                className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-800 text-white text-xs font-bold rounded-xl hover:bg-brand-900 transition-colors disabled:opacity-50"
+        <>
+            <ModalWrapper title="Validação de Aulas" onClose={onClose}>
+                {loading ? <Spinner /> : pendentes.length === 0 ? (
+                    <EmptyState icon={CheckCircle2} msg="Nenhuma aula pendente de validação." />
+                ) : (
+                    <ul className="divide-y divide-neutral-600/10">
+                        {pendentes.map(a => (
+                            <li key={a.id_marcacao} className="py-3.5 flex items-center justify-between gap-4">
+                                <div>
+                                    <p className="font-semibold text-neutral-800 text-sm">{a.modalidade ?? '—'}</p>
+                                    <p className="text-xs text-neutral-600 mt-0.5">
+                                        {formatDate(a.data)} · {formatTime(a.hora_inicio)} · {formatDuration(a.duracao_minutos)}
+                                    </p>
+                                    <p className="text-xs text-neutral-600">{a.sala_atual ?? '—'}</p>
+                                </div>
+                                <button
+                                    onClick={() => handleStartConfirm(a)}
+                                    disabled={actioning === a.id_marcacao}
+                                    className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-800 text-white text-xs font-bold rounded-xl hover:bg-brand-900 transition-colors disabled:opacity-50"
+                                >
+                                    {actioning === a.id_marcacao ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
+                                    Confirmar
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                {toast && <Toast {...toast} />}
+            </ModalWrapper>
+
+            {confirmCtx && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={() => setConfirmCtx(null)}>
+                    <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+                    <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm font-['Sora']" onClick={e => e.stopPropagation()}>
+                        <h4 className="font-bold text-brand-800 text-base mb-1">Confirmar Aula</h4>
+                        <p className="text-sm text-neutral-600 mb-4">
+                            {confirmCtx.modalidade} · {formatDate(confirmCtx.data)} às {formatTime(confirmCtx.hora_inicio)}
+                        </p>
+                        {salas.length === 0 ? (
+                            <p className="text-sm text-amber-600 mb-4">Sem salas disponíveis neste horário.</p>
+                        ) : (
+                            <select
+                                value={selectedSala}
+                                onChange={e => setSelectedSala(e.target.value)}
+                                className="w-full border border-neutral-600/25 rounded-xl px-3 py-2 text-sm mb-4 focus:outline-none focus:border-brand-800"
                             >
-                                {confirming === a.id_marcacao ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
+                                <option value="">Selecionar sala...</option>
+                                {salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
+                            </select>
+                        )}
+                        <div className="flex gap-2">
+                            <button onClick={() => setConfirmCtx(null)} className="flex-1 py-2.5 text-sm border border-neutral-600/25 rounded-xl text-neutral-600 hover:bg-brand-50 transition-colors">
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleConfirm}
+                                disabled={!selectedSala || actioning === confirmCtx.id_marcacao}
+                                className="flex-1 py-2.5 text-sm bg-brand-800 text-white font-bold rounded-xl hover:bg-brand-900 transition-colors disabled:opacity-50"
+                            >
                                 Confirmar
                             </button>
-                        </li>
-                    ))}
-                </ul>
+                        </div>
+                    </div>
+                </div>
             )}
-            {toast && <Toast {...toast} />}
-        </ModalWrapper>
+        </>
     )
 }
 
@@ -679,6 +731,7 @@ function normalizeValidacao(raw) {
 export function ValidacaoCoachingModal({ onClose }) {
     const [confirmCtx, setConfirmCtx] = useState(null)
     const [selectedSala, setSelectedSala]   = useState('')
+    const [pendingReject, setPendingReject] = useState(null)
     const [actioning, setActioning]   = useState(null)
     const [toast, setToast]           = useState(null)
 
@@ -689,6 +742,7 @@ export function ValidacaoCoachingModal({ onClose }) {
 
     async function handleReject(row, refetch) {
         setActioning(row.id)
+        setPendingReject(null)
         try {
             await api.post('/coaching/rejeitar-marcacao', { id_marcacao: row.id_marcacao, motivo: 'Pedido rejeitado pela coordenação' })
             showToast('Pedido rejeitado.')
@@ -722,11 +776,32 @@ export function ValidacaoCoachingModal({ onClose }) {
     function renderActions(row, refetch) {
         const isPendente = row.id_estado < 3
         const busy = actioning === row.id
+
+        if (pendingReject === row.id) {
+            return (
+                <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-neutral-500 whitespace-nowrap">Rejeitar?</span>
+                    <button
+                        onClick={() => handleReject(row, refetch)}
+                        className="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center hover:bg-red-700 transition-colors"
+                    >
+                        <Check size={12} strokeWidth={3} className="text-white" />
+                    </button>
+                    <button
+                        onClick={() => setPendingReject(null)}
+                        className="w-7 h-7 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center hover:bg-neutral-200 transition-colors"
+                    >
+                        <X size={12} strokeWidth={3} className="text-neutral-600" />
+                    </button>
+                </div>
+            )
+        }
+
         return (
             <div className="flex items-center justify-center gap-1.5">
                 <button
                     disabled={!isPendente || busy}
-                    onClick={() => handleReject(row, refetch)}
+                    onClick={() => setPendingReject(row.id)}
                     className="w-8 h-8 rounded-full border-2 border-red-400 text-red-500 flex items-center justify-center hover:bg-red-50 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
                 >
                     {busy ? <RefreshCw size={11} className="animate-spin" /> : <X size={13} />}

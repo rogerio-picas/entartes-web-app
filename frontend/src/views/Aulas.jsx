@@ -78,6 +78,9 @@ export default function Aulas() {
   const [disponibilidades, setDisponibilidades] = useState([])
   const [loadingDisp, setLoadingDisp] = useState(false)
   const [deletingDispId, setDeletingDispId] = useState(null)
+  const [confirmId, setConfirmId] = useState(null)
+  const [salaPickerCtx, setSalaPickerCtx] = useState(null)
+  const [selectedSalaPicker, setSelectedSalaPicker] = useState('')
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -118,6 +121,7 @@ export default function Aulas() {
           numero_alunos_pretendidos: m.numero_alunos_pretendidos,
           ja_validou: m.ja_validou,
           _data_raw: m.data,
+          hora_inicio_raw: m.hora_inicio,
           duracao_min: m.duracao_minutos
         }
       })
@@ -162,14 +166,28 @@ export default function Aulas() {
   }
 
   const handleConfirm = async (id) => {
+    if (role === 1) {
+      setLoadingId(id)
+      try {
+        const row = marcacoes.find(m => m.id === id)
+        const dataStr = row?._data_raw ? row._data_raw.split('T')[0] : ''
+        const horaStr = row?.hora_inicio_raw
+          ? (row.hora_inicio_raw.includes('T') ? row.hora_inicio_raw.split('T')[1].substring(0, 8) : row.hora_inicio_raw.substring(0, 8))
+          : ''
+        const salas = await api.get(`/coaching/salas-disponiveis?data_a_realizar=${dataStr}&hora_inicio=${horaStr}&duracao_minutos=${row?.duracao_min ?? 60}`)
+        setSalaPickerCtx({ id, salas: Array.isArray(salas) ? salas.filter(s => s.disponivel) : [] })
+        setSelectedSalaPicker('')
+      } catch (err) {
+        showToast(err.response?.data?.message || err.message || 'Erro ao carregar salas.', 'error')
+      } finally {
+        setLoadingId(null)
+      }
+      return
+    }
     setLoadingId(id)
     try {
       let result
-      if (role === 1) {
-        const salaId = prompt('Introduza o ID da Sala para confirmar (ex: 1):')
-        if (!salaId) throw new Error('ID Sala é obrigatório para o Admin atribuir.')
-        result = await api.post('/coaching/confirmar-marcacao', { id_marcacao: id, id_sala: parseInt(salaId) })
-      } else if (role === 2) {
+      if (role === 2) {
         result = await api.post(`/coaching/docente/conclusao-sessao/${id}`)
       } else {
         result = await api.post(`/coaching/aluno/conclusao-sessao/${id}`)
@@ -178,6 +196,21 @@ export default function Aulas() {
       fetchMarcacoes()
     } catch (err) {
       showToast(err.response?.data?.message || err.message || 'Erro.', 'error')
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
+  const handleConfirmComSala = async () => {
+    if (!selectedSalaPicker || !salaPickerCtx) return
+    setLoadingId(salaPickerCtx.id)
+    try {
+      const result = await api.post('/coaching/confirmar-marcacao', { id_marcacao: salaPickerCtx.id, id_sala: Number(selectedSalaPicker) })
+      setSalaPickerCtx(null)
+      showToast(result?.mensagem || 'Coaching confirmado!', 'success')
+      fetchMarcacoes()
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || 'Erro ao confirmar.', 'error')
     } finally {
       setLoadingId(null)
     }
@@ -503,32 +536,51 @@ export default function Aulas() {
                         {isLoading ? (
                           <RefreshCw size={18} className="text-brand-800 animate-spin" />
                         ) : role === 1 && isPendente ? (
-                          <div className="flex gap-2">
-                            <button onClick={() => handleConfirm(row.id)} title="Confirmar"
-                              className="w-8 h-8 rounded-full border-2 border-brand-800 text-brand-800 flex items-center justify-center hover:bg-neutral-50 transition-colors active:scale-95">
-                              <Check size={13} />
-                            </button>
-                            <button onClick={() => {
-                              if (window.confirm('Tem a certeza que deseja rejeitar esta marcação?')) {
-                                handleReject(row.id)
-                              }
-                            }} title="Rejeitar"
-                              className="w-8 h-8 rounded-full border-2 border-red-400 text-red-500 flex items-center justify-center hover:bg-red-50 transition-colors active:scale-95">
-                              <X size={13} />
-                            </button>
-                          </div>
+                          confirmId === row.id ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-neutral-500">Confirmar?</span>
+                              <button onClick={() => { setConfirmId(null); handleReject(row.id) }}
+                                className="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center hover:bg-red-700 transition-colors">
+                                <Check size={12} strokeWidth={3} className="text-white" />
+                              </button>
+                              <button onClick={() => setConfirmId(null)}
+                                className="w-7 h-7 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center hover:bg-neutral-200 transition-colors">
+                                <X size={12} strokeWidth={3} className="text-neutral-600" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <button onClick={() => handleConfirm(row.id)} title="Confirmar"
+                                className="w-8 h-8 rounded-full border-2 border-brand-800 text-brand-800 flex items-center justify-center hover:bg-neutral-50 transition-colors active:scale-95">
+                                <Check size={13} />
+                              </button>
+                              <button onClick={() => setConfirmId(row.id)} title="Rejeitar"
+                                className="w-8 h-8 rounded-full border-2 border-red-400 text-red-500 flex items-center justify-center hover:bg-red-50 transition-colors active:scale-95">
+                                <X size={13} />
+                              </button>
+                            </div>
+                          )
                         ) : (role === 2 || role === 3) && isPendente ? (
-                          <button
-                            onClick={() => {
-                              if (window.confirm('Tem a certeza que deseja cancelar esta marcação?')) {
-                                handleReject(row.id)
-                              }
-                            }}
+                          confirmId === row.id ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-neutral-500">Confirmar?</span>
+                              <button onClick={() => { setConfirmId(null); handleReject(row.id) }}
+                                className="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center hover:bg-red-700 transition-colors">
+                                <Check size={12} strokeWidth={3} className="text-white" />
+                              </button>
+                              <button onClick={() => setConfirmId(null)}
+                                className="w-7 h-7 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center hover:bg-neutral-200 transition-colors">
+                                <X size={12} strokeWidth={3} className="text-neutral-600" />
+                              </button>
+                            </div>
+                          ) : (
+                          <button onClick={() => setConfirmId(row.id)}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
                           >
                             <X size={12} strokeWidth={3} />
                             Cancelar
                           </button>
+                          )
                         ) : podeConfirmarPresenca ? (
                           <button
                             onClick={() => handleConfirm(row.id)}
@@ -644,13 +696,25 @@ export default function Aulas() {
                           <td className="px-4 py-4">
                             {isDeleting ? (
                               <RefreshCw size={16} className="text-red-500 animate-spin" />
+                            ) : confirmId === `disp_${d.id_disponibilidade}` ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-neutral-500">Confirmar?</span>
+                                <button onClick={() => { setConfirmId(null); handleDeleteDisponibilidade(d.id_disponibilidade) }}
+                                  className="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center hover:bg-red-700 transition-colors">
+                                  <Check size={12} strokeWidth={3} className="text-white" />
+                                </button>
+                                <button onClick={() => setConfirmId(null)}
+                                  className="w-7 h-7 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center hover:bg-neutral-200 transition-colors">
+                                  <X size={12} strokeWidth={3} className="text-neutral-600" />
+                                </button>
+                              </div>
                             ) : (
                               <button
-                                onClick={() => handleDeleteDisponibilidade(d.id_disponibilidade)}
-                                title="Eliminar disponibilidade"
-                                className="w-8 h-8 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center hover:bg-red-100 transition-colors text-red-600"
+                                onClick={() => setConfirmId(`disp_${d.id_disponibilidade}`)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
                               >
-                                <X size={14} strokeWidth={2.5} />
+                                <X size={12} strokeWidth={2.5} />
+                                Cancelar
                               </button>
                             )}
                           </td>
@@ -674,11 +738,7 @@ export default function Aulas() {
           item={modalAula}
           role={role}
           onClose={() => setModalAula(null)}
-          onDelete={(modalAula.id_estado === 1 || modalAula.id_estado === 2) ? () => {
-            if (window.confirm('Tem a certeza que deseja cancelar esta marcação?')) {
-              handleReject(modalAula.id)
-            }
-          } : undefined}
+          onDelete={(modalAula.id_estado === 1 || modalAula.id_estado === 2) ? () => handleReject(modalAula.id) : undefined}
         />
       )}
 
@@ -694,6 +754,39 @@ export default function Aulas() {
           onClose={() => setShowNovaMarcacao(false)}
           onSuccess={() => { showToast('Pedido de marcação enviado com sucesso!', 'success'); fetchMarcacoes() }}
         />
+      )}
+
+      {salaPickerCtx && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSalaPickerCtx(null)}>
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+          <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm font-['Sora']" onClick={e => e.stopPropagation()}>
+            <h4 className="font-bold text-brand-800 text-base mb-4">Confirmar Coaching — Selecionar Sala</h4>
+            {salaPickerCtx.salas.length === 0 ? (
+              <p className="text-sm text-amber-600 mb-4">Sem salas disponíveis neste horário.</p>
+            ) : (
+              <select
+                value={selectedSalaPicker}
+                onChange={e => setSelectedSalaPicker(e.target.value)}
+                className="w-full border border-neutral-600/25 rounded-xl px-3 py-2 text-sm mb-4 focus:outline-none focus:border-brand-800"
+              >
+                <option value="">Selecionar sala...</option>
+                {salaPickerCtx.salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
+              </select>
+            )}
+            <div className="flex gap-2">
+              <button onClick={() => setSalaPickerCtx(null)} className="flex-1 py-2.5 text-sm border border-neutral-600/25 rounded-xl text-neutral-600 hover:bg-neutral-50 transition-colors">
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmComSala}
+                disabled={!selectedSalaPicker}
+                className="flex-1 py-2.5 text-sm bg-brand-800 text-white font-bold rounded-xl hover:bg-brand-900 transition-colors disabled:opacity-50"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast */}

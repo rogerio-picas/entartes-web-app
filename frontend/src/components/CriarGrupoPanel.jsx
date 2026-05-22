@@ -104,7 +104,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                         errors.push(`Membro ${membro.nome}: ${e.response?.data?.error || e.message}`)
                     }
                 }
-                if (errors.length > 0) alert("Erros ao adicionar membros:\n" + errors.join("\n"))
+                if (errors.length > 0) setErro('Erros ao adicionar membros: ' + errors.join('; '))
 
                 for (const id of removedIds) {
                     try {
@@ -131,7 +131,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                         errors.push(`Membro ${membro.nome}: ${e.response?.data?.error || e.message}`)
                     }
                 }
-                if (errors.length > 0) alert("Erros ao adicionar membros:\n" + errors.join("\n"))
+                if (errors.length > 0) setErro('Erros ao adicionar membros: ' + errors.join('; '))
             }
             onSuccess(grupo)
         } catch (e) {

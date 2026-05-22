@@ -41,6 +41,7 @@ export default function EventDetailsView() {
 
     const [editingAnuncio, setEditingAnuncio] = useState(null)
     const [toast, setToast] = useState(null)
+    const [confirmCtx, setConfirmCtx] = useState(null)
 
     const showToast = (title, type = 'success') => {
         setToast({ title, type })
@@ -140,28 +141,36 @@ export default function EventDetailsView() {
         }
     }
 
-    const handleDeleteGroup = async (groupId) => {
-        if (!window.confirm("Pretende mesmo APAGAR este grupo? Todos os alertas e membros serão perdidos para sempre.")) return;
-        try {
-            await api.delete(`/evento/${id}/grupos/${groupId}`);
-            setSelectedGroup(null);
-            loadEventData();
-            showToast('Grupo apagado com sucesso!');
-        } catch (e) {
-            alert('Não foi possível eliminar o grupo.\n' + (e.message || ''));
-        }
+    const handleDeleteGroup = (groupId) => {
+        setConfirmCtx({
+            message: 'Apagar este grupo? Todos os alertas e membros serão perdidos para sempre.',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/evento/${id}/grupos/${groupId}`)
+                    setSelectedGroup(null)
+                    loadEventData()
+                    showToast('Grupo apagado com sucesso!')
+                } catch (e) {
+                    showToast('Não foi possível eliminar o grupo: ' + (e.message || ''), 'error')
+                }
+            }
+        })
     }
 
-    const handleDeleteAnuncio = async (id_anuncio, isGroupContext) => {
-        if (!window.confirm("Apagar este anúncio permanentemente?")) return
-        try {
-            await api.delete(`/anuncios/${id_anuncio}`)
-            if (isGroupContext) loadGroupAnnouncements(selectedGroup.id_grupo)
-            else loadEventAnnouncements()
-            showToast('Anúncio eliminado.')
-        } catch (e) {
-            alert('Erro ao apagar anúncio: ' + (e.response?.data?.error || e.message))
-        }
+    const handleDeleteAnuncio = (id_anuncio, isGroupContext) => {
+        setConfirmCtx({
+            message: 'Apagar este anúncio permanentemente?',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/anuncios/${id_anuncio}`)
+                    if (isGroupContext) loadGroupAnnouncements(selectedGroup.id_grupo)
+                    else loadEventAnnouncements()
+                    showToast('Anúncio eliminado.')
+                } catch (e) {
+                    showToast('Erro ao apagar anúncio: ' + (e.response?.data?.error || e.message), 'error')
+                }
+            }
+        })
     }
 
     const handleSaveEditAnuncio = async () => {
@@ -173,22 +182,25 @@ export default function EventDetailsView() {
             })
             if (editingAnuncio.isGroupContext) loadGroupAnnouncements(selectedGroup.id_grupo)
             else loadEventAnnouncements()
-
             setEditingAnuncio(null)
             showToast('Anúncio atualizado com sucesso!')
         } catch (e) {
-            alert('Erro ao editar anúncio: ' + (e.response?.data?.error || e.message))
+            showToast('Erro ao editar anúncio: ' + (e.response?.data?.error || e.message), 'error')
         }
     }
 
-    const handleDeleteEvent = async () => {
-        if (!window.confirm(`Tem a certeza absoluta de que pretende cancelar/eliminar o evento "${event?.nome}"?\n\nIsto afetará todas as inscrições e anúncios associados.`)) return
-        try {
-            await api.delete(`/evento/${id}`)
-            navigate('/eventos')
-        } catch (err) {
-            alert('Erro ao eliminar evento: ' + (err.response?.data?.error || err.message))
-        }
+    const handleDeleteEvent = () => {
+        setConfirmCtx({
+            message: `Eliminar o evento "${event?.nome}"? Isto afetará todas as inscrições e anúncios associados.`,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/evento/${id}`)
+                    navigate('/eventos')
+                } catch (err) {
+                    showToast('Erro ao eliminar evento: ' + (err.response?.data?.error || err.message), 'error')
+                }
+            }
+        })
     }
 
     if (loading) {
@@ -718,6 +730,24 @@ export default function EventDetailsView() {
                     </div>
                 </div>
             )}
+
+        {confirmCtx && (
+            <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" onClick={() => setConfirmCtx(null)}>
+                <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+                <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm font-['Sora']" onClick={e => e.stopPropagation()}>
+                    <p className="font-semibold text-neutral-800 text-base mb-1">Tem a certeza?</p>
+                    <p className="text-sm text-neutral-500 mb-5">{confirmCtx.message}</p>
+                    <div className="flex gap-2">
+                        <button onClick={() => setConfirmCtx(null)} className="flex-1 py-2.5 text-sm border border-neutral-600/25 rounded-xl text-neutral-600 hover:bg-neutral-50 transition-colors">
+                            Cancelar
+                        </button>
+                        <button onClick={() => { setConfirmCtx(null); confirmCtx.onConfirm() }} className="flex-1 py-2.5 text-sm bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors">
+                            Confirmar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
 
         {toast && <Toast msg={toast.title} type={toast.type} onClose={() => setToast(null)} />}
         </div>
