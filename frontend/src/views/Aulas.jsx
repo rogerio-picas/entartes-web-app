@@ -238,7 +238,7 @@ export default function Aulas() {
   // ── Lógica 48h para aluno ─────────────────────────────────────────────────
   // Uma aula precisa de confirmação se: estado=Confirmada + data já passou + menos de 48h
   function precisaConfirmacao(aula) {
-    if (aula.id_estado !== 3) return false
+    if (aula.id_estado !== 3 || aula.ja_validou) return false
     if (!aula._data_raw) return false
     const fim = new Date(aula._data_raw)
     fim.setMinutes(fim.getMinutes() + (aula.duracao_min || 60))
@@ -500,14 +500,14 @@ export default function Aulas() {
 
                   // Janela de confirmação de presença (role 2 e 3): estado Confirmada + aula já passou + ≤48h
                   const podeConfirmarPresenca = (() => {
-                    if (role === 1 || row.id_estado !== 3 || !row._data_raw) return false
+                    if (role === 1 || row.id_estado !== 3 || !row._data_raw || row.ja_validou) return false
                     const fim = new Date(row._data_raw)
                     fim.setMinutes(fim.getMinutes() + (row.duracao_min || 60))
                     const diffHoras = (new Date() - fim) / (1000 * 60 * 60)
                     return diffHoras >= 0 && diffHoras <= 48
                   })()
                   const prazoExpiradoTabela = (() => {
-                    if (role === 1 || row.id_estado !== 3 || !row._data_raw) return false
+                    if (role === 1 || row.id_estado !== 3 || !row._data_raw || row.ja_validou) return false
                     const fim = new Date(row._data_raw)
                     fim.setMinutes(fim.getMinutes() + (row.duracao_min || 60))
                     const diffHoras = (new Date() - fim) / (1000 * 60 * 60)
@@ -589,6 +589,8 @@ export default function Aulas() {
                             <Check size={12} strokeWidth={3} />
                             Confirmar presen&ccedil;a
                           </button>
+                  ) : row.ja_validou && row.id_estado === 3 ? (
+                    <span className="text-xs text-brand-800 font-semibold bg-brand-100 px-2 py-1 rounded-lg">A aguardar a outra parte</span>
                         ) : prazoExpiradoTabela ? (
                           <span className="text-xs text-gray-400 font-medium">Prazo expirado</span>
                         ) : (

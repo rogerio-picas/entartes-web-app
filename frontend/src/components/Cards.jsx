@@ -36,34 +36,34 @@ export function EventCard({ event, onOpen }) {
 // Cartão: Presenças a confirmar a expirar
 export function ActionCard({ item, onAccept, onReject }) {
   return (
-    <div className="bg-brand-50 border border-brand-800 rounded-xl p-4 flex relative min-w-[340px]">
+    <div className="bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex relative min-w-[340px]">
       <div className="flex-1 flex flex-col gap-1.5">
         <p className="text-sm">
-          <span className="text-brand-900 font-medium">Modalidade: </span>
-          <span className="text-brand-800">{item.modalidade}</span>
+          <span className="text-neutral-500 font-medium">Modalidade: </span>
+          <span className="text-neutral-800 font-semibold">{item.modalidade}</span>
         </p>
         <p className="text-sm">
-          <span className="text-brand-900 font-medium">Data: </span>
-          <span className="text-brand-800">{item.data}</span>
+          <span className="text-neutral-500 font-medium">Data: </span>
+          <span className="text-neutral-800 font-semibold">{item.data}</span>
         </p>
         <p className="text-sm">
-          <span className="text-brand-900 font-medium">Duração: </span>
-          <span className="text-brand-800">{item.duracao}</span>
+          <span className="text-neutral-500 font-medium">Duração: </span>
+          <span className="text-neutral-800 font-semibold">{item.duracao}</span>
         </p>
         <p className="text-sm">
-          <span className="text-brand-900 font-medium">Hora início: </span>
-          <span className="text-brand-800">{item.hora}</span>
+          <span className="text-neutral-500 font-medium">Hora início: </span>
+          <span className="text-neutral-800 font-semibold">{item.hora}</span>
         </p>
         <p className="text-sm">
-          <span className="text-brand-900 font-medium">Tipo: </span>
-          <span className="text-brand-800">{item.tipo}</span>
+          <span className="text-neutral-500 font-medium">Tipo: </span>
+          <span className="text-neutral-800 font-semibold">{item.tipo}</span>
         </p>
       </div>
 
       <div className="flex flex-col items-end justify-between">
         <div className="flex items-center gap-1.5 pt-1">
-          <Clock size={16} className="text-brand-800" />
-          <span className="text-xs font-semibold text-black">{item.tempoRestante}</span>
+          <Clock size={14} className="text-amber-600" />
+          <span className="text-xs font-semibold text-amber-700">{item.tempoRestante}</span>
         </div>
 
         <div className="flex gap-2">
@@ -75,7 +75,7 @@ export function ActionCard({ item, onAccept, onReject }) {
           </button>
           <button
             onClick={onAccept}
-            className="w-12 h-12 bg-feedback-success border border-brand-800 rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity"
+            className="w-12 h-12 bg-feedback-success border border-feedback-success-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity"
           >
             <Check size={24} strokeWidth={3} className="text-white" />
           </button>
@@ -90,40 +90,42 @@ export function ClassCard({ item, statusType, onOpen }) {
   const isConfirmada = statusType === 'confirmada'
 
   return (
-    <div className="bg-brand-50 border border-brand-800 rounded-xl p-5 flex flex-col justify-between min-w-[340px]">
+    <div 
+      onClick={onOpen}
+      className="bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex flex-col justify-between min-w-[340px] cursor-pointer hover:scale-[1.01] hover:shadow-md transition-all duration-300 group">
       <div className="flex justify-between items-start mb-4">
         <div className="flex flex-col gap-1 w-2/3">
           <p className="text-sm">
-            <span className="text-brand-900 font-medium">Modalidade: </span>
-            <span className="text-brand-800">{item.modalidade}</span>
+            <span className="text-neutral-500 font-medium">Modalidade: </span>
+            <span className="text-neutral-800 font-semibold">{item.modalidade}</span>
           </p>
           <p className="text-sm">
-            <span className="text-brand-900 font-medium">Data: </span>
-            <span className="text-brand-800">{item.data}</span>
+            <span className="text-neutral-500 font-medium">Data: </span>
+            <span className="text-neutral-800 font-semibold">{item.data}</span>
           </p>
           <p className="text-sm">
-            <span className="text-brand-900 font-medium">Hora início: </span>
-            <span className="text-brand-800">{item.hora}</span>
+            <span className="text-neutral-500 font-medium">Hora início: </span>
+            <span className="text-neutral-800 font-semibold">{item.hora}</span>
           </p>
           <p className="text-sm">
-            <span className="text-brand-900 font-medium">Duração: </span>
-            <span className="text-brand-800">{item.duracao}</span>
+            <span className="text-neutral-500 font-medium">Duração: </span>
+            <span className="text-neutral-800 font-semibold">{item.duracao}</span>
           </p>
           <p className="text-sm">
-            <span className="text-brand-900 font-medium">Estúdio: </span>
-            <span className="text-brand-800">{item.estudio || item.sala}</span>
+            <span className="text-neutral-500 font-medium">Estúdio: </span>
+            <span className="text-neutral-800 font-semibold">{item.estudio || item.sala}</span>
           </p>
           <p className="text-sm">
-            <span className="text-brand-900 font-medium">Tipo: </span>
-            <span className="text-brand-800">{item.tipo || 'Individual'}</span>
+            <span className="text-neutral-500 font-medium">Tipo: </span>
+            <span className="text-neutral-800 font-semibold">{item.tipo || 'Individual'}</span>
           </p>
         </div>
 
-        <div className="flex flex-col items-center justify-start mt-2">
-          <div className="w-14 h-14 rounded-full border-4 border-brand-800 flex items-center justify-center bg-white mb-2 relative overflow-hidden">
+        <div className="flex flex-col items-center justify-start text-center my-auto">
+          <div className="w-14 h-14 bg-brand-500 rounded-full border-2 border-brand-800 flex items-center justify-center mb-2 relative overflow-hidden">
             <User size={30} className="text-brand-800" />
           </div>
-          <span className="text-brand-900 text-xs text-center leading-tight">Docente<br /><span className="font-bold">{item.docente}</span></span>
+          <span className="text-neutral-500 text-xs text-center leading-tight">Docente<br /><span className="font-bold text-neutral-800">{item.docente}</span></span>
         </div>
       </div>
 
@@ -134,12 +136,6 @@ export function ClassCard({ item, statusType, onOpen }) {
           }`}>
           {isConfirmada ? 'Confirmada' : 'Pendente'}
         </div>
-        <button
-          onClick={onOpen}
-          className="px-5 py-0.5 rounded-full bg-brand-500 border border-brand-800 text-white text-sm font-medium hover:brightness-95 transition-all"
-        >
-          Ver mais
-        </button>
       </div>
     </div>
   )
@@ -202,5 +198,3 @@ export function DashboardSection({ title, icon: Icon, children }) {
     </section>
   )
 }
-
-

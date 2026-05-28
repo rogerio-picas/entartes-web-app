@@ -22,7 +22,9 @@ export default {
           900: '#00504E',
           800: '#006A68',
           500: '#CCE8E6',
-          200: '#CCE8E6',
+          300: '#d1fae5',
+          200: '#f0faf9',
+          100: '#FFFFFF',
           50: '#F4FBF9',
         },
         neutral: {
@@ -38,7 +40,7 @@ export default {
           50: '#EFF5F4',
         },
         feedback: {
-          success: { DEFAULT: '#049A59', dark: '#0A7659' },
+          success: { DEFAULT: '#049A59', dark: '#0A7659', clean: '#d1fae5' },
           error: { DEFAULT: '#BA1A1A', dark: '#93000A', light: '#FFDAD6' },
           info: { DEFAULT: '#324863', light: '#D2E4FF' },
           warning: { DEFAULT: '#FF9500', light: '#FFF3E0' }
