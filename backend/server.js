@@ -62,6 +62,7 @@ const notificacaoRoutes = require('./src/routes/notificacaoRoutes');
 const salaRoutes = require('./src/routes/salaRoutes');
 const modalidadeRoutes = require('./src/routes/modalidadeRoutes');
 
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 

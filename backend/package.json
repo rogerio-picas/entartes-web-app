@@ -11,6 +11,7 @@
     "test:e2e": "python3 -m robot --outputdir ../tests/robot/results ../tests/robot/tests/"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -18,14 +19,13 @@
     "express": "^4.22.1",
     "express-rate-limit": "^8.4.1",
     "jsonwebtoken": "^9.0.3",
+    "prisma": "^6.19.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "@prisma/client": "^6.19.3",
     "jest": "^29.7.0",
     "nodemon": "^3.1.0",
-    "prisma": "^6.19.3",
     "supertest": "^7.2.2"
   },
   "jest": {
