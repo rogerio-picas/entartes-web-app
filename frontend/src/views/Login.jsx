@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
+import logoSrc from '../logo.png'
 
 const TEAL = '#006A68' // brand-800
 
@@ -8,7 +9,7 @@ function DancerLogo() {
   return (
     <div className="w-full flex flex-col items-center mb-10">
       {/* Dancer silhouette */}
-      <img src="src/logo.png" alt="Dancer Logo" height="300" width="300" className="mx-auto block" />
+      <img src={logoSrc} alt="Dancer Logo" height="300" width="300" className="mx-auto block" />
 
     </div>
   )
