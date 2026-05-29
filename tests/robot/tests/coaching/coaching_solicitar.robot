@@ -20,6 +20,7 @@ ${CREATED_MARCACAO_ID}      ${NONE}
 ${CREATED_DISPONIBILIDADE}  ${NONE}
 ${DOCENTE_ID}               ${42}
 ${MODALIDADE_ID}            ${2}
+${MODALIDADE_NAO_ASSOCIADA_ID}    ${9999}
 ${DATA_FUTURA}              2027-06-15
 ${HORA_INICIO}              10:00
 
@@ -106,6 +107,18 @@ Solicitar Com Horário Fora Da Disponibilidade Retorna 400
     ${response}=    POST    ${BASE_URL}/api/coaching/marcacao/solicitar    json=${body}    headers=${headers}    expected_status=400
     ${msg}=    Get From Dictionary    ${response.json()}    message
     Should Contain    ${msg}    não cabe dentro da disponibilidade
+
+Solicitar Com Modalidade Não Associada Retorna 400
+    [Documentation]    Tentar solicitar uma marcação para uma modalidade à qual o aluno não está associado
+    ...                deve retornar erro 400.
+    [Tags]    coaching    negative    create
+    ${headers}=    Make Auth Headers    ${ALUNO_TOKEN}
+    ${body}=    Create Dictionary
+    ...    id_docente=${DOCENTE_ID}    id_modalidade=${MODALIDADE_NAO_ASSOCIADA_ID}
+    ...    data_a_realizar=${DATA_FUTURA}    hora_inicio=${HORA_INICIO}    duracao_minutos=${60}
+    ${response}=    POST    ${BASE_URL}/api/coaching/marcacao/solicitar    json=${body}    headers=${headers}    expected_status=400
+    ${msg}=    Get From Dictionary    ${response.json()}    message
+    Should Contain    ${msg}    Não estás associado a esta modalidade
 
 # ---------------------------------------------------------------------------
 # CREATE — POST /api/coaching/marcacao/solicitar
