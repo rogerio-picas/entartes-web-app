@@ -51,12 +51,19 @@ const getMe = async (req, res) => {
                 data_nascimento: true,
                 nif: true,
                 codigo_username: true,
+                id_tipo: true,
+                estado: true,
+                aluno: { include: { aluno_modalidade: { include: { modalidade: true } } } },
+                docente: { include: { docente_modalidade: { include: { modalidade: true } } } },
+                coordenadora: true,
             }
         });
 
         if (!user) {
             return res.status(404).json({ message: 'Utilizador não encontrado.' });
         }
+
+        delete user.password;
 
         res.status(200).json(user);
     } catch (error) {

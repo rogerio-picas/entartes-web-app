@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 const getUsers = async (options = {}) => {
     const queryOptions = { ...options };
-    if (!queryOptions.include) {
+    if (!queryOptions.include && !queryOptions.select) {
         queryOptions.include = {
             aluno: { include: { aluno_modalidade: { include: { modalidade: true } } } },
             docente: { include: { docente_modalidade: { include: { modalidade: true } } } },
@@ -16,7 +16,7 @@ const getUsers = async (options = {}) => {
 
 const getUser = async (options = {}) => {
     const queryOptions = { ...options };
-    if (!queryOptions.include) {
+    if (!queryOptions.include && !queryOptions.select) {
         queryOptions.include = {
             aluno: { include: { aluno_modalidade: { include: { modalidade: true } } } },
             docente: { include: { docente_modalidade: { include: { modalidade: true } } } },
