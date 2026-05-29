@@ -401,7 +401,7 @@ export default function Home() {
         {/* ── ADMIN/DOCENTE: pending requests 48h ──────────────── */}
         {(isAdmin || isDocente) && (
           <section>
-            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Coachings pendentes a expirar em 48h"} action="Ver todas" onAction={() => navigate('/coaching')} />
+            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Coachings pendentes a expirar em 48h"} action="Ver todas" onAction={() => navigate('/aulas', { state: { filtro48h: true } })} />
             {coachings48h.length === 0 ? (
               <p className="text-sm text-neutral-600 italic">Sem coachings pendentes nas próximas 48h.</p>
             ) : (
