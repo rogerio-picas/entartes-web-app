@@ -255,7 +255,7 @@ async function solicitarMarcacao(id_aluno, dados) {
     const alunoMod = await prisma.aluno_modalidade.findFirst({
       where: { id_utilizador: id_aluno, id_modalidade }
     });
-    if (!alunoMod) throw new Error('Não estás associado a esta modalidade.');
+    if (!alunoMod) throw new Error('Ação inválida: Não estás associado a esta modalidade.');
   }
 
   // ── Validação 2: duração permitida (RF-COA-06)
@@ -481,7 +481,7 @@ async function adicionarParticipantesGrupo(id_marcacao, id_aluno_requisitante, o
     const outroAlunoMod = await prisma.aluno_modalidade.findFirst({
       where: { id_utilizador: id, id_modalidade: marcacao.id_modalidade }
     });
-    if (!outroAlunoMod) throw new Error(`O aluno com ID ${id} não está associado à modalidade da marcação.`);
+    if (!outroAlunoMod) throw new Error(`Ação inválida: O aluno com ID ${id} não está associado à modalidade da marcação.`);
 
     // Verificar se o aluno já tem pedido para o mesmo slot
     const conflito = await prisma.aluno_marcacao.findFirst({
