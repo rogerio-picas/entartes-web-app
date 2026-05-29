@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { UserCog, BellRing, Music2, LifeBuoy, LogOut, ChevronRight } from 'lucide-react'
+import { UserCog, Music2, LogOut, ChevronRight } from 'lucide-react'
 import { authService } from '../services/authService'
 import { useNavigate } from 'react-router-dom'
 import EditarPerfilModal from '../components/EditarPerfilModal'
@@ -24,22 +24,12 @@ export default function ProfileManagement() {
       icon: UserCog,
       onClick: () => setShowEditarPerfil(true),
     },
-    {
-      title: 'Gestão de Notificações',
-      icon: BellRing,
-      onClick: () => console.log('Notificações')
-    },
     // Apenas mostra "Gerir Modalidades" se não for aluno (role 3)
     ...(role !== 3 ? [{
       title: 'Gerir modalidades',
       icon: Music2,
       onClick: () => navigate('/modalidades')
     }] : []),
-    {
-      title: 'Ajuda e Suporte',
-      icon: LifeBuoy,
-      onClick: () => console.log('Suporte')
-    },
   ]
 
   return (
