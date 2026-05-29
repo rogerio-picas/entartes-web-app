@@ -172,7 +172,7 @@ function CustomToolbar({ label, onNavigate, onView, view }) {
     return (
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5 px-8 pt-8">
             <div className="flex items-center gap-4">
-                <h2 className="text-2xl font-bold text-[#324B4A] min-w-[200px]">{label}</h2>
+                <h2 className="text-2xl font-bold text-[#324B4A] w-[270px]">{label}</h2>
                 <div className="flex items-center gap-2 ml-2">
                     <button onClick={() => onNavigate('PREV')} className="w-9 h-9 rounded-full border border-[#4a6362]/25 flex items-center justify-center hover:bg-[#EFF5F4] transition-colors">
                         <ChevronLeft size={17} className="text-[#4A6362]" />
@@ -352,18 +352,57 @@ function Toast({ msg, type, onClose }) {
 
 // ─── Filter Dropdown ──────────────────────────────────────────────────────────
 function FilterDropdown({ value, onChange, options, placeholder }) {
+    const [isOpen, setIsOpen] = useState(false)
+
+    // Find current label
+    const currentOption = options.find(o => String(o.id !== undefined ? o.id : o) === String(value))
+    const currentLabel = currentOption ? (currentOption.nome || currentOption) : (placeholder || 'Geral (Tudo)')
+
     return (
-        <div className="relative">
-            <select value={value} onChange={e => onChange(e.target.value)}
-                className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-[#4a6362]/25 text-xs font-medium text-[#324B4A] bg-white focus:outline-none focus:border-[#006A68] cursor-pointer">
-                <option value="">{placeholder}</option>
-                {options.map(o => (
-                    <option key={o.id || o} value={o.id !== undefined ? o.id : o}>
-                        {o.nome || o}
-                    </option>
-                ))}
-            </select>
-            <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#4A6362] pointer-events-none" />
+        <div className="relative inline-block text-left select-none z-20">
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center justify-between gap-2.5 pl-4 pr-3 py-2 bg-white border border-[#4a6362]/25 rounded-[12px] text-xs font-semibold text-[#324B4A] hover:bg-[#EFF5F4] transition-all cursor-pointer focus:outline-none focus:border-[#006A68] min-w-[150px]"
+            >
+                <span className="truncate">{currentLabel}</span>
+                <ChevronDown size={14} className={`text-[#4A6362] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isOpen && (
+                <>
+                    {/* Backdrop to close when clicking outside */}
+                    <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+
+                    {/* Dropdown Menu */}
+                    <div className="absolute left-0 mt-1.5 w-[200px] bg-white border border-[#4a6362]/15 rounded-[16px] shadow-lg py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                        {placeholder && (
+                            <button
+                                type="button"
+                                onClick={() => { onChange(''); setIsOpen(false); }}
+                                className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-[#EFF5F4] transition-colors ${value === '' ? 'text-[#006A68] font-bold bg-[#EFF5F4]/60' : 'text-[#324B4A]'}`}
+                            >
+                                {placeholder}
+                            </button>
+                        )}
+                        {options.map(o => {
+                            const optionId = o.id !== undefined ? o.id : o;
+                            const optionLabel = o.nome || o;
+                            const isSelected = String(optionId) === String(value);
+                            return (
+                                <button
+                                    key={optionId}
+                                    type="button"
+                                    onClick={() => { onChange(optionId); setIsOpen(false); }}
+                                    className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-[#EFF5F4] transition-colors ${isSelected ? 'text-[#006A68] font-bold bg-[#EFF5F4]/60' : 'text-[#324B4A]'}`}
+                                >
+                                    {optionLabel}
+                                </button>
+                            )
+                        })}
+                    </div>
+                </>
+            )}
         </div>
     )
 }
@@ -753,6 +792,9 @@ export default function Horario() {
         }
         .rbc-header:first-child { border-left: none !important; }
         
+        /* Ocultar a área de "dia inteiro" (all-day) na vista semanal para remover o espaço em branco */
+        .rbc-allday-cell { display: none !important; }
+        
         .rbc-off-range-bg { background-color: #F9FAFB !important; }
         
         /* Círculo do dia "Hoje" (Azul Google) */
@@ -816,12 +858,17 @@ export default function Horario() {
         .rbc-show-more:hover { background-color: #F1F3F4; }
     `;
 
-    const filterOptions = [
-        { id: '', nome: 'Geral (Tudo)' },
-        { id: 'aulas', nome: 'Aulas' },
-        { id: 'eventos', nome: 'Eventos' },
-        { id: 'disponibilidades', nome: 'Disponibilidades' }
-    ]
+    const filterOptions = useMemo(() => {
+        const base = [
+            { id: '', nome: 'Geral (Tudo)' },
+            { id: 'aulas', nome: 'Aulas' },
+            { id: 'eventos', nome: 'Eventos' }
+        ]
+        if (role !== 1) {
+            base.push({ id: 'disponibilidades', nome: 'Disponibilidades' })
+        }
+        return base
+    }, [role])
 
     return (
         <>
@@ -873,7 +920,6 @@ export default function Horario() {
                         value={filterType}
                         onChange={setFilterType}
                         options={filterOptions}
-                        placeholder="Tipo de Item"
                     />
 
                     {/* Filter: modalidade */}
@@ -913,6 +959,8 @@ export default function Horario() {
                         onView={setViewMode}
                         date={currentDate}
                         onNavigate={date => setCurrentDate(date)}
+                        min={new Date(0, 0, 0, 8, 0, 0)}
+                        max={new Date(0, 0, 0, 23, 0, 0)}
                         onSelectEvent={handleSelectEvent}
                         eventPropGetter={event => {
                             const base = eventStyleGetter(event)
