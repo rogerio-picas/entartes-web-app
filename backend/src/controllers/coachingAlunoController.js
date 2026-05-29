@@ -12,10 +12,7 @@ function _handleError(res, error) {
   ) {
     return res.status(404).json({ message: mensagemOriginal });
   }
-  // CORREÇÃO: 'não tem permissão' era mapeado para 400 em vez de 403
-  if (mensagemMinuscula.includes('não tem permissão')) {
-    return res.status(403).json({ message: mensagemOriginal });
-  }
+  // CORREÇÃO: 'não tem permissão de coaching' é 400, não 403 — verificar ANTES do genérico
   if (
     mensagemMinuscula.includes('obrigatório') ||
     mensagemMinuscula.includes('inválido') ||
@@ -27,9 +24,15 @@ function _handleError(res, error) {
     mensagemMinuscula.includes('já não está disponível') ||
     mensagemMinuscula.includes('conflito') ||
     mensagemMinuscula.includes('só é possível') ||
-    mensagemMinuscula.includes('não tem permissão de coaching')
+    mensagemMinuscula.includes('não tem permissão de coaching') ||
+    mensagemMinuscula.includes('não estás associado') ||
+    mensagemMinuscula.includes('não está associado')
   ) {
     return res.status(400).json({ message: mensagemOriginal });
+  }
+  // Genérico: 'não tem permissão' (sem 'de coaching') → 403
+  if (mensagemMinuscula.includes('não tem permissão')) {
+    return res.status(403).json({ message: mensagemOriginal });
   }
   return res.status(500).json({ message: 'Erro interno no servidor.', error: mensagemOriginal });
 }
