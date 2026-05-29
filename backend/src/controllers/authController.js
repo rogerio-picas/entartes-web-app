@@ -38,32 +38,16 @@ const login = async (req, res) => {
  */
 const getMe = async (req, res) => {
     try {
-        const id = req.user.id;
+        const id = req.user.id || req.user.id_utilizador;
 
         const user = await userService.getUser({
             where: { id_utilizador: id },
-            select: {
-                id_utilizador: true,
-                nome: true,
-                apelido: true,
-                email: true,
-                telemovel: true,
-                data_nascimento: true,
-                nif: true,
-                codigo_username: true,
-                id_tipo: true,
-                estado: true,
-                aluno: { include: { aluno_modalidade: { include: { modalidade: true } } } },
-                docente: { include: { docente_modalidade: { include: { modalidade: true } } } },
-                coordenadora: true,
-            }
+            omit: { password: true }
         });
 
         if (!user) {
             return res.status(404).json({ message: 'Utilizador não encontrado.' });
         }
-
-        delete user.password;
 
         res.status(200).json(user);
     } catch (error) {
