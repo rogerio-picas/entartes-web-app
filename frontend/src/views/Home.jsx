@@ -19,7 +19,7 @@ import {
 import {
   StatCard,
   LiveClassCard, CoachingCard, ConfirmedCard, RequisicaoCard, PresencaDocenteCard,
-  RoomOccupancyWidget,
+  SalasDoDiaWidget,
   PerfilModal, SectionHeader, ScrollRow, Toast
 } from '../components/HomeWidgets'
 import ItemDetailModal from '../components/ItemDetailModal'
@@ -205,8 +205,9 @@ export default function Home() {
         setCoachings48h(pendentes48h)
 
         const hoje = todas.filter(a => new Date(a._data_raw).toDateString() === now.toDateString())
+        const confirmadasHoje = hoje.filter(a => a.id_estado === 3)
         setStats({
-          hoje: hoje.length,
+          hoje: confirmadasHoje.length,
           porValidar: pedPendentes.length,
           concluidas: todas.filter(a => a.id_estado === 4).length
         })
@@ -396,8 +397,8 @@ export default function Home() {
         {isAdmin && (
           <div className="flex gap-4 flex-wrap flex-1">
             <div className="border border-brand-800 rounded-xl p-4 bg-white flex-1 min-w-[300px]">
-              <p className="text-xs font-bold text-brand-800 mb-3">Ocupação de Salas (Hoje)</p>
-              <RoomOccupancyWidget data={ocupacaoSalas} />
+              <p className="text-xs font-bold text-brand-800 mb-3">Salas — Coachings de Hoje</p>
+              <SalasDoDiaWidget />
             </div>
           </div>
         )}

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Clock, User, Check, X, RefreshCw, ChevronRight } from 'lucide-react'
+import { Clock, User, Check, X, RefreshCw, ChevronRight, CalendarClock } from 'lucide-react'
 import { api } from '../services/api'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-export { formatDate, formatTime } from '../utils/dateUtils'
+import { formatDate, formatTime } from '../utils/dateUtils'
+export { formatDate, formatTime }
 export function formatDuration(min) {
   if (!min) return '—'
   const h = Math.floor(min / 60), m = min % 60
@@ -434,6 +435,321 @@ export function RoomOccupancyWidget({ data }) {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+// ─── SalasDoDiaWidget ─────────────────────────────────────────────────────────
+// Layout: cada SALA é uma COLUNA. As aulas empilham VERTICALMENTE dentro de cada
+// coluna, como um quadro de horários de estúdio (imagem de referência).
+
+const SESSION_PALETTE = [
+  { bg: '#CCE8E6', border: '#006A68', text: '#00504E', label: '#006A68' },
+  { bg: '#E8F5FF', border: '#90CAF9', text: '#1565C0', label: '#1565C0' },
+  { bg: '#F3E5F5', border: '#CE93D8', text: '#6A1B9A', label: '#6A1B9A' },
+  { bg: '#FFF3E0', border: '#FFCC80', text: '#E65100', label: '#E65100' },
+  { bg: '#FCE4EC', border: '#F48FB1', text: '#C62828', label: '#C62828' },
+  { bg: '#E0F7FA', border: '#80DEEA', text: '#00695C', label: '#00695C' },
+  { bg: '#E8F5E9', border: '#A5D6A7', text: '#2E7D32', label: '#2E7D32' },
+  { bg: '#FFF8E1', border: '#FFE082', text: '#F57F17', label: '#F57F17' },
+]
+
+// Converte hora_inicio (ISO string ou Date) para "HH:MM" em UTC
+function isoToHHMM(isoStr) {
+  if (!isoStr) return '—'
+  const d = new Date(isoStr)
+  return d.getUTCHours().toString().padStart(2, '0') + ':' + d.getUTCMinutes().toString().padStart(2, '0')
+}
+
+export function SalasDoDiaWidget() {
+  const [salas, setSalas] = useState([])
+  const [loadingWidget, setLoadingWidget] = useState(true)
+
+  useEffect(() => {
+    const hoje = new Date()
+    const yyyy = hoje.getFullYear()
+    const mm   = String(hoje.getMonth() + 1).padStart(2, '0')
+    const dd   = String(hoje.getDate()).padStart(2, '0')
+    const dataStr = `${yyyy}-${mm}-${dd}`
+
+    Promise.all([
+      api.get('/salas').catch(() => []),
+      api.get('/coaching/pedidos-pendentes?estados=3').catch(() => [])
+    ])
+      .then(([salasRes, pendentesRes]) => {
+        const roomsList = Array.isArray(salasRes) ? salasRes : []
+        const classesList = Array.isArray(pendentesRes) ? pendentesRes : []
+
+        // Filter classes timezone-safely for today
+        const classesHoje = classesList.filter(c => c.data && c.data.substring(0, 10) === dataStr)
+
+        // Build occupancy lists for each room
+        const mappedSalas = roomsList.map(sala => {
+          // Find classes mapped to this room. Match by room name or id_sala if available.
+          const roomClasses = classesHoje.filter(c => c.sala_atual === sala.nome)
+
+          const ocupacoes = roomClasses.map(c => {
+            // Safe extraction and formatting of time
+            const startStr = formatTime(c.hora_inicio)
+            // Calculate end time
+            let endStr = '00:00'
+            if (startStr && startStr !== '—') {
+              const [h, m] = startStr.split(':').map(Number)
+              const totalMin = h * 60 + m + (c.duracao_minutos || 60)
+              const endH = String(Math.floor(totalMin / 60) % 24).padStart(2, '0')
+              const endM = String(totalMin % 60).padStart(2, '0')
+              endStr = `${endH}:${endM}`
+            }
+            return {
+              id: c.id_marcacao,
+              inicio: startStr,
+              fim: endStr,
+              docente: c.docente || '—',
+              modalidade: c.modalidade || 'Coaching',
+              duracao_minutos: c.duracao_minutos || 60
+            }
+          })
+
+          // Sort occupations by start time
+          ocupacoes.sort((a, b) => a.inicio.localeCompare(b.inicio))
+
+          return {
+            id_sala: sala.id_sala,
+            nome: sala.nome,
+            descricao: sala.descricao,
+            ocupacoes: ocupacoes
+          }
+        })
+
+        setSalas(mappedSalas)
+      })
+      .catch(() => setSalas([]))
+      .finally(() => setLoadingWidget(false))
+  }, [])
+
+  const hoje      = new Date()
+  const diaSemana = hoje.toLocaleDateString('pt-PT', { weekday: 'long' })
+  const dataFmt   = hoje.toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })
+  const totalSessoes = salas.reduce((a, s) => a + s.ocupacoes.length, 0)
+
+  // Color sessions globally by start time
+  const allUniqueTimes = [...new Set(salas.flatMap(s => s.ocupacoes.map(o => o.inicio)))].sort()
+  const timeColorMap = {}
+  allUniqueTimes.forEach((t, i) => { timeColorMap[t] = SESSION_PALETTE[i % SESSION_PALETTE.length] })
+
+  if (loadingWidget) {
+    return (
+      <div className="flex items-center justify-center py-8 text-brand-800">
+        <RefreshCw size={20} className="animate-spin" />
+      </div>
+    )
+  }
+
+  const colWidth = 150   // px per room column
+  const totalW   = salas.length * (colWidth + 8)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+
+      {/* ── Sub-header ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+          <CalendarClock size={14} style={{ color: '#006A68' }} />
+          <span style={{ fontSize: '11px', fontWeight: 700, color: '#006A68', textTransform: 'capitalize' }}>
+            {diaSemana}, {dataFmt}
+          </span>
+        </div>
+        <span style={{ fontSize: '10px', fontWeight: 600, color: '#6F7978' }}>
+          <span style={{ fontWeight: 800, color: '#006A68' }}>{totalSessoes}</span> sessões hoje
+        </span>
+      </div>
+
+      {/* ── Date banner (like the image) ── */}
+      <div style={{
+        background: '#F0FAF9',
+        border: '1px solid #CCE8E6',
+        borderRadius: '10px',
+        padding: '6px 14px',
+        textAlign: 'center',
+        marginBottom: '10px',
+      }}>
+        <span style={{ fontSize: '11px', fontWeight: 800, color: '#006A68', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {diaSemana.toUpperCase()} | {hoje.getDate()} DE {hoje.toLocaleDateString('pt-PT', { month: 'long' }).toUpperCase()} DE {hoje.getFullYear()}
+        </span>
+      </div>
+
+      {/* ── Column grid ── */}
+      {salas.length === 0 ? (
+        <p style={{ fontSize: '11px', color: '#9EAFAD', fontStyle: 'italic', textAlign: 'center', padding: '16px 0' }}>
+          Sem salas disponíveis.
+        </p>
+      ) : (
+        <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${salas.length}, minmax(${colWidth}px, 1fr))`,
+            gridAutoRows: 'minmax(100px, auto)',
+            gap: '0',
+            minWidth: `${totalW}px`,
+            border: '1px solid #D8E6E5',
+            borderRadius: '10px',
+            overflow: 'hidden',
+          }}>
+
+            {/* ── Room header row ── */}
+            {salas.map((sala, si) => (
+              <div
+                key={`hdr-${sala.nome}`}
+                style={{
+                  padding: '9px 10px',
+                  background: '#006A68',
+                  borderRight: si < salas.length - 1 ? '1px solid #00504E' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'center' }}>
+                  {sala.nome}
+                </span>
+              </div>
+            ))}
+
+            {/* ── Time Slots Grid Cells ── */}
+            {allUniqueTimes.length === 0 ? (
+              // If there are no sessions today, each room gets a single "Disponível" cell under its header
+              salas.map((sala, si) => (
+                <div
+                  key={`empty-${sala.nome}`}
+                  style={{
+                    padding: '20px 10px',
+                    background: si % 2 === 0 ? '#FFFFFF' : '#F8FFFE',
+                    borderRight: si < salas.length - 1 ? '1px solid #E8F0EF' : 'none',
+                    borderTop: '1px solid #E8F0EF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '100px',
+                  }}
+                >
+                  <span style={{ fontSize: '10px', color: '#006A68', fontWeight: 600, opacity: 0.6, fontStyle: 'italic' }}>
+                    Disponível
+                  </span>
+                </div>
+              ))
+            ) : (
+              // Otherwise, we iterate row by row (each time slot) and column by column (each room)
+              allUniqueTimes.map((timeSlot) => {
+                return salas.map((sala, si) => {
+                  const isLast = si === salas.length - 1
+                  const oc = sala.ocupacoes.find(o => o.inicio === timeSlot)
+
+                  return (
+                    <div
+                      key={`cell-${sala.id_sala || sala.nome}-${timeSlot}`}
+                      style={{
+                        padding: '10px 8px',
+                        background: si % 2 === 0 ? '#FFFFFF' : '#F8FFFE',
+                        borderRight: !isLast ? '1px solid #E8F0EF' : 'none',
+                        borderTop: '1px solid #E8F0EF',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        minHeight: '100px',
+                      }}
+                    >
+                      {oc ? (
+                        // Render class card
+                        (() => {
+                          const color = timeColorMap[oc.inicio] || SESSION_PALETTE[0]
+                          return (
+                            <div
+                              style={{
+                                background: color.bg,
+                                border: `1.5px solid ${color.border}`,
+                                borderRadius: '7px',
+                                padding: '8px 10px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '3px',
+                                cursor: 'default',
+                                transition: 'transform 0.12s, box-shadow 0.12s',
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.transform = 'translateY(-1px)'
+                                e.currentTarget.style.boxShadow = `0 4px 12px ${color.border}55`
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.transform = 'translateY(0)'
+                                e.currentTarget.style.boxShadow = 'none'
+                              }}
+                            >
+                              {/* Modality name */}
+                              <span style={{
+                                fontSize: '10px',
+                                fontWeight: 800,
+                                color: color.text,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {oc.modalidade}
+                              </span>
+
+                              {/* Time range */}
+                              <span style={{
+                                fontSize: '9px',
+                                fontWeight: 700,
+                                color: color.text,
+                                opacity: 0.9,
+                              }}>
+                                {oc.inicio} – {oc.fim}
+                              </span>
+
+                              {/* Coach name */}
+                              {oc.docente && (
+                                <span style={{
+                                  fontSize: '9px',
+                                  fontWeight: 600,
+                                  color: color.text,
+                                  opacity: 0.75,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  fontStyle: 'italic',
+                                }}>
+                                  ({oc.docente})
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })()
+                      ) : (
+                        // If no class starts at this time slot, check if this room has absolutely no classes today.
+                        // If it has no classes today, we display a soft "Disponível" watermark in the first row's slot.
+                        sala.ocupacoes.length === 0 && timeSlot === allUniqueTimes[0] ? (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '100%',
+                            height: '100%',
+                          }}>
+                            <span style={{ fontSize: '10px', color: '#B0CCCA', fontStyle: 'italic' }}>Disponível</span>
+                          </div>
+                        ) : null
+                      )}
+                    </div>
+                  )
+                })
+              })
+            )}
+
+          </div>
+        </div>
+      )}
     </div>
   )
 }
