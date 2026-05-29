@@ -53,12 +53,19 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
     const originalModalidadeIds = useRef([])
 
     useEffect(() => {
-        modalidadeService.listar(null, true)
+        modalidadeService.listar(null, true, true)
             .then(list => {
                 setAllModalidades(list.map(m => ({ id_modalidade: m.id_modalidade, nome: m.nome })))
                 if (isEdit && utilizador.id_tipo === 2) {
                     const current = list
                         .filter(m => m.docente_modalidade?.some(d => d.id_docente === utilizador.id_utilizador))
+                        .map(m => ({ id_modalidade: m.id_modalidade, nome: m.nome }))
+                    setSelectedModalidades(current)
+                    originalModalidadeIds.current = current.map(m => m.id_modalidade)
+                }
+                if (isEdit && utilizador.id_tipo === 3) {
+                    const current = list
+                        .filter(m => m.aluno_modalidade?.some(a => a.id_utilizador === utilizador.id_utilizador))
                         .map(m => ({ id_modalidade: m.id_modalidade, nome: m.nome }))
                     setSelectedModalidades(current)
                     originalModalidadeIds.current = current.map(m => m.id_modalidade)
@@ -120,6 +127,16 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
         ])
     }
 
+    async function syncAlunoModalidades(id_utilizador) {
+        const selectedIds = selectedModalidades.map(m => m.id_modalidade)
+        const toAdd = selectedIds.filter(id => !originalModalidadeIds.current.includes(id))
+        const toRemove = originalModalidadeIds.current.filter(id => !selectedIds.includes(id))
+        await Promise.all([
+            ...toAdd.map(id => modalidadeService.associarAluno(id, id_utilizador)),
+            ...toRemove.map(id => modalidadeService.desassociarAluno(id, id_utilizador)),
+        ])
+    }
+
     async function handleSubmit() {
         const e = validate()
         if (Object.keys(e).length > 0) { setErrors(e); return }
@@ -152,6 +169,9 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
 
             if (parseInt(form.id_tipo) === 2) {
                 await syncDocenteModalidades(userId)
+            }
+            if (parseInt(form.id_tipo) === 3) {
+                await syncAlunoModalidades(userId)
             }
 
             onSuccess(isEdit)
@@ -200,13 +220,12 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                             onChange={e => {
                                 const newType = e.target.value
                                 set('id_tipo', newType)
-                                if (parseInt(newType) !== 2) {
-                                    setSelectedModalidades([])
-                                    setAddingModalidadeId('')
-                                    setErrors(prev => ({ ...prev, modalidades: '' }))
-                                }
+                                setSelectedModalidades([])
+                                setAddingModalidadeId('')
+                                setErrors(prev => ({ ...prev, modalidades: '' }))
                             }}
-                            className={inputCls(!!errors.id_tipo) + ' appearance-none'}
+                            disabled={isEdit}
+                            className={inputCls(!!errors.id_tipo) + ' appearance-none' + (isEdit ? ' opacity-50 cursor-not-allowed' : '')}
                         >
                             <option value="">Selecionar tipo...</option>
                             {USER_TYPES.map(t => (
@@ -320,7 +339,7 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
 
                             {selectedModalidades.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mb-3">
-                                    {selectedModalidades.map(m => (
+                                    {[...selectedModalidades].sort((a, b) => a.nome.localeCompare(b.nome)).map(m => (
                                         <span
                                             key={m.id_modalidade}
                                             className="inline-flex items-center gap-1.5 text-xs bg-brand-200 text-brand-800 px-2.5 py-1 rounded-full font-medium"
@@ -368,6 +387,67 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
 
                             {errors.modalidades && (
                                 <p className="mt-2 text-[11px] text-red-600">{errors.modalidades}</p>
+                            )}
+
+                            {availableModalidades.length === 0 && selectedModalidades.length === 0 && (
+                                <p className="text-xs text-neutral-600">Nenhuma modalidade disponível.</p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Modalidades — apenas para Aluno */}
+                    {parseInt(form.id_tipo) === 3 && (
+                        <div>
+                            <p className="text-sm font-medium mb-3 text-black">
+                                Modalidades
+                            </p>
+
+                            {selectedModalidades.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {[...selectedModalidades].sort((a, b) => a.nome.localeCompare(b.nome)).map(m => (
+                                        <span
+                                            key={m.id_modalidade}
+                                            className="inline-flex items-center gap-1.5 text-xs bg-brand-200 text-brand-800 px-2.5 py-1 rounded-full font-medium"
+                                        >
+                                            {m.nome}
+                                            <button
+                                                onClick={() => removeModalidade(m.id_modalidade)}
+                                                className="hover:text-red-600 transition-colors"
+                                            >
+                                                <UserMinus size={12} />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            {availableModalidades.length > 0 && (
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <label className="absolute -top-2.5 left-3 bg-brand-50 text-[11px] text-neutral-700 font-medium px-1 z-10">
+                                            Adicionar modalidade
+                                        </label>
+                                        <select
+                                            value={addingModalidadeId}
+                                            onChange={e => setAddingModalidadeId(e.target.value)}
+                                            className="w-full bg-white border border-neutral-500 rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-brand-800 transition-colors appearance-none"
+                                        >
+                                            <option value="">Selecionar...</option>
+                                            {availableModalidades.map(m => (
+                                                <option key={m.id_modalidade} value={m.id_modalidade}>
+                                                    {m.nome}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <button
+                                        onClick={addModalidade}
+                                        disabled={!addingModalidadeId}
+                                        className="self-end w-11 h-11 rounded-xl bg-brand-800 text-white flex items-center justify-center hover:bg-brand-900 transition-colors disabled:opacity-40"
+                                    >
+                                        <Plus size={18} />
+                                    </button>
+                                </div>
                             )}
 
                             {availableModalidades.length === 0 && selectedModalidades.length === 0 && (

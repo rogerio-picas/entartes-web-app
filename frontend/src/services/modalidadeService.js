@@ -1,10 +1,11 @@
 import { api } from './api'
 
 export const modalidadeService = {
-    async listar(id_docente, comDocentes = false) {
+    async listar(id_docente, comDocentes = false, comAlunos = false) {
         const params = new URLSearchParams()
         if (id_docente) params.set('id_docente', id_docente)
         if (comDocentes) params.set('docentes', 'true')
+        if (comAlunos) params.set('alunos', 'true')
         const query = params.toString() ? `?${params}` : ''
         return api.get(`/modalidades${query}`)
     },
@@ -32,5 +33,13 @@ export const modalidadeService = {
 
     async desassociarDocente(id_modalidade, id_docente) {
         return api.delete(`/modalidades/${id_modalidade}/docentes/${id_docente}`)
+    },
+
+    async associarAluno(id_modalidade, id_utilizador) {
+        return api.post(`/modalidades/${id_modalidade}/alunos`, { id_utilizador })
+    },
+
+    async desassociarAluno(id_modalidade, id_utilizador) {
+        return api.delete(`/modalidades/${id_modalidade}/alunos/${id_utilizador}`)
     },
 }
