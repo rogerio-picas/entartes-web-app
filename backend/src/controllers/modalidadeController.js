@@ -2,13 +2,19 @@ const modalidadeService = require('../services/modalidadeService');
 
 const listModalidades = async (req, res) => {
     try {
-        const { id_docente, docentes } = req.query;
+        const { id_docente, id_aluno, docentes } = req.query;
         const incluirDocentes = docentes === 'true';
 
-        const resultado = await modalidadeService.listarModalidades(id_docente, incluirDocentes);
+        let alunoId = id_aluno;
+        if (Number(req.user?.role) === 3 || Number(req.user?.id_tipo) === 3) {
+            alunoId = req.user.id || req.user.id_utilizador;
+        }
+
+        const resultado = await modalidadeService.listarModalidades(id_docente, incluirDocentes, alunoId);
         res.json(resultado);
     } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('[listModalidades] Erro:', error);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 };
 

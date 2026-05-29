@@ -36,6 +36,10 @@ jest.mock('@prisma/client', () => {
     docente: {
       findFirst: jest.fn(),
     },
+    aluno_modalidade: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+    },
     aluno_marcacao: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -154,6 +158,11 @@ const marcacaoFixture = {
 // ─────────────────────────────────────────────────────────────
 beforeEach(() => {
   jest.clearAllMocks();
+  prisma.aluno_modalidade.findFirst.mockResolvedValue({ id_modalidade: 5 });
+  prisma.aluno_modalidade.findMany.mockResolvedValue([{ id_modalidade: 5 }]);
+  prisma.marcacao.findMany.mockResolvedValue([]);
+  prisma.aluno_marcacao.findMany.mockResolvedValue([]);
+  prisma.horario_letivo.findMany.mockResolvedValue([]);
 });
 
 // ═════════════════════════════════════════════════════════════
@@ -164,7 +173,6 @@ describe('consultarDisponibilidades', () => {
   test('devolve lista de slots disponíveis quando não há conflitos', async () => {
     // Arrange — o Prisma devolve uma disponibilidade e nenhum conflito
     prisma.disponibilidade.findMany.mockResolvedValue([disponibilidadeFixture]);
-    prisma.marcacao.findFirst.mockResolvedValue(null); // sem conflito
 
     // Act
     const resultado = await consultarDisponibilidades({ data: '2025-06-10' });
@@ -179,7 +187,7 @@ describe('consultarDisponibilidades', () => {
   test('filtra slots com conflito (marcação já existente no mesmo horário)', async () => {
     // Arrange — existe uma marcação confirmada que ocupa o slot
     prisma.disponibilidade.findMany.mockResolvedValue([disponibilidadeFixture]);
-    prisma.marcacao.findFirst.mockResolvedValue({ id_marcacoes: 99 }); // conflito!
+    prisma.marcacao.findMany.mockResolvedValue([{ hora_inicio: new Date('1970-01-01T09:00:00Z'), duracao_minutos: 480 }]); // conflito total!
 
     // Act
     const resultado = await consultarDisponibilidades({ data: '2025-06-10' });
@@ -198,7 +206,6 @@ describe('consultarDisponibilidades', () => {
 
   test('filtra por modalidade quando id_modalidade é fornecido', async () => {
     prisma.disponibilidade.findMany.mockResolvedValue([disponibilidadeFixture]);
-    prisma.marcacao.findFirst.mockResolvedValue(null);
 
     await consultarDisponibilidades({ id_modalidade: 5, data: '2025-06-10' });
 
@@ -302,7 +309,9 @@ describe('solicitarMarcacao', () => {
     prisma.aluno.findUnique.mockResolvedValue(alunoFixture);
     prisma.docente.findFirst.mockResolvedValue(docenteFixture);
     prisma.disponibilidade.findFirst.mockResolvedValue(disponibilidadeFixture);
-    prisma.aluno_marcacao.findFirst.mockResolvedValue({ id_aluno: 1 }); // duplicado!
+    prisma.aluno_marcacao.findMany.mockResolvedValue([{
+      marcacao: { hora_inicio: new Date('1970-01-01T09:30:00Z'), duracao_minutos: 60 }
+    }]); // duplicado!
 
     await expect(solicitarMarcacao(1, dadosMarcacao))
       .rejects.toThrow('Já existe um pedido teu para este horário.');

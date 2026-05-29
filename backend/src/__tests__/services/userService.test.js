@@ -544,7 +544,7 @@ describe('userService › atualizarUtilizador', () => {
 
             expect(mockTx.docente.delete).toHaveBeenCalledWith({ where: { id_utilizador: 2 } });
             expect(mockTx.aluno.create).toHaveBeenCalledWith({
-                data: { id_utilizador: 2 },
+                data: { id_utilizador: 2, coaching: false },
             });
         });
 
@@ -626,7 +626,7 @@ describe('userService › atualizarUtilizador', () => {
 
             expect(mockTx.coordenadora.delete).toHaveBeenCalledWith({ where: { id_utilizador: 6 } });
             expect(mockTx.aluno.create).toHaveBeenCalledWith({
-                data: { id_utilizador: 6 },
+                data: { id_utilizador: 6, coaching: false },
             });
             expect(mockTx.docente.create).not.toHaveBeenCalled();
         });
@@ -801,9 +801,17 @@ describe('userService › atualizarUtilizador [cobertura branch linha 170]', () 
 describe('userService › getUsers', () => {
     it('deve chamar prisma.utilizador.findMany com opções', async () => {
         const options = { where: { id_tipo: 3 } };
+        const expectedOptions = {
+            ...options,
+            include: {
+                aluno: { include: { aluno_modalidade: { include: { modalidade: true } } } },
+                docente: { include: { docente_modalidade: { include: { modalidade: true } } } },
+                coordenadora: true,
+            }
+        };
         mockPrisma.utilizador.findMany.mockResolvedValue([{ id: 1 }]);
         const result = await getUsers(options);
-        expect(mockPrisma.utilizador.findMany).toHaveBeenCalledWith(options);
+        expect(mockPrisma.utilizador.findMany).toHaveBeenCalledWith(expectedOptions);
         expect(result).toEqual([{ id: 1 }]);
     });
 });
@@ -814,9 +822,17 @@ describe('userService › getUsers', () => {
 describe('userService › getUser', () => {
     it('deve chamar prisma.utilizador.findUnique com opções', async () => {
         const options = { where: { id_utilizador: 1 } };
+        const expectedOptions = {
+            ...options,
+            include: {
+                aluno: { include: { aluno_modalidade: { include: { modalidade: true } } } },
+                docente: { include: { docente_modalidade: { include: { modalidade: true } } } },
+                coordenadora: true,
+            }
+        };
         mockPrisma.utilizador.findUnique.mockResolvedValue({ id: 1 });
         const result = await getUser(options);
-        expect(mockPrisma.utilizador.findUnique).toHaveBeenCalledWith(options);
+        expect(mockPrisma.utilizador.findUnique).toHaveBeenCalledWith(expectedOptions);
         expect(result).toEqual({ id: 1 });
     });
 });

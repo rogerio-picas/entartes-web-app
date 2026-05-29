@@ -18,8 +18,10 @@ ${ADMIN_TOKEN}              ${NONE}
 ${DOCENTE_TOKEN}            ${NONE}
 ${CREATED_MARCACAO_ID}      ${NONE}
 ${CREATED_DISPONIBILIDADE}  ${NONE}
+${ALUNO_ID}                 ${NONE}
 ${DOCENTE_ID}               ${42}
 ${MODALIDADE_ID}            ${2}
+${MODALIDADE_NAO_ASSOCIADA_ID}    ${9999}
 ${DATA_FUTURA}              2027-06-15
 ${HORA_INICIO}              10:00
 
@@ -106,6 +108,18 @@ Solicitar Com Horário Fora Da Disponibilidade Retorna 400
     ${response}=    POST    ${BASE_URL}/api/coaching/marcacao/solicitar    json=${body}    headers=${headers}    expected_status=400
     ${msg}=    Get From Dictionary    ${response.json()}    message
     Should Contain    ${msg}    não cabe dentro da disponibilidade
+
+Solicitar Com Modalidade Não Associada Retorna 400
+    [Documentation]    Tentar solicitar uma marcação para uma modalidade à qual o aluno não está associado
+    ...                deve retornar erro 400.
+    [Tags]    coaching    negative    create
+    ${headers}=    Make Auth Headers    ${ALUNO_TOKEN}
+    ${body}=    Create Dictionary
+    ...    id_docente=${DOCENTE_ID}    id_modalidade=${MODALIDADE_NAO_ASSOCIADA_ID}
+    ...    data_a_realizar=${DATA_FUTURA}    hora_inicio=${HORA_INICIO}    duracao_minutos=${60}
+    ${response}=    POST    ${BASE_URL}/api/coaching/marcacao/solicitar    json=${body}    headers=${headers}    expected_status=400
+    ${msg}=    Get From Dictionary    ${response.json()}    message
+    Should Contain    ${msg}    Não estás associado a esta modalidade
 
 # ---------------------------------------------------------------------------
 # CREATE — POST /api/coaching/marcacao/solicitar
@@ -204,6 +218,7 @@ Setup Suite
     Set Suite Variable    ${ALUNO_TOKEN}      ${aluno_token}
     Set Suite Variable    ${DOCENTE_TOKEN}    ${docente_token}
     Set Suite Variable    ${ADMIN_TOKEN}      ${admin_token}
+    Associar Modalidade Ao Aluno
     Validate Docente And Modalidade
     Criar Disponibilidade Para Teste
 
@@ -219,6 +234,13 @@ Cancelar Marcacao Se Pendente
     ${headers}=    Make Auth Headers    ${ALUNO_TOKEN}
     Run Keyword And Ignore Error
     ...    DELETE    ${BASE_URL}/api/coaching/pedido/${CREATED_MARCACAO_ID}/cancelar    headers=${headers}    expected_status=200
+
+Associar Modalidade Ao Aluno
+    [Documentation]    Garante que o automation.aluno tem a modalidade associada para poder solicitar marcações
+    ${headers}=    Make Auth Headers    ${ADMIN_TOKEN}
+    ${mods}=    Create List    ${MODALIDADE_ID}
+    ${body}=    Create Dictionary    id_tipo=${3}    modalidades=${mods}
+    ${response}=    PUT    ${BASE_URL}/api/users/${ALUNO_ID}    json=${body}    headers=${headers}    expected_status=200
 
 Validate Docente And Modalidade
     [Documentation]    Garante que MODALIDADE_ID existe e que DOCENTE_ID está associado a ela.
@@ -252,6 +274,8 @@ Login As Aluno
     ${body}=      Create Dictionary    codigo_username=automation.aluno    password=1234567
     ${response}=  POST    ${BASE_URL}/api/auth/login    json=${body}    expected_status=200
     ${token}=     Get From Dictionary    ${response.json()}    token
+    ${user}=      Get From Dictionary    ${response.json()}    user
+    Set Suite Variable    ${ALUNO_ID}    ${user}[id_utilizador]
     RETURN    ${token}
 
 Login As Docente
