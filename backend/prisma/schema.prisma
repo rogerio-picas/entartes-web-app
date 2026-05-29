@@ -13,6 +13,7 @@ model aluno {
   utilizador             utilizador               @relation(fields: [id_utilizador], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
   aluno_grupo            aluno_grupo[]
   aluno_marcacao         aluno_marcacao[]
+  aluno_modalidade       aluno_modalidade[]
   evento_aluno           evento_aluno[]
   participacao_conclusao participacao_conclusao[]
 }
@@ -160,12 +161,15 @@ model horario_letivo {
   dia_semana  Int?
   hora_inicio DateTime? @db.Time(6)
   hora_fim    DateTime? @db.Time(6)
+  data_inicio DateTime? @db.Date
+  data_fim    DateTime? @db.Date
   docente     docente?  @relation(fields: [id_docente], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model modalidade {
   id_modalidade      Int                  @id @default(autoincrement())
   nome               String               @db.VarChar(100)
+  aluno_modalidade   aluno_modalidade[]
   docente_modalidade docente_modalidade[]
   marcacao           marcacao[]
 }
@@ -281,4 +285,13 @@ model evento_estado {
   nome             String   @db.VarChar(50)
   descricao        String?
   evento           evento[]
+}
+
+model aluno_modalidade {
+  id_utilizador Int
+  id_modalidade Int
+  aluno         aluno      @relation(fields: [id_utilizador], references: [id_utilizador], onDelete: Cascade, onUpdate: NoAction, map: "fk_aluno_modalidade_aluno")
+  modalidade    modalidade @relation(fields: [id_modalidade], references: [id_modalidade], onDelete: Cascade, onUpdate: NoAction, map: "fk_aluno_modalidade_modalidade")
+
+  @@id([id_utilizador, id_modalidade])
 }

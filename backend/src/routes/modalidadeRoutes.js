@@ -19,6 +19,11 @@ const modalidadeController = require('../controllers/modalidadeController');
  *           type: integer
  *         description: Filtra modalidades atribuídas ao docente com este ID
  *       - in: query
+ *         name: id_aluno
+ *         schema:
+ *           type: integer
+ *         description: Filtrar modalidades em que um aluno está inscrito (se a role autenticada for Aluno, este filtro aplica-se automaticamente ao seu ID).
+ *       - in: query
  *         name: docentes
  *         schema:
  *           type: boolean

@@ -48,7 +48,18 @@ const PRAZO_DUPLA_VALIDACAO_MS = 48 * 60 * 60 * 1000; // 48 horas
  * @param {string|null} filtros.data          - Data no formato "YYYY-MM-DD" (opcional)
  * @returns {Promise<Array>} Lista de slots disponíveis com info do docente e modalidade
  */
-async function consultarDisponibilidades({ id_modalidade = null, data = null } = {}) {
+async function consultarDisponibilidades(filtros = {}) {
+  const { id_modalidade = null, data = null, id_aluno = null } = filtros;
+
+  let modalidadesAlunoIds = [];
+  if (id_aluno) {
+    const alunoMods = await prisma.aluno_modalidade.findMany({
+      where: { id_utilizador: parseInt(id_aluno) },
+      select: { id_modalidade: true }
+    });
+    modalidadesAlunoIds = alunoMods.map(am => am.id_modalidade);
+  }
+
   // Busca disponibilidades dos docentes ativos, incluindo as suas modalidades
   const disponibilidades = await prisma.disponibilidade.findMany({
     where: {
@@ -84,42 +95,116 @@ async function consultarDisponibilidades({ id_modalidade = null, data = null } =
     orderBy: [{ dia_semana: 'asc' }, { hora_inicio: 'asc' }],
   });
 
-  // Para cada slot, verifica se já existe marcação confirmada ou em validação que bloqueia o horário
-  const slotsLivres = await Promise.all(
+  // Para cada slot, subtrai as marcações e os horários letivos para encontrar os blocos realmente livres
+  const slotsBrutos = await Promise.all(
     disponibilidades.map(async (disp) => {
-      const conflito = await prisma.marcacao.findFirst({
-        where: {
-          id_docente: disp.id_docente,
-          id_estado: {
-            in: [ESTADO_MARCACAO.EM_VALIDACAO, ESTADO_MARCACAO.CONFIRMADA],
-          },
-          data_a_realizar: new Date(data),
-          hora_inicio: {
-            gte: disp.hora_inicio,
-            lt: disp.hora_fim,
-          },
-        },
-      });
+      let blocosLivres = [{ start: new Date(disp.hora_inicio), end: new Date(disp.hora_fim) }];
+      
+      if (data) {
+        const dataRealizarDate = new Date(`${data.split('T')[0]}T00:00:00.000Z`);
+        const [ano, mes, dia] = data.split('T')[0].split('-').map(Number);
+        const diaSemana = new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay();
 
-      return {
+        // Obter marcações
+        const marcacoesDia = await prisma.marcacao.findMany({
+          where: {
+            id_docente: disp.id_docente,
+            id_estado: {
+              in: [ESTADO_MARCACAO.PENDENTE, ESTADO_MARCACAO.EM_VALIDACAO, ESTADO_MARCACAO.CONFIRMADA],
+            },
+            data_a_realizar: dataRealizarDate,
+          },
+          select: { hora_inicio: true, duracao_minutos: true },
+        });
+
+        // Obter horários letivos (que também bloqueiam a agenda do docente)
+        const horariosLetivos = await prisma.horario_letivo.findMany({
+          where: {
+            id_docente: disp.id_docente,
+            dia_semana: diaSemana,
+          },
+          select: { hora_inicio: true, hora_fim: true },
+        });
+
+        // Construir lista de ocupados
+        const ocupados = [];
+        for (const m of marcacoesDia) {
+          const mInicio = new Date(m.hora_inicio);
+          const mFim = new Date(mInicio.getTime() + m.duracao_minutos * 60 * 1000);
+          ocupados.push({ start: mInicio, end: mFim });
+        }
+        for (const hl of horariosLetivos) {
+          ocupados.push({ start: new Date(hl.hora_inicio), end: new Date(hl.hora_fim) });
+        }
+
+        // Se o id_aluno for fornecido, também subtrai as marcações do próprio aluno (noutros docentes)
+        if (id_aluno) {
+          const marcacoesAluno = await prisma.aluno_marcacao.findMany({
+            where: {
+              id_aluno: id_aluno,
+              id_aluno_estado: { not: ESTADO_ALUNO_MARCACAO.RECUSADO },
+              marcacao: {
+                data_a_realizar: dataRealizarDate,
+                id_estado: { notIn: [ESTADO_MARCACAO.CANCELADA] },
+              },
+            },
+            include: {
+              marcacao: { select: { hora_inicio: true, duracao_minutos: true } },
+            },
+          });
+          
+          for (const ma of marcacoesAluno) {
+            const mInicio = new Date(ma.marcacao.hora_inicio);
+            const mFim = new Date(mInicio.getTime() + ma.marcacao.duracao_minutos * 60 * 1000);
+            ocupados.push({ start: mInicio, end: mFim });
+          }
+        }
+
+        // Subtrair os intervalos ocupados dos blocos livres
+        ocupados.sort((a, b) => a.start - b.start);
+        
+        for (const occ of ocupados) {
+          const novosBlocos = [];
+          for (const bloco of blocosLivres) {
+            // Se o intervalo ocupado não se sobrepõe ao bloco, mantemos o bloco intacto
+            if (occ.end <= bloco.start || occ.start >= bloco.end) {
+              novosBlocos.push(bloco);
+            } else {
+              // Se há sobreposição, cortamos o bloco livre nas partes que não estão ocupadas
+              if (occ.start > bloco.start) {
+                novosBlocos.push({ start: bloco.start, end: occ.start });
+              }
+              if (occ.end < bloco.end) {
+                novosBlocos.push({ start: occ.end, end: bloco.end });
+              }
+            }
+          }
+          blocosLivres = novosBlocos;
+        }
+      }
+
+      // Mapear cada sub-bloco livre para o formato final esperado pela frontend
+      return blocosLivres.map(bloco => ({
         id_disponibilidade: disp.id_disponibilidade,
         id_docente: disp.id_docente,
         nome_docente: `${disp.docente.utilizador.nome} ${disp.docente.utilizador.apelido}`,
-        modalidades: disp.docente.docente_modalidade.map((dm) => ({
-          id: dm.modalidade.id_modalidade,
-          nome: dm.modalidade.nome,
-        })),
+        modalidades: disp.docente.docente_modalidade
+          .map((dm) => ({
+            id: dm.modalidade.id_modalidade,
+            nome: dm.modalidade.nome,
+          }))
+          .filter(mod => !id_aluno || modalidadesAlunoIds.includes(mod.id)),
         dia_semana: disp.dia_semana,
         data_especifica: disp.data_especifica,
-        hora_inicio: disp.hora_inicio,
-        hora_fim: disp.hora_fim,
-        disponivel: !conflito, // false se já houver marcação a bloquear
-      };
+        hora_inicio: bloco.start,
+        hora_fim: bloco.end,
+        disponivel: true,
+      }));
     })
   );
 
-  // Devolve apenas os slots sem conflito
-  return slotsLivres.filter((s) => s.disponivel);
+  // Juntar todos os sub-blocos e ordenar
+  return slotsBrutos.flat().filter(slot => slot.modalidades.length > 0).sort((a, b) => a.hora_inicio - b.hora_inicio);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -164,6 +249,14 @@ async function solicitarMarcacao(id_aluno, dados) {
   });
   if (!aluno) throw new Error('Aluno não encontrado.');
   if (!aluno.coaching) throw new Error('O aluno não tem permissão de coaching ativa.');
+
+  // ── Validação Extra: o aluno está inscrito na modalidade
+  if (id_modalidade) {
+    const alunoMod = await prisma.aluno_modalidade.findFirst({
+      where: { id_utilizador: id_aluno, id_modalidade }
+    });
+    if (!alunoMod) throw new Error('Não estás associado a esta modalidade.');
+  }
 
   // ── Validação 2: duração permitida (RF-COA-06)
   if (!DURACOES_PERMITIDAS.includes(duracao_minutos)) {
@@ -214,19 +307,29 @@ async function solicitarMarcacao(id_aluno, dados) {
       `O horário pedido (${hora_inicio} + ${duracao_minutos}min) não cabe dentro da disponibilidade do docente.`
     );
   }
-  // ── Validação 5: sem pedido duplicado do mesmo aluno para o mesmo slot
-  const pedidoDuplicado = await prisma.aluno_marcacao.findFirst({
+  // ── Validação 5: sem pedido sobreposto do mesmo aluno
+  const marcacoesAluno = await prisma.aluno_marcacao.findMany({
     where: {
       id_aluno,
+      id_aluno_estado: { not: ESTADO_ALUNO_MARCACAO.RECUSADO },
       marcacao: {
-        id_docente,
         data_a_realizar: dataRealizarDate,
-        hora_inicio: horaInicioDate,
         id_estado: { notIn: [ESTADO_MARCACAO.CANCELADA] },
       },
     },
+    include: {
+      marcacao: { select: { hora_inicio: true, duracao_minutos: true } },
+    },
   });
-  if (pedidoDuplicado) throw new Error('Já existe um pedido teu para este horário.');
+
+  for (const ma of marcacoesAluno) {
+    const mInicio = new Date(ma.marcacao.hora_inicio);
+    const mFim = new Date(mInicio.getTime() + ma.marcacao.duracao_minutos * 60 * 1000);
+
+    if (horaInicioDate < mFim && horaFimDate > mInicio) {
+      throw new Error('Já existe um pedido teu para este horário.');
+    }
+  }
 
   // ── Validação 6: sem conflito de agenda do docente (RF-COA-05)
   const marcacoesExistentes = await prisma.marcacao.findMany({
@@ -374,6 +477,11 @@ async function adicionarParticipantesGrupo(id_marcacao, id_aluno_requisitante, o
     });
     if (!outro_aluno) throw new Error(`Outro aluno com ID ${id} não encontrado.`);
     if (!outro_aluno.coaching) throw new Error(`Outro aluno com ID ${id} não tem permissão de coaching ativa.`);
+
+    const outroAlunoMod = await prisma.aluno_modalidade.findFirst({
+      where: { id_utilizador: id, id_modalidade: marcacao.id_modalidade }
+    });
+    if (!outroAlunoMod) throw new Error(`O aluno com ID ${id} não está associado à modalidade da marcação.`);
 
     // Verificar se o aluno já tem pedido para o mesmo slot
     const conflito = await prisma.aluno_marcacao.findFirst({

@@ -77,11 +77,14 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
         }
         setModalidades(mods)
       })
-      .catch(() => setErro('Não foi possível carregar as modalidades.'))
+      .catch((err) => {
+        console.error('Erro ao carregar modalidades:', err);
+        setErro(err.response?.data?.details || 'Não foi possível carregar as modalidades.');
+      })
       .finally(() => setLoadingMod(false))
   }, [initialSlot])
 
-  // Passo 2: carregar disponibilidades para a modalidade escolhida
+  // Passo 2: carregar disponibilidades (slots genéricos)
   useEffect(() => {
     if (step !== 2 || !modalidadeSel) return
     setLoadingSlots(true)
@@ -93,6 +96,27 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
       .catch(() => setErro('Não foi possível consultar as disponibilidades.'))
       .finally(() => setLoadingSlots(false))
   }, [step, modalidadeSel])
+
+  // Passo 3: carregar blocos de tempo livres REAIS para a data selecionada
+  const [blocosReais, setBlocosReais] = useState([])
+  const [loadingBlocos, setLoadingBlocos] = useState(false)
+
+  useEffect(() => {
+    if (step !== 3 || !data || !modalidadeSel || !docenteSel) return
+    setLoadingBlocos(true)
+    setBlocosReais([])
+
+    const params = new URLSearchParams({ id_modalidade: modalidadeSel.id_modalidade, data })
+    api.get(`/coaching/disponibilidades/consultar?${params}`)
+      .then(r => {
+        const disponibilidadesCompletas = Array.isArray(r) ? r : r.data || []
+        // Filtrar apenas os blocos cortados que pertencem a este docente
+        const blocosDocente = disponibilidadesCompletas.filter(b => b.id_docente === docenteSel.id_docente)
+        setBlocosReais(blocosDocente)
+      })
+      .catch(() => setErro('Não foi possível consultar os horários livres para este dia.'))
+      .finally(() => setLoadingBlocos(false))
+  }, [step, data, modalidadeSel, docenteSel])
 
   const DIAS = ['Domingo', 'Segunda-Feira', 'Terça-Feira', 'Quarta-Feira', 'Quinta-Feira', 'Sexta-Feira', 'Sábado']
 
@@ -141,24 +165,31 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
     return true // dia_semana é sempre futuro
   })
 
-  // Calcular horas possíveis dentro do slot do docente selecionado
+  // Calcular horas possíveis com base nos blocos reais devolvidos pelo backend
   const horasPossiveis = (() => {
-    if (!slotSel || !duracao) return []
+    if (!blocosReais || blocosReais.length === 0 || !duracao) return []
     const parse = (s) => {
       if (!s) return null
       const d = new Date(s)
       return isNaN(d) ? null : d
     }
-    const inicio = parse(slotSel.hora_inicio)
-    const fim = parse(slotSel.hora_fim)
-    if (!inicio || !fim) return []
-    const horas = []
-    const cursor = new Date(inicio)
-    while (new Date(cursor.getTime() + duracao * 60000) <= fim) {
-      horas.push(cursor.toISOString().substring(11, 19)) // "HH:MM:SS"
-      cursor.setMinutes(cursor.getMinutes() + 30)
+    
+    const horas = new Set()
+    
+    for (const bloco of blocosReais) {
+      const inicio = parse(bloco.hora_inicio)
+      const fim = parse(bloco.hora_fim)
+      if (!inicio || !fim) continue
+      
+      const cursor = new Date(inicio)
+      while (new Date(cursor.getTime() + duracao * 60000) <= fim) {
+        horas.add(cursor.toISOString().substring(11, 19)) // "HH:MM:SS"
+        cursor.setMinutes(cursor.getMinutes() + 30)
+      }
     }
-    return horas
+    
+    // Converter o Set para Array e ordenar as horas de forma cronológica
+    return Array.from(horas).sort()
   })()
 
   // Carregar colegas se for em grupo
@@ -458,7 +489,11 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
               {/* Hora de início */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wide mb-1.5">Hora de Início</label>
-                {horasPossiveis.length === 0 ? (
+                {loadingBlocos ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 size={24} className="text-brand-800 animate-spin" />
+                  </div>
+                ) : horasPossiveis.length === 0 ? (
                   <div className="text-center py-3 text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                     Não é possível encaixar {duracao} min neste slot. Escolhe uma duração menor.
                   </div>
@@ -652,5 +687,3 @@ function Row({ icon: Icon, label, value }) {
     </div>
   )
 }
-
-

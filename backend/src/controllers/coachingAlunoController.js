@@ -46,6 +46,8 @@ const consultarDisponibilidades = async (req, res) => {
     const filtros = {};
     if (id_modalidade) filtros.id_modalidade = Number(id_modalidade);
     if (data) filtros.data = data;
+    if (req.user?.id) filtros.id_aluno = req.user.id;
+    else if (req.user?.id_utilizador) filtros.id_aluno = req.user.id_utilizador;
 
     const disponibilidades = await coachingAlunoService.consultarDisponibilidades(filtros);
     return res.status(200).json(disponibilidades);

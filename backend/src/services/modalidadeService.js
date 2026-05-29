@@ -17,12 +17,20 @@ const prisma = new PrismaClient();
  * @param {boolean} comDocentes - Se true, inclui a lista de docentes por modalidade
  * @returns {Promise<Array>}
  */
-const listarModalidades = async (id_docente = null, comDocentes = false) => {
+const listarModalidades = async (id_docente = null, comDocentes = false, id_aluno = null) => {
   const where = {};
   if (id_docente) {
     where.docente_modalidade = {
       some: { id_docente: parseInt(id_docente) }
     };
+  }
+  if (id_aluno) {
+    // Para evitar falhas com nomes de relações no Prisma, procuramos primeiro a tabela associativa
+    const associacoes = await prisma.aluno_modalidade.findMany({
+      where: { id_utilizador: parseInt(id_aluno) },
+      select: { id_modalidade: true }
+    });
+    where.id_modalidade = { in: associacoes.map(a => a.id_modalidade) };
   }
 
   const modalidades = await prisma.modalidade.findMany({

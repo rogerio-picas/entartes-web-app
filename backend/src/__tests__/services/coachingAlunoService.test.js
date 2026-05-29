@@ -36,6 +36,10 @@ jest.mock('@prisma/client', () => {
     docente: {
       findFirst: jest.fn(),
     },
+    aluno_modalidade: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+    },
     aluno_marcacao: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -154,6 +158,8 @@ const marcacaoFixture = {
 // ─────────────────────────────────────────────────────────────
 beforeEach(() => {
   jest.clearAllMocks();
+  prisma.aluno_modalidade.findFirst.mockResolvedValue({ id_modalidade: 5 });
+  prisma.aluno_modalidade.findMany.mockResolvedValue([{ id_modalidade: 5 }]);
 });
 
 // ═════════════════════════════════════════════════════════════
