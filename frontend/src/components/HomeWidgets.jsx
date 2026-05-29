@@ -158,15 +158,15 @@ export function CoachingCard({ aula, onConfirm, onReject, loading }) {
   }
 
   return (
-    <div className="flex-1 min-w-[300px] max-w-[380px] bg-brand-50 border border-brand-800 rounded-xl p-4 flex flex-col gap-2.5">
+    <div className="flex-1 min-w-[300px] max-w-[380px] bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex flex-col gap-2.5 hover:scale-[1.01] hover:shadow-md transition-all duration-300 group">
       <div className="flex flex-col gap-1 text-sm">
         {[['Modalidade', String(aula.modalidade || '—')], ['Data', String(aula.data || '—')],
         ['Docente', String(aula.docente || '—')], ['Duração', String(aula.duracao || '—')],
         ['Hora início', String(aula.hora || '—')], ['Tipo', 'Individual']
         ].map(([k, v]) => (
           <div key={k}>
-            <span className="text-brand-800">{k}: </span>
-            <span className="text-black font-medium">{v}</span>
+            <span className="text-neutral-500 font-medium">{k}: </span>
+            <span className="text-neutral-800 font-semibold">{v}</span>
           </div>
         ))}
       </div>
@@ -183,17 +183,17 @@ export function CoachingCard({ aula, onConfirm, onReject, loading }) {
       </div>
 
       {remaining && (
-        <div className="flex items-center gap-1.5 text-xs text-black">
-          <Clock size={13} /><span>{remaining}</span>
+        <div className="flex items-center gap-1.5 text-xs">
+          <Clock size={14} className="text-amber-600" /><span className="text-amber-700 font-semibold">{remaining}</span>
         </div>
       )}
       <div className="flex items-center gap-2 pt-1">
         <button onClick={() => onReject(aula.id)} disabled={loading === aula.id}
-          className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90 disabled:opacity-50">
+          className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50">
           <X size={18} strokeWidth={3} className="text-white" />
         </button>
         <button onClick={handleConfirm} disabled={loading === aula.id}
-          className="flex-1 h-12 bg-feedback-success border border-brand-800 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 text-white text-sm font-bold">
+          className="flex-1 h-12 bg-feedback-success border border-feedback-success-dark rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 text-white text-sm font-bold">
           <Check size={16} /> Confirmar
         </button>
       </div>
@@ -203,7 +203,10 @@ export function CoachingCard({ aula, onConfirm, onReject, loading }) {
 
 export function ConfirmedCard({ aula, onOpen, role }) {
   return (
-    <div className="flex-1 min-w-[300px] w-full bg-brand-50 border border-brand-900 rounded-xl p-5 flex flex-col gap-3">
+    <div 
+      onClick={onOpen}
+      className="flex-1 min-w-[300px] w-full bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex flex-col gap-3 cursor-pointer hover:scale-[1.01] hover:shadow-md transition-all duration-300 group"
+    >
       <div className="flex gap-3">
         <div className="flex-1 text-sm flex flex-col gap-0.5">
           {[
@@ -212,34 +215,30 @@ export function ConfirmedCard({ aula, onOpen, role }) {
             ['Sala', String(aula.sala || '—')], ['Tipo', String(aula.tipo || '—')]
           ].map(([k, v]) => (
             <div key={k}>
-              <span className="text-brand-800 font-semibold">{k}: </span>
-              <span className="text-black">{v}</span>
+              <span className="text-neutral-500 font-medium">{k}: </span>
+              <span className="text-neutral-800 font-semibold">{v}</span>
             </div>
           ))}
         </div>
-        <div className="flex flex-col items-center gap-1 text-center">
-          <div className="w-14 h-14 rounded-full bg-brand-200 flex items-center justify-center border-2 border-brand-800">
+        <div className="flex flex-col items-center gap-1 text-center my-auto">
+          <div className="w-14 h-14 rounded-full bg-brand-500 flex items-center justify-center border-2 border-brand-800">
             <User size={32} className="text-brand-800" />
           </div>
-          <span className="text-sm font-bold text-brand-900 flex flex-col items-center">
-            {(role === 3 ? String(aula.alunos || '—') : String(aula.docente || '—'))
-              .split(',')
-              .map((n, i) => <span key={i}>{n.trim()}</span>)
-            }
+          <span className="text-neutral-500 text-xs text-center leading-tight">
+            {role === 2 ? 'Aluno(s)' : 'Docente'}<br />
+            <span className="font-bold text-neutral-800 flex flex-col items-center text-sm mt-0.5">
+              {(role === 3 ? String(aula.alunos || '—') : String(aula.docente || '—'))
+                .split(',')
+                .map((n, i) => <span key={i}>{n.trim()}</span>)
+              }
+            </span>
           </span>
-          <span className="text-xs text-black">{role === 2 ? 'Aluno(s)' : 'Docente'}</span>
         </div>
       </div>
       <div className="flex items-center gap-2">
         <span className="bg-feedback-success border border-feedback-success-dark text-white text-xs font-semibold px-3 py-0.5 rounded-full">
           Confirmada
         </span>
-        <button
-          onClick={onOpen}
-          className="bg-brand-500 border border-brand-800 text-brand-900 text-xs font-regular px-3 py-0.5 rounded-full hover:brightness-95 transition-all"
-        >
-          Ver mais
-        </button>
       </div>
     </div>
   )
@@ -247,32 +246,32 @@ export function ConfirmedCard({ aula, onOpen, role }) {
 
 export function RequisicaoCard({ item, onAccept, onReject, loading, onVerPerfil }) {
   return (
-    <div className="bg-brand-50 border border-brand-800 rounded-xl p-4 flex relative min-w-[340px]">
+    <div className="bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex relative min-w-[340px] hover:scale-[1.01] hover:shadow-md transition-all duration-300 group">
       <div className="flex-1 flex flex-col gap-1.5">
-        <p className="text-sm"><span className="text-brand-900 font-medium">Modalidade - </span>
-          <span className="text-brand-800">{item.modalidade}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Data - </span>
-          <span className="text-brand-800">{item.data}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Duração - </span>
-          <span className="text-brand-800">{item.duracao}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Hora início - </span>
-          <span className="text-brand-800">{item.hora}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Tipo - </span>
-          <span className="text-brand-800">Individual</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Modalidade: </span>
+          <span className="text-neutral-800 font-semibold">{item.modalidade}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Data: </span>
+          <span className="text-neutral-800 font-semibold">{item.data}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Duração: </span>
+          <span className="text-neutral-800 font-semibold">{item.duracao}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Hora início: </span>
+          <span className="text-neutral-800 font-semibold">{item.hora}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Tipo: </span>
+          <span className="text-neutral-800 font-semibold">Individual</span></p>
         {item.alunos?.length > 0 && (
           <button onClick={() => onVerPerfil(item.alunos[0])}
-            className="flex items-center gap-2 mt-1 bg-brand-200 rounded-lg px-2.5 py-1.5 w-fit
-              hover:bg-brand-800/20 transition-colors">
+            className="flex items-center gap-2 mt-1 bg-neutral-100 rounded-lg px-2.5 py-1.5 w-fit
+              hover:bg-neutral-200 transition-colors">
             <div className="w-6 h-6 rounded-full bg-brand-800 flex items-center justify-center">
               <User size={13} className="text-white" />
             </div>
-            <span className="text-xs font-semibold text-brand-800">{String(item.alunos[0] || '—')}</span>
-            <ChevronRight size={12} className="text-brand-800" />
+            <span className="text-xs font-semibold text-neutral-800">{String(item.alunos[0] || '—')}</span>
+            <ChevronRight size={12} className="text-neutral-500" />
           </button>
         )}
         <div className="flex items-center gap-1.5 mt-1">
-          <Clock size={13} className="text-brand-800" />
-          <span className="text-xs font-semibold text-black">Nas próximas 48h</span>
+          <Clock size={14} className="text-amber-600" />
+          <span className="text-xs font-semibold text-amber-700">Nas próximas 48h</span>
         </div>
       </div>
       <div className="flex flex-col items-end justify-end gap-2">
@@ -280,11 +279,11 @@ export function RequisicaoCard({ item, onAccept, onReject, loading, onVerPerfil 
           ? <RefreshCw size={18} className="text-brand-800 animate-spin" />
           : <div className="flex gap-2">
             <button onClick={() => onReject(item.id)}
-              className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90">
+              className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
               <X size={22} strokeWidth={3} className="text-white" />
             </button>
             <button onClick={() => onAccept(item.id)}
-              className="w-12 h-12 bg-feedback-success border border-brand-800 rounded-xl flex items-center justify-center hover:opacity-90">
+              className="w-12 h-12 bg-feedback-success border border-feedback-success-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
               <Check size={22} strokeWidth={3} className="text-white" />
             </button>
           </div>
@@ -296,34 +295,34 @@ export function RequisicaoCard({ item, onAccept, onReject, loading, onVerPerfil 
 
 export function PresencaDocenteCard({ item, onConfirm, onReject, loading }) {
   return (
-    <div className="bg-brand-50 border border-brand-800 rounded-xl p-4 flex relative min-w-[340px]">
+    <div className="bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex relative min-w-[340px]">
       <div className="flex-1 flex flex-col gap-1.5">
-        <p className="text-sm"><span className="text-brand-900 font-semibold">Modalidade - </span>
-          <span className="text-brand-800">{item.modalidade}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-semibold">Data - </span>
-          <span className="text-brand-800">{item.data}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-semibold">Hora - </span>
-          <span className="text-brand-800">{item.hora}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-semibold">Duração - </span>
-          <span className="text-brand-800">{item.duracao}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-semibold">Tipo - </span>
-          <span className="text-brand-800">Individual</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Modalidade: </span>
+          <span className="text-neutral-800 font-semibold">{item.modalidade}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Data: </span>
+          <span className="text-neutral-800 font-semibold">{item.data}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Hora: </span>
+          <span className="text-neutral-800 font-semibold">{item.hora}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Duração: </span>
+          <span className="text-neutral-800 font-semibold">{item.duracao}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Tipo: </span>
+          <span className="text-neutral-800 font-semibold">Individual</span></p>
         <div className="flex items-center gap-1.5 mt-1">
-          <Clock size={25} className="text-brand-800" />
-          <span className="text-sm font-semibold text-black">A expirar nas próximas 48h</span>
+          <Clock size={16} className="text-amber-600" />
+          <span className="text-xs font-semibold text-amber-700">A expirar nas próximas 48h</span>
         </div>
       </div>
-      <div className="flex flex-col items-end justify-end gap-2">
+      <div className="flex flex-col items-end justify-center gap-2 pr-[5%]">
         {loading === item.id
           ? <RefreshCw size={18} className="text-brand-800 animate-spin" />
-          : <div className="flex gap-2">
+          : <div className="flex flex-col gap-2">
             <button onClick={() => onReject(item.id)}
-              className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90">
-              <X size={22} strokeWidth={3} className="text-white" />
+              className="w-12 h-12 bg-transparent border-2 border-feedback-error text-feedback-error rounded-full flex items-center justify-center hover:bg-red-50 transition-colors">
+              <X size={32} strokeWidth={3} />
             </button>
             <button onClick={() => onConfirm(item.id)}
-              className="w-12 h-12 bg-feedback-success border border-brand-800 rounded-xl flex items-center justify-center hover:opacity-90">
-              <Check size={22} strokeWidth={3} className="text-white" />
+              className="w-12 h-12 bg-transparent border-2 border-feedback-success text-feedback-success rounded-full flex items-center justify-center hover:bg-emerald-50 transition-colors">
+              <Check size={32} strokeWidth={3} />
             </button>
           </div>
         }
@@ -448,5 +447,3 @@ export function Toast({ msg, type, onClose }) {
     </div>
   )
 }
-
-

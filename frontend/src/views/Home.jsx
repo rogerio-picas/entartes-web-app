@@ -27,31 +27,31 @@ import ItemDetailModal from '../components/ItemDetailModal'
 // ── Presence confirmation card (aluno confirma a SUA presença) ──
 function PresencaAlunoCard({ item, onConfirm, onReject, loading }) {
   return (
-    <div className="bg-brand-50 border border-brand-800 rounded-xl p-4 flex relative min-w-[340px]">
+    <div className="bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex relative min-w-[340px] hover:scale-[1.01] hover:shadow-md transition-all duration-300 group">
       <div className="flex-1 flex flex-col gap-1.5">
-        <p className="text-sm"><span className="text-brand-900 font-medium">Modalidade: </span>
-          <span className="text-brand-800">{item.modalidade}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Data: </span>
-          <span className="text-brand-800">{item.data}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Hora início: </span>
-          <span className="text-brand-800">{item.hora}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Duração: </span>
-          <span className="text-brand-800">{item.duracao}</span></p>
-        <p className="text-sm"><span className="text-brand-900 font-medium">Docente: </span>
-          <span className="text-brand-800">{item.docente}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Modalidade: </span>
+          <span className="text-neutral-800 font-semibold">{item.modalidade}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Data: </span>
+          <span className="text-neutral-800 font-semibold">{item.data}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Hora início: </span>
+          <span className="text-neutral-800 font-semibold">{item.hora}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Duração: </span>
+          <span className="text-neutral-800 font-semibold">{item.duracao}</span></p>
+        <p className="text-sm"><span className="text-neutral-500 font-medium">Docente: </span>
+          <span className="text-neutral-800 font-semibold">{item.docente}</span></p>
         <div className="flex items-center gap-1.5 mt-1">
-          <Clock size={15} className="text-brand-800" />
-          <span className="text-xs font-semibold text-black">{item.tempoRestante || 'Nas próximas 48h'}</span>
+          <Clock size={14} className="text-amber-600" />
+          <span className="text-xs font-semibold text-amber-700">{item.tempoRestante || 'Nas próximas 48h'}</span>
         </div>
       </div>
       <div className="flex flex-col items-end justify-end gap-2">
         <div className="flex gap-2">
           <button onClick={() => onReject(item.id)} disabled={loading === item.id}
-            className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90">
+            className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
             <X size={22} strokeWidth={3} className="text-white" />
           </button>
           <button onClick={() => onConfirm(item.id)} disabled={loading === item.id}
-            className="w-12 h-12 bg-feedback-success border border-brand-800 rounded-xl flex items-center justify-center hover:opacity-90">
+            className="w-12 h-12 bg-feedback-success border border-feedback-success-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
             <Check size={22} strokeWidth={3} className="text-white" />
           </button>
         </div>
@@ -234,7 +234,7 @@ export default function Home() {
         const limit48h = new Date(now.getTime() - 48 * 60 * 60 * 1000)
         setPresencasDocente(minhasAulas.filter(a => {
           const d = new Date(a._data_raw)
-          return a.id_estado === 3 && d < now && d >= limit48h
+          return a.id_estado === 3 && d < now && d >= limit48h && !a.ja_validou
         }))
 
       } else if (isAluno) {
@@ -257,7 +257,7 @@ export default function Home() {
         const limit48h = new Date(now.getTime() - 48 * 60 * 60 * 1000)
         setPresencasAluno(meusPedidos.filter(a => {
           const d = new Date(a._data_raw)
-          return a.id_estado === 3 && d < now && d >= limit48h
+          return a.id_estado === 3 && d < now && d >= limit48h && !a.ja_validou
         }))
       }
 
@@ -415,7 +415,6 @@ export default function Home() {
                     ? <CoachingCard key={a.id} aula={a} onConfirm={handleConfirmAdminDocente} onReject={handleRejectAdminDocente} loading={loadingAction} />
                     : <RequisicaoCard key={a.id} item={a} onAccept={handleConfirmAdminDocente} onReject={handleRejectAdminDocente} loading={loadingAction} onVerPerfil={handleVerPerfil} />
                 ))}
-                {coachings48h.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais pendentes" />}
               </ScrollRow>
             )}
           </section>
@@ -432,7 +431,6 @@ export default function Home() {
                 {presencasDocente.slice(0, 3).map(item => (
                   <PresencaDocenteCard key={item.id} item={item} onConfirm={handleConfirmPresencaDocente} onReject={handleRejectDocente} loading={loadingAction} />
                 ))}
-                {presencasDocente.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais presenças" />}
               </ScrollRow>
             )}
           </section>
@@ -446,7 +444,6 @@ export default function Home() {
               {presencasAluno.slice(0, 3).map(item => (
                 <PresencaAlunoCard key={item.id} item={item} onConfirm={handleConfirmarPresencaAluno} onReject={handleRecusarPresencaAluno} loading={loadingAction} />
               ))}
-              {presencasAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais presenças" />}
             </ScrollRow>
           </section>
         )}
@@ -463,7 +460,7 @@ export default function Home() {
                   ? <ConfirmedCard key={a.id} aula={a} onOpen={() => setSelectedItem(a)} role={role} />
                   : <ClassCard key={a.id} item={a} statusType="confirmada" onOpen={() => setSelectedItem(a)} />
               ))}
-              {aulasConfirmadas.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas', { state: { filtroEstado: '3' } })} label="Ver mais coachings" />}            </ScrollRow>
+            </ScrollRow>
           )}
         </section>
 
@@ -475,7 +472,6 @@ export default function Home() {
               {inscricoesAluno.slice(0, 3).map((item, idx) => (
                 <ClassCard key={item.id || idx} item={item} statusType="pendente" onOpen={() => setSelectedItem(item)} />
               ))}
-              {inscricoesAluno.length > 3 && <ViewMoreCard onClick={() => navigate('/aulas')} label="Ver mais inscrições" />}
             </ScrollRow>
           </section>
         )}
@@ -495,7 +491,6 @@ export default function Home() {
               {eventos.slice(0, 3).map(item => (
                 <SimpleEventCard key={item.id_evento} event={item} onOpen={() => setSelectedItem(item)} />
               ))}
-              {eventos.length > 3 && <ViewMoreCard onClick={() => navigate('/eventos')} label="Ver todos os eventos" />}
             </div>
           )}
         </section>
