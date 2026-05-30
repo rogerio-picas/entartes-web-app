@@ -12,6 +12,14 @@ const mockReqRes = (overrides = {}) => {
 };
 
 describe('modalidadeController', () => {
+  beforeAll(() => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterAll(() => {
+    console.error.mockRestore();
+  });
+
   beforeEach(() => jest.clearAllMocks());
 
   // ── listModalidades ───────────────────────────────────────────────────────
