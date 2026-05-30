@@ -19,7 +19,7 @@ import {
 import {
   StatCard,
   LiveClassCard, CoachingCard, ConfirmedCard, RequisicaoCard, PresencaDocenteCard,
-  RoomOccupancyWidget,
+  SalasDoDiaWidget,
   PerfilModal, SectionHeader, ScrollRow, Toast
 } from '../components/HomeWidgets'
 import ItemDetailModal from '../components/ItemDetailModal'
@@ -205,9 +205,10 @@ export default function Home() {
         setCoachings48h(pendentes48h)
 
         const hoje = todas.filter(a => new Date(a._data_raw).toDateString() === now.toDateString())
+        const confirmadasHoje = hoje.filter(a => a.id_estado === 3)
         setStats({
-          hoje: hoje.length,
-          porValidar: pedPendentes.length,
+          hoje: confirmadasHoje.length,
+          porValidar: pendentes48h.length,
           concluidas: todas.filter(a => a.id_estado === 4).length
         })
         const sortAsc = (a, b) => new Date(a._data_raw) - new Date(b._data_raw);
@@ -374,38 +375,32 @@ export default function Home() {
 
         {/* ── ADMIN: Stats Row + Charts + Buttons ──────────────── */}
         {isAdmin && (
-          <div className="flex flex-wrap gap-4 items-start justify-between">
-            <div className="flex flex-wrap gap-3">
-              <StatCard count={stats.hoje} label="aulas hoje" color="text-neutral-800" bg="bg-brand-200" border="border-brand-800" />
-              <StatCard count={stats.porValidar} label="por validar" color="text-feedback-info" bg="bg-feedback-info-light" border="border-feedback-info" />
-              <StatCard count={stats.concluidas} label="concluída" color="text-feedback-error-dark" bg="bg-feedback-error-light" border="border-feedback-error-dark" />
-            </div>
-            <div className="flex flex-col gap-2 shrink-0">
-              <button onClick={() => navigate('/aulas')}
-                className="px-4 py-2.5 border border-brand-800 text-brand-800 text-sm font-semibold rounded-xl hover:bg-neutral-50 transition-colors whitespace-nowrap">
-                Consultar Coachings
-              </button>
-              <button onClick={() => setShowNovoEvento(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-brand-800 text-white text-sm font-semibold rounded-xl hover:bg-brand-900 transition-colors">
-                <Plus size={16} /> Novo evento
-              </button>
-            </div>
-          </div>
-        )}
-
-        {isAdmin && (
-          <div className="flex gap-4 flex-wrap flex-1">
-            <div className="border border-brand-800 rounded-xl p-4 bg-white flex-1 min-w-[300px]">
-              <p className="text-xs font-bold text-brand-800 mb-3">Ocupação de Salas (Hoje)</p>
-              <RoomOccupancyWidget data={ocupacaoSalas} />
-            </div>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap gap-4 items-start justify-between">
+              <div className="flex flex-wrap gap-3">
+                <StatCard count={stats.hoje} label="aulas hoje" color="text-neutral-800" bg="bg-brand-200" border="border-brand-800" />
+                <StatCard count={stats.porValidar} label="por validar" color="text-feedback-info" bg="bg-feedback-info-light" border="border-feedback-info" />
+                <StatCard count={stats.concluidas} label="concluída" color="text-feedback-error-dark" bg="bg-feedback-error-light" border="border-feedback-error-dark" />
+              </div>
+              <div className="flex flex-col gap-2 shrink-0">
+                <button onClick={() => navigate('/aulas')}
+                  className="px-4 py-2.5 border border-brand-800 text-brand-800 text-sm font-semibold rounded-xl hover:bg-neutral-50 transition-colors whitespace-nowrap">
+                  Consultar Coachings
+                </button>
+              </div>
+              </div>
+            <div className="flex gap-4 flex-wrap flex-1">
+              <div className="border border-brand-800 rounded-xl p-4 bg-white flex-1 min-w-[300px] max-w-full overflow-hidden">
+                <p className="text-xs font-bold text-brand-800 mb-3">Ocupação de salas</p>
+                <SalasDoDiaWidget />
+              </div>
           </div>
         )}
 
         {/* ── ADMIN/DOCENTE: pending requests 48h ──────────────── */}
         {(isAdmin || isDocente) && (
           <section>
-            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Coachings pendentes a expirar em 48h"} action="Ver todas" onAction={() => navigate('/coaching')} />
+            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Coachings pendentes a expirar em 48h"} action="Ver todas" onAction={() => navigate('/aulas', { state: { filtro48h: true } })} />
             {coachings48h.length === 0 ? (
               <p className="text-sm text-neutral-600 italic">Sem coachings pendentes nas próximas 48h.</p>
             ) : (
