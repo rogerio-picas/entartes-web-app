@@ -17,7 +17,7 @@ const prisma = new PrismaClient();
  * @param {boolean} comDocentes - Se true, inclui a lista de docentes por modalidade
  * @returns {Promise<Array>}
  */
-const listarModalidades = async (id_docente = null, comDocentes = false, id_aluno = null) => {
+const listarModalidades = async (id_docente = null, comDocentes = false, id_aluno = null, comAlunos = false) => {
   const where = {};
   if (id_docente) {
     where.docente_modalidade = {
@@ -33,21 +33,25 @@ const listarModalidades = async (id_docente = null, comDocentes = false, id_alun
     where.id_modalidade = { in: associacoes.map(a => a.id_modalidade) };
   }
 
-  const modalidades = await prisma.modalidade.findMany({
-    where,
-    include: comDocentes
-      ? {
-        docente_modalidade: {
+  const include = {};
+  if (comDocentes) {
+    include.docente_modalidade = {
+      include: {
+        docente: {
           include: {
-            docente: {
-              include: {
-                utilizador: { select: { nome: true, apelido: true, codigo_username: true } },
-              },
-            },
+            utilizador: { select: { nome: true, apelido: true, codigo_username: true } },
           },
         },
-      }
-      : undefined,
+      },
+    };
+  }
+  if (comAlunos) {
+    include.aluno_modalidade = { select: { id_utilizador: true } };
+  }
+
+  const modalidades = await prisma.modalidade.findMany({
+    where,
+    include: Object.keys(include).length > 0 ? include : undefined,
     orderBy: { nome: 'asc' },
   });
 
@@ -301,6 +305,47 @@ const desassociarDocente = async (id_modalidade, id_docente) => {
 };
 
 // ─────────────────────────────────────────────────────────────
+// 7. associarAluno / desassociarAluno
+// ─────────────────────────────────────────────────────────────
+const associarAluno = async (id_modalidade, id_utilizador) => {
+  const id = parseInt(id_modalidade);
+  const idAluno = parseInt(id_utilizador);
+
+  const modalidade = await prisma.modalidade.findUnique({ where: { id_modalidade: id } });
+  if (!modalidade) throw new Error('Modalidade não encontrada.');
+
+  const aluno = await prisma.aluno.findUnique({ where: { id_utilizador: idAluno } });
+  if (!aluno) throw new Error('Aluno não encontrado.');
+
+  const jaAssociado = await prisma.aluno_modalidade.findUnique({
+    where: { id_utilizador_id_modalidade: { id_utilizador: idAluno, id_modalidade: id } },
+  });
+  if (jaAssociado) throw new Error('Este aluno já está associado a esta modalidade.');
+
+  await prisma.aluno_modalidade.create({
+    data: { id_utilizador: idAluno, id_modalidade: id },
+  });
+
+  return { id_utilizador: idAluno, id_modalidade: id };
+};
+
+const desassociarAluno = async (id_modalidade, id_utilizador) => {
+  const id = parseInt(id_modalidade);
+  const idAluno = parseInt(id_utilizador);
+
+  const associacao = await prisma.aluno_modalidade.findUnique({
+    where: { id_utilizador_id_modalidade: { id_utilizador: idAluno, id_modalidade: id } },
+  });
+  if (!associacao) throw new Error('Associação não encontrada.');
+
+  await prisma.aluno_modalidade.delete({
+    where: { id_utilizador_id_modalidade: { id_utilizador: idAluno, id_modalidade: id } },
+  });
+
+  return { mensagem: 'Aluno removido da modalidade com sucesso.' };
+};
+
+// ─────────────────────────────────────────────────────────────
 // EXPORTAÇÕES
 // ─────────────────────────────────────────────────────────────
 module.exports = {
@@ -311,4 +356,6 @@ module.exports = {
   eliminarModalidade,
   associarDocente,
   desassociarDocente,
+  associarAluno,
+  desassociarAluno,
 };
