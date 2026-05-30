@@ -507,26 +507,20 @@ export default function Aulas() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-neutral-50 border-b-2 border-neutral-600/20">
-                {['Modalidade', 'Data', 'Hora', 'Duração', 'Tipo Aula', 'Sala', 'Estado', 'Ação', ''].map((col, i) => {
-                  const sortable = !!SORT_KEYS[col]
-                  const active = sortConfig.key === SORT_KEYS[col]
-                  const SortIcon = active ? (sortConfig.dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
-                  return (
-                    <th
-                      key={col || i}
-                      onClick={sortable ? () => handleSort(col) : undefined}
-                      className={`px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap ${sortable ? 'cursor-pointer select-none hover:bg-neutral-100' : ''}`}
-                    >
-                      {col && (
-                        <span className="flex items-center gap-1">
-                          {col}
-                          {sortable && <SortIcon size={10} className={active ? 'text-brand-800' : 'text-brand-800/30'} />}
-                        </span>
-                      )}
-                    </th>
-                  )
-                })}
-                </tr>
+                {['Modalidade', 'Data', 'Hora', 'Duração', 'Tipo Aula', 'Sala', 'Estado', 'Ação'].map((col, i) => (
+                  <th
+                    key={col || i}
+                    className="px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap"
+                  >
+                    {col && (
+                      <span className="flex items-center gap-1">
+                        {col}
+                        {col && col !== '' && <ArrowUpDown size={10} className="text-brand-800/30" />}
+                      </span>
+                    )}
+                  </th>
+                ))}
+              </tr>
             </thead>
             <tbody>
               {loading ? (
@@ -563,7 +557,8 @@ export default function Aulas() {
                   return (
                     <tr
                       key={row.id ?? idx}
-                      className={`border-b border-neutral-600/10 hover:bg-brand-50 transition-colors ${idx % 2 === 0 ? '' : 'bg-brand-50'}`}
+                      onClick={() => setModalAula(row)}
+                      className={`border-b border-neutral-600/10 hover:bg-brand-50 transition-colors cursor-pointer ${idx % 2 === 0 ? '' : 'bg-brand-50'}`}
                     >
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
@@ -579,7 +574,7 @@ export default function Aulas() {
                       <td className="px-4 py-4">
                         <StatusBadge id_estado={row.id_estado} estado_nome={row.estado_nome} />
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
                         {isLoading ? (
                           <RefreshCw size={18} className="text-brand-800 animate-spin" />
                         ) : role === 1 && isPendente ? (
@@ -621,12 +616,12 @@ export default function Aulas() {
                               </button>
                             </div>
                           ) : (
-                          <button onClick={() => setConfirmId(row.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
-                          >
-                            <X size={12} strokeWidth={3} />
-                            Cancelar
-                          </button>
+                            <button onClick={() => setConfirmId(row.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
+                            >
+                              <X size={12} strokeWidth={3} />
+                              Cancelar
+                            </button>
                           )
                         ) : podeConfirmarPresenca ? (
                           <button
@@ -636,22 +631,15 @@ export default function Aulas() {
                             <Check size={12} strokeWidth={3} />
                             Confirmar presen&ccedil;a
                           </button>
-                  ) : row.ja_validou && row.id_estado === 3 ? (
-                    <span className="text-xs text-brand-800 font-semibold bg-brand-100 px-2 py-1 rounded-lg">A aguardar a outra parte</span>
+                        ) : row.ja_validou && row.id_estado === 3 ? (
+                          <span className="text-xs text-brand-800 font-semibold bg-brand-100 px-2 py-1 rounded-lg">A aguardar a outra parte</span>
                         ) : prazoExpiradoTabela ? (
                           <span className="text-xs text-gray-400 font-medium">Prazo expirado</span>
                         ) : (
                           <span className="text-xs text-gray-300 font-['Sora']">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-4">
-                        <button
-                          onClick={() => setModalAula(row)}
-                          className="px-3.5 py-1.5 rounded-lg bg-brand-200 text-brand-800 text-xs font-bold hover:bg-brand-800 hover:text-white transition-colors whitespace-nowrap"
-                        >
-                          Ver mais
-                        </button>
-                      </td>
+
                     </tr>
                   )
                 })
@@ -693,7 +681,7 @@ export default function Aulas() {
                 className="flex items-center gap-2 px-4 py-2 bg-brand-800 text-white rounded-xl text-sm font-bold hover:bg-brand-900 transition-colors shadow-sm"
               >
                 <Plus size={15} />
-                Nova Disponibilidade 
+                Nova Disponibilidade
               </button>
             </div>
             <div className="rounded-2xl border border-neutral-600/20 overflow-hidden shadow-sm bg-white">
