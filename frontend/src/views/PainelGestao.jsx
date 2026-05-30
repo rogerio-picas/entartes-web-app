@@ -1,7 +1,6 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Network, CheckCircle2, BookOpen, User } from 'lucide-react'
-import { notificacaoService } from '../services/notificacaoService'
 import { authService } from '../services/authService'
 import {
     ValidacaoCoachingModal, ListagemCoachingModal, HorasCoachingModal
@@ -22,23 +21,8 @@ const CARDS = [
     { label: 'Consultar Horas de Coaching dos Alunos',   modal: 'coaching',  icon: BookOpen,     description: 'Ver total de horas de coaching dos alunos' },
     { label: 'Consultar Horas de Coaching dos Docentes', modal: 'docentes',  icon: BookOpen,     description: 'Ver total de horas de coaching dos docentes' },
     { label: 'Gestão de Utilizadores',                   path: '/gestao/utilizadores', icon: User,       description: 'Gerir contas de alunos e docentes' },
-    { label: "Gestão de FAQ's",                          icon: BookOpen,     description: 'Em breve disponível' },
     { label: 'Gerir Modalidades',                        path: '/modalidades',         icon: BookOpen,   description: 'Configurar modalidades disponíveis' },
 ]
-
-function NotifSkeleton() {
-    return (
-        <div className="animate-pulse space-y-3 mt-2">
-            {[...Array(9)].map((_, i) => (
-                <div
-                    key={i}
-                    className="h-7 bg-brand-800/20 rounded-lg"
-                    style={{ width: `${70 + (i % 3) * 10}%` }}
-                />
-            ))}
-        </div>
-    )
-}
 
 export default function PainelGestao() {
     const navigate = useNavigate()
@@ -48,16 +32,6 @@ export default function PainelGestao() {
     useEffect(() => {
         if (user?.role !== 1) navigate('/', { replace: true })
     }, [user, navigate])
-
-    const [notifs, setNotifs] = useState([])
-    const [loadingNotifs, setLoadingNotifs] = useState(true)
-
-    useEffect(() => {
-        notificacaoService.getAll()
-            .then(data => setNotifs(data.slice(0, 9)))
-            .catch(() => setNotifs([]))
-            .finally(() => setLoadingNotifs(false))
-    }, [])
 
     return (
         <>
@@ -71,9 +45,9 @@ export default function PainelGestao() {
                 </div>
 
                 {/* Body */}
-                <div className="grid grid-cols-[1fr_1fr_300px] gap-5 items-start">
+                <div>
                     {/* Card grid */}
-                    <div className="col-span-2 grid grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {CARDS.map(card => (
                             <ActionCard
                                 key={card.label}
@@ -87,34 +61,6 @@ export default function PainelGestao() {
                                 }}
                             />
                         ))}
-                    </div>
-
-                    {/* Centro de Notificações */}
-                    <div className="bg-brand-200 rounded-2xl p-6">
-                        <p className="text-brand-900 font-medium text-sm mb-4">
-                            Centro de Notificações
-                        </p>
-                        {loadingNotifs ? (
-                            <NotifSkeleton />
-                        ) : notifs.length === 0 ? (
-                            <p className="text-sm text-brand-900/60">Sem notificações.</p>
-                        ) : (
-                            <ul className="space-y-2">
-                                {notifs.map(n => (
-                                    <li
-                                        key={n.id}
-                                        className={`text-xs px-3 py-2 rounded-lg leading-snug
-                                            ${n.lida
-                                                ? 'bg-brand-800/10 text-brand-900'
-                                                : 'bg-white text-brand-900 font-medium shadow-sm'
-                                            }`}
-                                    >
-                                        <span className="block truncate">{n.titulo}</span>
-                                        <span className="text-brand-900/50 font-normal">{n.data}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
                     </div>
                 </div>
             </div>

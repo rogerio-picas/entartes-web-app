@@ -19,6 +19,7 @@ import { formatDate, formatTime, parseDate, parseDateTime, addMinutesToTime, toW
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovoEventoModal from './NovoEventoModal'
 import NovaMarcacaoModal from './NovaMarcacaoModal'
+import EditSalaModal from '../components/EditSalaModal'
 // ─── Localizer para português ───────────────────────────────────────────────
 const localizer = dateFnsLocalizer({
     format,
@@ -109,60 +110,7 @@ function EventComponent({ event }) {
     )
 }
 
-function EditSalaModal({ item, salas, onClose, onSuccess }) {
-    const [loading, setLoading] = useState(false)
-    const [erro, setErro] = useState('')
-    const [idSala, setIdSala] = useState(item?.id_sala || '')
 
-    if (!item) return null;
-
-
-    async function handleSubmit() {
-        if (!idSala) { setErro('Seleciona uma sala.'); return }
-        setLoading(true)
-        try {
-            await coachingService.reatribuirSala(item.id, Number(idSala))
-            onSuccess()
-        } catch (e) {
-            setErro(e.response?.data?.message || 'Erro ao mudar sala')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    return (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={onClose}>
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
-                <div className="px-6 py-5 bg-[#F4FBF9] border-b-2 border-[#80D5D2] flex items-center justify-between">
-                    <h3 className="font-bold text-lg text-[#006A68]">Mudar Sala</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
-                </div>
-                <div className="p-6 space-y-4">
-                    {erro && <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100">{erro}</div>}
-                    <div>
-                        <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Sala Atual: {item.sala || 'Nenhuma'}</label>
-                        <select
-                            value={idSala}
-                            onChange={e => setIdSala(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#006A68]"
-                        >
-                            <option value="">Selecionar nova sala...</option>
-                            {salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
-                        </select>
-                    </div>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="w-full py-2.5 bg-[#006A68] text-white font-bold rounded-xl hover:bg-[#00504E] disabled:opacity-50 transition-colors"
-                    >
-                        {loading ? 'A guardar...' : 'Confirmar Alteração'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    )
-}
 
 // 2. Componente para renderizar o FUNDO do dia (a célula do calendário)
 const DateCellWrapper = ({ children, value, onAdd, currentMonth }) => {
@@ -480,7 +428,6 @@ export default function Horario() {
     const [itemToEdit, setItemToEdit] = useState(null)
     const [showEditSala, setShowEditSala] = useState(false)
     const [toast, setToast] = useState(null)
-    const [pendingDeleteItem, setPendingDeleteItem] = useState(null)
 
     function showToast(msg, type = 'success') {
         setToast({ msg, type })
@@ -772,12 +719,7 @@ export default function Horario() {
         }
     }
 
-    const handleDeleteItem = (item) => {
-        setPendingDeleteItem(item)
-    }
-
-    const executeDeleteItem = async (item) => {
-        setPendingDeleteItem(null)
+    const handleDeleteItem = async (item) => {
         try {
             if (item._type === 'disponibilidade') {
                 await disponibilidadeService.eliminar(item.id_disponibilidade)
@@ -1143,19 +1085,19 @@ export default function Horario() {
 
                 if (role === 1) {
                     // Admin pode tudo em itens futuros
-                    canEdit = true;
+                    canEdit = !isAula; // O admin usa o botão "Mudar Sala" para aulas, não o "Editar"
                     canDelete = true;
                 } else if (role === 2) {
-                    // Docente gere suas disponibilidades e pode cancelar suas aulas
+                    // Docente gere suas disponibilidades e pode cancelar suas aulas (se pendentes)
                     if (isDisp) {
                         canEdit = true;
                         canDelete = true;
-                    } else if (isAula) {
+                    } else if (isAula && (selectedItem.id_estado === 1 || selectedItem.id_estado === 2)) {
                         canDelete = true; // "Cancelar"
                     }
                 } else if (role === 3) {
-                    // Aluno pode cancelar suas aulas
-                    if (isAula) {
+                    // Aluno pode cancelar suas aulas (se pendentes)
+                    if (isAula && (selectedItem.id_estado === 1 || selectedItem.id_estado === 2)) {
                         canDelete = true;
                     }
                 }
@@ -1166,6 +1108,10 @@ export default function Horario() {
                         role={role}
                         onClose={() => setSelectedItem(null)}
                         onEdit={canEdit ? handleEditItem : null}
+                        onChangeRoom={(role === 1 && isAula) ? () => {
+                            setItemToEdit(selectedItem);
+                            setShowEditSala(true);
+                        } : undefined}
                         onDelete={canDelete ? handleDeleteItem : null}
                         onNavigate={(item) => {
                             if (item._isEvent || item._type === 'evento') {
@@ -1238,27 +1184,6 @@ export default function Horario() {
                         fetchAll()
                     }}
                 />
-            )}
-
-
-            {pendingDeleteItem && (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4" onClick={() => setPendingDeleteItem(null)}>
-                    <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-                    <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm font-['Sora']" onClick={e => e.stopPropagation()}>
-                        <p className="font-semibold text-neutral-800 text-base mb-1">
-                            {pendingDeleteItem._type === 'aula' ? 'Cancelar marcação?' : 'Eliminar registo?'}
-                        </p>
-                        <p className="text-sm text-neutral-500 mb-5">Esta ação não pode ser desfeita.</p>
-                        <div className="flex gap-2">
-                            <button onClick={() => setPendingDeleteItem(null)} className="flex-1 py-2.5 text-sm border border-neutral-600/25 rounded-xl text-neutral-600 hover:bg-neutral-50 transition-colors">
-                                Cancelar
-                            </button>
-                            <button onClick={() => executeDeleteItem(pendingDeleteItem)} className="flex-1 py-2.5 text-sm bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors">
-                                Confirmar
-                            </button>
-                        </div>
-                    </div>
-                </div>
             )}
 
             {toast && <Toast {...toast} onClose={() => setToast(null)} />}

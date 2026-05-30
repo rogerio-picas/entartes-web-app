@@ -9,6 +9,7 @@ import { eventService } from '../services/eventService'
 import { ClassCard, EventCard as SimpleEventCard } from '../components/Cards'
 import EventModal from '../components/EventModal'
 import NovoEventoModal from './NovoEventoModal'
+import EditSalaModal from '../components/EditSalaModal'
 import { ValidacaoModal, HistoricoModal } from '../components/EscolaModais'
 
 import {
@@ -93,10 +94,13 @@ export default function Home() {
   const [showPendentesModal, setShowPendentesModal] = useState(false)
   const [showConcluidasModal, setShowConcluidasModal] = useState(false)
   const [showAulasHojeModal, setShowAulasHojeModal] = useState(false)
+  const [showEditSala, setShowEditSala] = useState(false)
+  const [itemToEditRoom, setItemToEditRoom] = useState(null)
 
   // Shared Data
   const [eventos, setEventos] = useState([])
   const [aulasConfirmadas, setAulasConfirmadas] = useState([])
+  const [salas, setSalas] = useState([])
 
   // Admin Data
   const [stats, setStats] = useState({ hoje: 0, porValidar: 0, concluidas: 0 })
@@ -189,16 +193,19 @@ export default function Home() {
       }
 
       if (isAdmin) {
-        const [pendentes, todasRes, ocupacaoSalasRes] = await Promise.allSettled([
+        const [pendentes, todasRes, ocupacaoSalasRes, salasRes] = await Promise.allSettled([
           coachingService.listarPedidosPendentes({ estados: '1,2' }),
           coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' }),
           api.get('/relatorio/ocupacao-salas'),
+          api.get('/salas'),
         ])
         const rawPendentes = pendentes.status === 'fulfilled' ? (Array.isArray(pendentes.value) ? pendentes.value : (pendentes.value?.data || [])) : []
         const rawTodas = todasRes.status === 'fulfilled' ? (Array.isArray(todasRes.value) ? todasRes.value : (todasRes.value?.data || [])) : []
         const pedPendentes = rawPendentes.map(normalizeAula)
         const todas = rawTodas.map(normalizeAula)
         const ocupacao = ocupacaoSalasRes.status === 'fulfilled' && Array.isArray(ocupacaoSalasRes.value) ? ocupacaoSalasRes.value : []
+        const fetchedSalas = salasRes.status === 'fulfilled' ? (Array.isArray(salasRes.value) ? salasRes.value : (salasRes.value?.data || [])) : []
+        setSalas(fetchedSalas)
 
         setOcupacaoSalas(ocupacao)
         const limite48h = new Date(now.getTime() + 48 * 60 * 60 * 1000)
@@ -357,6 +364,32 @@ export default function Home() {
     setPerfilAluno({ nome: nomeAluno, apelido: '', email: '—', telemovel: '—', codigo_username: '—' })
   }
 
+  const handleCancelItem = async (item) => {
+    try {
+      const id = item.id || item.id_marcacao;
+      if (item._type === 'evento' || item.id_evento) {
+        await eventService.delete(item.id_evento || id)
+      } else {
+        if (isAdmin) {
+          if (item.id_estado === 3) {
+            await coachingService.cancelarMarcacaoConfirmada(id, 'Cancelado via Dashboard')
+          } else {
+            await coachingService.rejeitarMarcacao(id, 'Cancelado via Dashboard')
+          }
+        } else if (isDocente) {
+          await coachingService.cancelarMarcacaoDocente(id, 'Cancelado via Dashboard')
+        } else if (isAluno) {
+          await coachingService.cancelarPedidoPendente(id)
+        }
+      }
+      setSelectedItem(null)
+      showToast('Cancelado com sucesso!', 'success')
+      loadData()
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || 'Erro ao cancelar.', 'error')
+    }
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center py-24 text-brand-800">
       <RefreshCw size={32} className="animate-spin" />
@@ -409,7 +442,7 @@ export default function Home() {
             <div className="flex gap-4 flex-wrap flex-1">
               <div className="border border-brand-800 rounded-xl p-4 bg-white flex-1 min-w-[300px] max-w-full overflow-hidden">
                 <p className="text-xs font-bold text-brand-800 mb-3">Ocupação de salas</p>
-                <SalasDoDiaWidget />
+                <SalasDoDiaWidget onItemClick={setSelectedItem} />
               </div>
             </div>
           </div>
@@ -534,12 +567,38 @@ export default function Home() {
           item={selectedItem}
           role={role}
           onClose={() => setSelectedItem(null)}
+          onDelete={
+            (selectedItem.id_estado === 1 || selectedItem.id_estado === 2 || (isAdmin && selectedItem.id_estado === 3))
+              ? () => handleCancelItem(selectedItem)
+              : undefined
+          }
+          onChangeRoom={(isAdmin && !selectedItem.id_evento && !selectedItem._isEvent && selectedItem._type !== 'evento') ? (item) => {
+            setItemToEditRoom(item);
+            setShowEditSala(true);
+          } : undefined}
           onNavigate={(item) => {
             if (item.id_evento || item._isEvent || item._type === 'evento') {
               navigate(`/eventos/${item.id}`);
             } else {
               navigate('/aulas');
             }
+          }}
+        />
+      )}
+
+      {showEditSala && itemToEditRoom && (
+        <EditSalaModal
+          item={itemToEditRoom}
+          salas={salas}
+          onClose={() => {
+            setShowEditSala(false);
+            setItemToEditRoom(null);
+          }}
+          onSuccess={() => {
+            setShowEditSala(false);
+            setItemToEditRoom(null);
+            showToast('Sala alterada com sucesso!', 'success');
+            loadData();
           }}
         />
       )}

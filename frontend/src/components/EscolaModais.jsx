@@ -20,8 +20,8 @@ export function formatDuration(min) {
 }
 
 // ─── Shared Primitives ────────────────────────────────────────────────────────
-export function ModalWrapper({ title, onClose, children, wide = false, wider = false }) {
-    const sizeClass = wider ? 'max-w-4xl' : wide ? 'max-w-2xl' : 'max-w-lg'
+export function ModalWrapper({ title, onClose, children, wide = false, wider = false, widest = false }) {
+    const sizeClass = widest ? 'max-w-[95vw] lg:max-w-6xl' : wider ? 'max-w-4xl' : wide ? 'max-w-2xl' : 'max-w-lg'
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
@@ -472,7 +472,8 @@ export function HorasCoachingModal({
     exportFilename = 'relatorio',
     hideExport = false, hideActions = false,
     showDateFilter = false,
-    onClose
+    onClose,
+    widest = false
 }) {
     const [rawData, setRawData]       = useState([])
     const [loading, setLoading]       = useState(true)
@@ -565,7 +566,7 @@ export function HorasCoachingModal({
     }
 
     return (
-        <ModalWrapper title={title} onClose={onClose} wider>
+        <ModalWrapper title={title} onClose={onClose} wider={!widest} widest={widest}>
             {showDateFilter && (
                 <div className="flex flex-wrap items-end gap-3 mb-5 p-4 bg-neutral-50 rounded-xl">
                     <div>
@@ -829,6 +830,7 @@ export function ValidacaoCoachingModal({ onClose }) {
                 exportFilename="validacao_coachings"
                 showDateFilter
                 hideExport
+                widest
                 onClose={onClose}
             />
 
@@ -913,6 +915,7 @@ export function ListagemCoachingModal({ onClose }) {
             showDateFilter
             hideExport
             hideActions
+            widest
             onClose={onClose}
         />
     )
