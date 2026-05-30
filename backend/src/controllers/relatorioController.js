@@ -100,9 +100,9 @@ const exportCSV = async (req, res) => {
 
     const csv = await relatorioService.gerarDadosCSV(from, to);
 
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="sessoes.csv"');
-    res.send(csv);
+    res.send('\uFEFF' + csv);
 
   } catch (error) {
     res.status(500).json({ error: 'Falha na exportação CSV.' });

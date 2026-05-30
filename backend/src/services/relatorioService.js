@@ -203,21 +203,32 @@ async function gerarDadosCSV(from, to) {
       },
     },
     include: {
-      docente: true,
+      docente: {
+        include: { utilizador: { select: { nome: true, apelido: true } } }
+      },
       modalidade: true,
       sala: true,
     },
   });
 
-  const linhas = sessoes.map((s) => ({
-    id:           s.id_marcacoes,
-    data:         s.data_a_realizar?.toISOString().split('T')[0] ?? 'N/A',
-    hora:         s.hora_inicio,
-    duracao_min:  s.duracao_minutos,
-    docente:      s.docente?.id_utilizador ?? 'N/A',
-    modalidade:   s.modalidade?.nome ?? 'N/A',
-    sala:         s.sala?.nome ?? 'N/A',
-  }));
+  const linhas = sessoes.map((s) => {
+    let horaFormatada = 'N/A';
+    if (s.hora_inicio) {
+      const h = new Date(s.hora_inicio);
+      horaFormatada = h.getUTCHours().toString().padStart(2, '0') + ':' + h.getUTCMinutes().toString().padStart(2, '0');
+    }
+    const nomeDocente = `${s.docente?.utilizador?.nome ?? ''} ${s.docente?.utilizador?.apelido ?? ''}`.trim();
+
+    return {
+      id:           s.id_marcacoes,
+      data:         s.data_a_realizar?.toISOString().split('T')[0] ?? 'N/A',
+      hora:         horaFormatada,
+      duracao_min:  s.duracao_minutos,
+      docente:      nomeDocente || 'N/A',
+      modalidade:   s.modalidade?.nome ?? 'N/A',
+      sala:         s.sala?.nome ?? 'N/A',
+    };
+  });
 
   const cabecalho = Object.keys(linhas[0] ?? {}).join(',');
   const corpo = linhas.map((l) => Object.values(l).join(','));
