@@ -59,19 +59,31 @@ async function _verificarSalaLivre(id_sala, data_a_realizar, hora_inicio, duraca
   const horaInicioDate = new Date(`1970-01-01T${hora_inicio}Z`);
   const horaFimDate = new Date(horaInicioDate.getTime() + duracao_minutos * 60 * 1000);
 
-  const conflito = await prisma.marcacao.findFirst({
+  const marcacoesNoDia = await prisma.marcacao.findMany({
     where: {
       id_sala,
       data_a_realizar: new Date(data_a_realizar),
       id_estado: { in: [ESTADO_MARCACAO.EM_VALIDACAO, ESTADO_MARCACAO.CONFIRMADA] },
       // Exclui a própria marcação (útil ao reatribuir sala)
       ...(excluir_id_marcacao && { id_marcacoes: { not: excluir_id_marcacao } }),
-      // Sobreposição: a existente começa antes do fim da nova E acaba depois do início da nova
-      hora_inicio: { lt: horaFimDate },
     },
+    select: {
+      hora_inicio: true,
+      duracao_minutos: true
+    }
   });
 
-  return !conflito; // true = livre
+  for (const m of marcacoesNoDia) {
+    const mInicio = new Date(m.hora_inicio);
+    const mFim = new Date(mInicio.getTime() + m.duracao_minutos * 60 * 1000);
+
+    // Condição de sobreposição: um evento começa antes do fim do outro E acaba depois do início do outro
+    if (mInicio < horaFimDate && mFim > horaInicioDate) {
+      return false; // Existe conflito, sala está ocupada
+    }
+  }
+
+  return true; // livre
 }
 
 // ─────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Music, Plus, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, X, Check, AlertCircle } from 'lucide-react'
+import { Music, Plus, RefreshCw, ArrowUpDown, Pencil, Trash2, X, Check, AlertCircle } from 'lucide-react'
 import { modalidadeService } from '../services/modalidadeService'
 import { authService } from '../services/authService'
 import NovaModalidadeModal from './NovaModalidadeModal'
@@ -35,26 +35,6 @@ export default function Modalidades() {
     const [editTarget, setEditTarget] = useState(null)
     const [confirmDeleteId, setConfirmDeleteId] = useState(null)
     const [deletingId, setDeletingId] = useState(null)
-    const [sortConfig, setSortConfig] = useState({ key: 'nome', dir: 'asc' })
-
-    const SORT_KEYS = { Nome: 'nome', Docentes: 'docentes_count' }
-
-    const handleSort = (col) => {
-        const key = SORT_KEYS[col]
-        if (!key) return
-        setSortConfig(prev => ({ key, dir: prev.key === key && prev.dir === 'asc' ? 'desc' : 'asc' }))
-    }
-
-    const modalidadesOrdenadas = [...modalidades].sort((a, b) => {
-        const va = sortConfig.key === 'docentes_count'
-            ? (a.docente_modalidade?.length ?? 0)
-            : (a.nome ?? '').toLowerCase()
-        const vb = sortConfig.key === 'docentes_count'
-            ? (b.docente_modalidade?.length ?? 0)
-            : (b.nome ?? '').toLowerCase()
-        const cmp = typeof va === 'number' ? va - vb : va.localeCompare(vb)
-        return sortConfig.dir === 'asc' ? cmp : -cmp
-    })
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type })
@@ -152,25 +132,19 @@ export default function Modalidades() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="bg-neutral-50 border-b-2 border-neutral-600/20">
-                                {['Nome', ...(isAdmin ? ['Docentes', ''] : [])].map((col, i) => {
-                                    const sortable = !!SORT_KEYS[col]
-                                    const active = sortable && sortConfig.key === SORT_KEYS[col]
-                                    const SortIcon = active ? (sortConfig.dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
-                                    return (
-                                        <th
-                                            key={i}
-                                            onClick={sortable ? () => handleSort(col) : undefined}
-                                            className={`px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap ${sortable ? 'cursor-pointer select-none hover:bg-neutral-100' : ''}`}
-                                        >
-                                            {col && (
-                                                <span className="flex items-center gap-1">
-                                                    {col}
-                                                    {sortable && <SortIcon size={10} className={active ? 'text-brand-800' : 'text-brand-800/30'} />}
-                                                </span>
-                                            )}
-                                        </th>
-                                    )
-                                })}
+                                {['Nome', ...(isAdmin ? ['Docentes', ''] : [])].map((col, i) => (
+                                    <th
+                                        key={i}
+                                        className="px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap"
+                                    >
+                                        {col && (
+                                            <span className="flex items-center gap-1">
+                                                {col}
+                                                {col !== '' && <ArrowUpDown size={10} className="text-brand-800/30" />}
+                                            </span>
+                                        )}
+                                    </th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody>
@@ -184,7 +158,7 @@ export default function Modalidades() {
                                     </td>
                                 </tr>
                             ) : (
-                                modalidadesOrdenadas.map((m, idx) => (
+                                modalidades.map((m, idx) => (
                                     <tr
                                         key={m.id_modalidade}
                                         className={`border-b border-neutral-600/10 hover:bg-brand-50 transition-colors ${idx % 2 === 0 ? '' : 'bg-brand-50'}`}

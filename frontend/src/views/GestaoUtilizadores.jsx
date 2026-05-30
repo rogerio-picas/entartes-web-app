@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, Plus, RefreshCw, Pencil, Trash2, X, Check, AlertCircle, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 import { utilizadorService } from '../services/utilizadorService'
@@ -130,6 +130,26 @@ export default function GestaoUtilizadores() {
         return 0
     }) : baseFiltered
 
+    const handleRemoveModalidade = async (userTarget, id_modalidade) => {
+        try {
+            if (userTarget.id_tipo === 2) {
+                await modalidadeService.desassociarDocente(id_modalidade, userTarget.id_utilizador)
+                showToast('Modalidade removida do docente com sucesso.')
+            } else if (userTarget.id_tipo === 3) {
+                const currentIds = (userTarget.aluno?.aluno_modalidade || []).map(am => am.id_modalidade)
+                const newIds = currentIds.filter(id => id !== id_modalidade)
+                await utilizadorService.atualizar(userTarget.id_utilizador, {
+                    id_tipo: 3,
+                    modalidades: newIds
+                })
+                showToast('Modalidade removida do aluno com sucesso.')
+            }
+            fetchData()
+        } catch (err) {
+            showToast(err.message || 'Erro ao remover modalidade.', 'error')
+        }
+    }
+
     const handleDelete = async (id) => {
         setDeletingId(id)
         try {
@@ -245,8 +265,11 @@ export default function GestaoUtilizadores() {
                                     const modalidades = u.id_tipo === 2
                                         ? (docenteModalidades[u.id_utilizador] ?? [])
                                         : u.id_tipo === 3
-                                        ? (alunoModalidades[u.id_utilizador] ?? [])
-                                        : []
+                                            ? (u.aluno?.aluno_modalidade ?? []).map(am => ({
+                                                id_modalidade: am.id_modalidade,
+                                                nome: am.modalidade?.nome
+                                            })).filter(m => m.nome)
+                                            : []
                                     return (
                                         <tr
                                             key={u.id_utilizador}
@@ -267,9 +290,23 @@ export default function GestaoUtilizadores() {
                                             </td>
                                             <td className="px-4 py-3.5">
                                                 {modalidades.length > 0 ? (
-                                                    <span className="text-neutral-600">
-                                                        {modalidades.join(', ')}
-                                                    </span>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {modalidades.map(m => (
+                                                            <span
+                                                                key={m.id_modalidade}
+                                                                className="inline-flex items-center gap-1 text-xs bg-brand-200 text-brand-800 px-2 py-0.5 rounded-full font-medium"
+                                                            >
+                                                                {m.nome}
+                                                                <button
+                                                                    onClick={() => handleRemoveModalidade(u, m.id_modalidade)}
+                                                                    title="Remover modalidade"
+                                                                    className="hover:text-red-600 transition-colors ml-0.5 flex items-center justify-center"
+                                                                >
+                                                                    <X size={10} strokeWidth={3} />
+                                                                </button>
+                                                            </span>
+                                                        ))}
+                                                    </div>
                                                 ) : (
                                                     <span className="text-gray-300 text-xs">—</span>
                                                 )}
