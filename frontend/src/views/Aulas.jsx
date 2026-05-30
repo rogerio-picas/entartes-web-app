@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { formatDate, formatTime } from '../utils/dateUtils'
+import { formatDate, formatTime, parseDate } from '../utils/dateUtils'
 import { useLocation } from 'react-router-dom'
 import {
   Clock, CheckCircle2,
@@ -556,6 +556,26 @@ export default function Aulas() {
                   const isLoading = loadingId === row.id
                   const isPendente = row.id_estado === 1 || row.id_estado === 2
 
+                  const isPast = (() => {
+                    const startValue = row._data_raw || row.data;
+                    const rawTimeValue = row.hora_inicio_raw || row.hora;
+                    if (!startValue) return false;
+                    const itemDate = parseDate(startValue);
+                    if (!itemDate) return false;
+                    
+                    const now = new Date();
+                    const timeValue = rawTimeValue ? formatTime(rawTimeValue) : null;
+                    if (timeValue && typeof timeValue === 'string' && timeValue.includes(':')) {
+                        const [h, m] = timeValue.split(':').map(Number);
+                        itemDate.setHours(h, m, 0, 0);
+                        return itemDate < now;
+                    }
+                    
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return itemDate < today;
+                  })();
+
                   // Janela de confirmação de presença (role 2 e 3): estado Confirmada + aula já passou + ≤48h
                   const podeConfirmarPresenca = (() => {
                     if (role === 1 || row.id_estado !== 3 || !row._data_raw || row.ja_validou) return false
@@ -640,7 +660,7 @@ export default function Aulas() {
                               Cancelar
                             </button>
                           )
-                        ) : role === 1 && row.id_estado === 3 ? (
+                        ) : role === 1 && row.id_estado === 3 && !isPast ? (
                           confirmId === row.id ? (
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs text-neutral-500">Cancelar aula?</span>
