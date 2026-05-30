@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
+import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
 import {
     BookOpen, Clock, Coins,
     AlertCircle, RefreshCw,
@@ -191,10 +191,10 @@ const ESTADO_CFG = {
     5: { label: 'Cancelada',    color: 'text-red-600    bg-red-50     border-red-200'   },
 }
 
-export function HistoricoModal({ onClose }) {
+export function HistoricoModal({ onClose, initialFiltro = 'todos' }) {
     const [aulas, setAulas] = useState([])
     const [loading, setLoading] = useState(true)
-    const [filtroEstado, setFiltroEstado] = useState('todos')
+    const [filtroEstado, setFiltroEstado] = useState(initialFiltro)
     const role = authService.getUser()?.role ?? 3
 
     useEffect(() => {

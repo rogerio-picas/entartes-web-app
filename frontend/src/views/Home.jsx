@@ -9,6 +9,7 @@ import { eventService } from '../services/eventService'
 import { ClassCard, EventCard as SimpleEventCard } from '../components/Cards'
 import EventModal from '../components/EventModal'
 import NovoEventoModal from './NovoEventoModal'
+import { ValidacaoModal, HistoricoModal } from '../components/EscolaModais'
 
 import {
   CalendarCheck, CalendarDays, Clock,
@@ -89,6 +90,9 @@ export default function Home() {
   const [perfilAluno, setPerfilAluno] = useState(null)
   const [showNovoEvento, setShowNovoEvento] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [showPendentesModal, setShowPendentesModal] = useState(false)
+  const [showConcluidasModal, setShowConcluidasModal] = useState(false)
+  const [showAulasHojeModal, setShowAulasHojeModal] = useState(false)
 
   // Shared Data
   const [eventos, setEventos] = useState([])
@@ -378,23 +382,36 @@ export default function Home() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap gap-4 items-start justify-between">
               <div className="flex flex-wrap gap-3">
-                <StatCard count={stats.hoje} label="aulas hoje" color="text-brand-800" bg="bg-brand-50" border="border-brand-500" />
-                <StatCard count={stats.porValidar} label="por validar" color="text-feedback-pendente-textPendente" bg="bg-feedback-pendente-pendenteLight" />
-                <StatCard count={stats.concluidas} label="concluídas" color="text-neutral-800" bg="bg-brand-200" />
+                <StatCard
+                  count={stats.hoje}
+                  label="aulas hoje"
+                  color="text-brand-800"
+                  bg="bg-brand-50"
+                  border="border-brand-500"
+                  onClick={() => setShowAulasHojeModal(true)}
+                />
+                <StatCard
+                  count={stats.porValidar}
+                  label="por validar"
+                  color="text-feedback-pendente-textPendente"
+                  bg="bg-feedback-pendente-pendenteLight"
+                  onClick={() => setShowPendentesModal(true)}
+                />
+                <StatCard
+                  count={stats.concluidas}
+                  label="concluídas"
+                  color="text-neutral-800"
+                  bg="bg-brand-200"
+                  onClick={() => setShowConcluidasModal(true)}
+                />
               </div>
-              <div className="flex flex-col gap-2 shrink-0">
-                <button onClick={() => navigate('/aulas')}
-                  className="px-4 py-2.5 border border-brand-800 text-brand-800 text-sm font-semibold rounded-xl hover:bg-neutral-50 transition-colors whitespace-nowrap">
-                  Consultar Coachings
-                </button>
-              </div>
-              </div>
+            </div>
             <div className="flex gap-4 flex-wrap flex-1">
               <div className="border border-brand-800 rounded-xl p-4 bg-white flex-1 min-w-[300px] max-w-full overflow-hidden">
                 <p className="text-xs font-bold text-brand-800 mb-3">Ocupação de salas</p>
                 <SalasDoDiaWidget />
               </div>
-          </div>
+            </div>
           </div>
         )}
 
@@ -528,6 +545,18 @@ export default function Home() {
       )}
 
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+
+      {showPendentesModal && (
+        <ValidacaoModal onClose={() => setShowPendentesModal(false)} />
+      )}
+
+      {showConcluidasModal && (
+        <HistoricoModal initialFiltro="4" onClose={() => setShowConcluidasModal(false)} />
+      )}
+
+      {showAulasHojeModal && (
+        <HistoricoModal initialFiltro="3" onClose={() => setShowAulasHojeModal(false)} />
+      )}
     </>
   )
 }
