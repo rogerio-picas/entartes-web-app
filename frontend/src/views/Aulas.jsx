@@ -12,6 +12,7 @@ import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovaMarcacaoModal from './NovaMarcacaoModal'
 import { disponibilidadeService } from '../services/disponibilidadeService'
 import ItemDetailModal from '../components/ItemDetailModal'
+import EditSalaModal from '../components/EditSalaModal'
 
 // ─── Mapeamento de estados e Funções Auxiliares ───────────
 const STATUS_CFG = {
@@ -83,6 +84,9 @@ export default function Aulas() {
   const [salaPickerCtx, setSalaPickerCtx] = useState(null)
   const [selectedSalaPicker, setSelectedSalaPicker] = useState('')
   const [pendingCancelAula, setPendingCancelAula] = useState(null)
+  const [salas, setSalas] = useState([])
+  const [showEditSala, setShowEditSala] = useState(false)
+  const [itemToEditRoom, setItemToEditRoom] = useState(null)
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -137,6 +141,12 @@ export default function Aulas() {
   }, [filtroEstado, role])
 
   useEffect(() => { fetchMarcacoes() }, [fetchMarcacoes])
+
+  useEffect(() => {
+    if (role === 1) {
+      api.get('/salas').then(d => setSalas(Array.isArray(d) ? d : [])).catch(() => {})
+    }
+  }, [role])
 
   const fetchDisponibilidades = useCallback(async () => {
     if (role !== 2) return
@@ -811,6 +821,31 @@ export default function Aulas() {
                 }
               : undefined
           }
+          onChangeRoom={
+            (role === 1 && modalAula.id_estado === 3 && modalAula._type !== 'evento' && !modalAula.id_evento)
+              ? (item) => {
+                  setItemToEditRoom(item);
+                  setShowEditSala(true);
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {showEditSala && itemToEditRoom && (
+        <EditSalaModal
+          item={itemToEditRoom}
+          salas={salas}
+          onClose={() => {
+            setShowEditSala(false);
+            setItemToEditRoom(null);
+          }}
+          onSuccess={() => {
+            setShowEditSala(false);
+            setItemToEditRoom(null);
+            showToast('Sala alterada com sucesso!', 'success');
+            fetchMarcacoes();
+          }}
         />
       )}
 
