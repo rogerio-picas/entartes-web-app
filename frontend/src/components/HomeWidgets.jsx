@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Clock, User, Check, X, RefreshCw, ChevronRight, CalendarClock  } from 'lucide-react'
+import { Clock, User, Check, X, RefreshCw, ChevronRight, CalendarClock } from 'lucide-react'
 import { api } from '../services/api'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -18,12 +18,16 @@ export function timeRemaining(dateRaw) {
   return `${h}h restantes`
 }
 
-export function StatCard({ count, label, color, bg, border }) {
+export function StatCard({ count, label, color, bg, border, onClick }) {
+  const Tag = onClick ? 'button' : 'div'
   return (
-    <div className={`relative flex items-center gap-3 rounded-xl px-5 py-3 border ${bg} ${border} min-w-[160px]`}>
+    <Tag
+      onClick={onClick}
+      className={`relative flex items-center gap-3 rounded-xl px-5 py-3 border ${bg} ${border ?? 'border-transparent'} min-w-[160px] ${onClick ? 'cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-neutral-300 hover:shadow-sm transition-all duration-200 active:scale-[0.98]' : ''}`}
+    >
       <span className={`text-4xl font-bold font-['Sora'] ${color}`}>{count}</span>
       <span className={`text-sm font-medium ${color} leading-tight max-w-[80px]`}>{label}</span>
-    </div>
+    </Tag>
   )
 }
 
