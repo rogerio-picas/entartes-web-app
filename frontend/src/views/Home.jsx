@@ -416,7 +416,7 @@ export default function Home() {
             <div className="flex gap-4 flex-wrap flex-1">
               <div className="border border-brand-800 rounded-xl p-4 bg-white flex-1 min-w-[300px] max-w-full overflow-hidden">
                 <p className="text-xs font-bold text-brand-800 mb-3">Ocupação de salas</p>
-                <SalasDoDiaWidget />
+                <SalasDoDiaWidget onItemClick={setSelectedItem} />
               </div>
             </div>
           </div>
