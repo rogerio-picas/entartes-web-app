@@ -527,6 +527,19 @@ export default function Aulas() {
                   )
                 })}
                 </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                [...Array(6)].map((_, i) => <SkeletonRow key={i} />)
+              ) : marcacoesFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-20 text-center">
+                    <BookOpen size={40} className="mx-auto text-brand-800/15 mb-3" />
+                    <p className="text-sm text-neutral-600 font-medium">
+                      Não existem aulas para o estado selecionado.
+                    </p>
+                  </td>
+                </tr>
               ) : (
                 marcacoesOrdenadas.map((row, idx) => {
                   const isLoading = loadingId === row.id
