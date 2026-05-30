@@ -114,9 +114,9 @@ describe('relatorioController', () => {
       relatorioService.gerarDadosCSV.mockResolvedValue('id,nome\n1,Ana');
       const { req, res } = mockReqRes({ query: { from: '2024-01-01', to: '2024-12-31' } });
       await relatorioController.exportCSV(req, res);
-      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/csv');
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/csv; charset=utf-8');
       expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', 'attachment; filename="sessoes.csv"');
-      expect(res.send).toHaveBeenCalledWith('id,nome\n1,Ana');
+      expect(res.send).toHaveBeenCalledWith('\uFEFF' + 'id,nome\n1,Ana');
     });
 
     it('retorna 500 quando o service lança erro', async () => {
