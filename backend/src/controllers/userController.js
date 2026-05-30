@@ -28,15 +28,22 @@ const getUsers = async (req, res) => {
             aluno_modalidade: {
               select: {
                 id_modalidade: true,
-                modalidade: {
-                  select: {
-                    nome: true
-                  }
-                }
+                modalidade: { select: { nome: true } }
               }
             }
           }
         },
+        docente: {
+          select: {
+            estado_atividade: true,
+            docente_modalidade: {
+              select: {
+                id_modalidade: true,
+                modalidade: { select: { nome: true } }
+              }
+            }
+          }
+        }
       },
     });
 

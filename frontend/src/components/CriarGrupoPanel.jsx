@@ -18,16 +18,18 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
     const [selected, setSelected] = useState([])
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
+    const [availableModalidades, setAvailableModalidades] = useState([])
+    const [feedback, setFeedback] = useState(null)
 
     useEffect(() => {
         api.get(`/evento/${eventId}/participantes`).then(data => {
-            // Backend returns { alunos: [...], docentes: [...] }
             const alunosList = (data.alunos || []).map(a => ({
                 id_utilizador: a.id_utilizador,
                 nome: a.nome,
                 apelido: a.apelido,
                 email: a.email,
                 codigo_username: a.codigo_username,
+                modalidades: a.modalidades || [],
                 tipo_utilizador: { id_tipo: 3 }
             }))
             const docentesList = (data.docentes || []).map(d => ({
@@ -36,10 +38,15 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                 apelido: d.apelido,
                 email: d.email,
                 codigo_username: d.codigo_username,
+                modalidades: d.modalidades || [],
                 tipo_utilizador: { id_tipo: 2 }
             }))
             const all = [...alunosList, ...docentesList]
             setAlunos(all)
+
+            const mods = new Set()
+            all.forEach(u => u.modalidades?.forEach(m => mods.add(m)))
+            setAvailableModalidades(Array.from(mods).sort())
 
             // Prefill if editing
             if (initialGroup && all.length > 0) {
@@ -66,6 +73,23 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                 ? prev.filter(s => s.id_utilizador !== u.id_utilizador)
                 : [...prev, u]
         )
+    }
+
+    function adicionarPorModalidade(modalidade) {
+        const toAdd = alunos.filter(u => u.modalidades?.includes(modalidade))
+        let addedCount = 0
+        setSelected(prev => {
+            const currentIds = new Set(prev.map(p => p.id_utilizador))
+            const newUsers = toAdd.filter(u => !currentIds.has(u.id_utilizador))
+            addedCount = newUsers.length
+            return [...prev, ...newUsers]
+        })
+        if (addedCount > 0) {
+            setFeedback({ type: 'success', text: `${addedCount} participantes da modalidade ${modalidade} adicionados.` })
+        } else {
+            setFeedback({ type: 'warning', text: `Todos os participantes de ${modalidade} já estavam selecionados.` })
+        }
+        setTimeout(() => setFeedback(null), 3000)
     }
 
     async function handleCreate() {
@@ -189,6 +213,26 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                         className="flex-1 bg-transparent text-sm text-neutral-600 focus:outline-none"
                     />
                 </div>
+
+                {availableModalidades.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                        {availableModalidades.map(mod => (
+                            <button
+                                key={mod}
+                                onClick={() => adicionarPorModalidade(mod)}
+                                className="px-3 py-1.5 text-[11px] font-semibold text-brand-800 bg-brand-100 rounded-full hover:bg-brand-200 transition-colors"
+                            >
+                                + {mod}
+                            </button>
+                        ))}
+                    </div>
+                )}
+                
+                {feedback && (
+                    <div className={`text-xs px-3 py-2 rounded-lg border ${feedback.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                        {feedback.text}
+                    </div>
+                )}
 
                 {selected.length > 0 && (
                     <div>

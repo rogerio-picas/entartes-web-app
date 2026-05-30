@@ -18,6 +18,8 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
     const [sucesso, setSucesso] = useState('')
+    const [availableModalidades, setAvailableModalidades] = useState([])
+    const [feedback, setFeedback] = useState(null)
 
     // Fetch all users on mount
     useEffect(() => {
@@ -25,7 +27,25 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
         api.get('/users')
             .then(data => {
                 if (Array.isArray(data)) {
-                    setAllUsers(data)
+                    const usersWithMods = data.map(u => {
+                        const mods = [];
+                        if (u.aluno?.aluno_modalidade) {
+                            u.aluno.aluno_modalidade.forEach(am => {
+                                if (am.modalidade?.nome) mods.push(am.modalidade.nome);
+                            });
+                        }
+                        if (u.docente?.docente_modalidade) {
+                            u.docente.docente_modalidade.forEach(dm => {
+                                if (dm.modalidade?.nome) mods.push(dm.modalidade.nome);
+                            });
+                        }
+                        return { ...u, modalidades: mods };
+                    });
+                    setAllUsers(usersWithMods)
+
+                    const modsSet = new Set()
+                    usersWithMods.forEach(u => u.modalidades?.forEach(m => modsSet.add(m)))
+                    setAvailableModalidades(Array.from(modsSet).sort())
                 }
             })
             .catch(() => {})
@@ -45,6 +65,23 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
                 ? prev.filter(s => s.id_utilizador !== u.id_utilizador)
                 : [...prev, u]
         )
+    }
+
+    function adicionarPorModalidade(modalidade) {
+        const toAdd = allUsers.filter(u => u.modalidades?.includes(modalidade))
+        let addedCount = 0
+        setSelected(prev => {
+            const currentIds = new Set(prev.map(p => p.id_utilizador))
+            const newUsers = toAdd.filter(u => !currentIds.has(u.id_utilizador))
+            addedCount = newUsers.length
+            return [...prev, ...newUsers]
+        })
+        if (addedCount > 0) {
+            setFeedback({ type: 'success', text: `${addedCount} utilizadores da modalidade ${modalidade} selecionados.` })
+        } else {
+            setFeedback({ type: 'warning', text: `Todos os utilizadores de ${modalidade} já estavam selecionados.` })
+        }
+        setTimeout(() => setFeedback(null), 3000)
     }
 
     async function handleAdd() {
@@ -119,6 +156,26 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
                         autoFocus
                     />
                 </div>
+
+                {availableModalidades.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                        {availableModalidades.map(mod => (
+                            <button
+                                key={mod}
+                                onClick={() => adicionarPorModalidade(mod)}
+                                className="px-3 py-1.5 text-[11px] font-semibold text-brand-800 bg-brand-100 rounded-full hover:bg-brand-200 transition-colors"
+                            >
+                                + {mod}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {feedback && (
+                    <div className={`text-xs px-3 py-2 rounded-lg border ${feedback.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                        {feedback.text}
+                    </div>
+                )}
 
                 {/* Selected chips */}
                 {selected.length > 0 && (
