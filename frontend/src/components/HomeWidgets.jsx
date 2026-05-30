@@ -159,7 +159,7 @@ export function CoachingCard({ aula, onConfirm, onReject, loading }) {
   }
 
   return (
-    <div className="flex-1 min-w-[300px] max-w-[380px] bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex flex-col gap-2.5 hover:scale-[1.01] hover:shadow-md transition-all duration-300 group">
+    <div className="flex-1  flex flex-col min-w-[300px] w-full bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex flex-col gap-2.5">
       <div className="flex flex-col gap-1 text-sm">
         {[['Modalidade', String(aula.modalidade || '—')], ['Data', String(aula.data || '—')],
         ['Docente', String(aula.docente || '—')], ['Duração', String(aula.duracao || '—')],
@@ -204,7 +204,7 @@ export function CoachingCard({ aula, onConfirm, onReject, loading }) {
 
 export function ConfirmedCard({ aula, onOpen, role }) {
   return (
-    <div 
+    <div
       onClick={onOpen}
       className="flex-1 min-w-[300px] w-full bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex flex-col gap-3 cursor-pointer hover:scale-[1.01] hover:shadow-md transition-all duration-300 group"
     >
@@ -462,8 +462,8 @@ export function SalasDoDiaWidget() {
   useEffect(() => {
     const hoje = new Date()
     const yyyy = hoje.getFullYear()
-    const mm   = String(hoje.getMonth() + 1).padStart(2, '0')
-    const dd   = String(hoje.getDate()).padStart(2, '0')
+    const mm = String(hoje.getMonth() + 1).padStart(2, '0')
+    const dd = String(hoje.getDate()).padStart(2, '0')
     const dataStr = `${yyyy}-${mm}-${dd}`
 
     Promise.all([
@@ -507,9 +507,9 @@ export function SalasDoDiaWidget() {
       .finally(() => setLoadingWidget(false))
   }, [])
 
-  const hoje         = new Date()
-  const diaSemana    = hoje.toLocaleDateString('pt-PT', { weekday: 'long' })
-  const dataFmt      = hoje.toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })
+  const hoje = new Date()
+  const diaSemana = hoje.toLocaleDateString('pt-PT', { weekday: 'long' })
+  const dataFmt = hoje.toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })
   const allUniqueTimes = [...new Set(salas.flatMap(s => s.ocupacoes.map(o => o.inicio)))].sort()
   const timeColorMap = {}
   allUniqueTimes.forEach((t, i) => { timeColorMap[t] = SESSION_PALETTE[i % SESSION_PALETTE.length] })
@@ -523,7 +523,7 @@ export function SalasDoDiaWidget() {
   }
 
   const colWidth = 150
-  const totalW   = salas.length * (colWidth + 8)
+  const totalW = salas.length * (colWidth + 8)
 
   return (
     <div className="flex flex-col">

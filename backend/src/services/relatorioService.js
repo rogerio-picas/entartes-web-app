@@ -2,8 +2,7 @@
 // Módulo de Relatórios — Lógica de negócio
 // Segue as convenções do projecto Ent'artes: todo o acesso ao Prisma fica aqui.
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 // ID do estado "Concluída" na tabela estado_marcacao
 const ESTADO_CONCLUIDA = 4;

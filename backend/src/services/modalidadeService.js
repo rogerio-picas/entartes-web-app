@@ -2,8 +2,7 @@
 // Gestão de Modalidades — apenas a coordenadora pode criar/editar/eliminar
 // Docentes e alunos podem listar (para uso nos formulários de marcação)
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 // ─────────────────────────────────────────────────────────────
 // 1. listarModalidades
