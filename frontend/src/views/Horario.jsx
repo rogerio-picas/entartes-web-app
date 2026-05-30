@@ -219,6 +219,7 @@ function InfoItem({ icon: Icon, label, value }) {
 function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
+    const [erroHora, setErroHora] = useState('')
     const [modalidades, setModalidades] = useState([])
     const [salas, setSalas] = useState([])
     const [form, setForm] = useState({
@@ -239,6 +240,12 @@ function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
 
     async function handleSubmit() {
         if (!form.data || !form.hora) { setErro('Data e hora são obrigatórias.'); return }
+        if (form.hora < '08:30' || form.hora > '21:30') {
+            setErroHora('A hora deve estar entre as 08:30 e as 21:30.')
+            setErro('Corrija a hora assinalada.')
+            return
+        }
+        setErroHora('')
         setLoading(true)
         setErro('')
         try {
@@ -286,8 +293,24 @@ function NovoCoachingModal({ onClose, onSuccess, selectedDate }) {
                         </div>
                         <div>
                             <label className="text-[11px] font-bold text-[#4A6362] uppercase tracking-wider mb-1.5 block">Hora</label>
-                            <input type="time" value={form.hora} onChange={e => set('hora', e.target.value)}
-                                className="w-full bg-white border border-[#6F7978] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#006A68]" />
+                            <input type="time" value={form.hora}
+                                onChange={e => {
+                                    const v = e.target.value
+                                    set('hora', v)
+                                    if (v && (v < '08:30' || v > '21:30')) {
+                                        setErroHora('Fora do horário permitido (08:30–21:30)')
+                                    } else {
+                                        setErroHora('')
+                                    }
+                                }}
+                                min="08:30" max="21:30"
+                                className={`w-full bg-white border rounded-lg px-3 py-2.5 text-sm focus:outline-none transition-colors ${erroHora ? 'border-red-500 focus:border-red-500' : 'border-[#6F7978] focus:border-[#006A68]'}`} />
+                            {erroHora && (
+                                <p className="text-[10px] text-red-600 mt-1 flex items-center gap-1 whitespace-nowrap">
+                                    <span className="inline-block w-3 h-3 rounded-full bg-red-500 text-white text-[8px] flex items-center justify-center font-bold">!</span>
+                                    {erroHora}
+                                </p>
+                            )}
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -594,6 +617,9 @@ export default function Horario() {
                             const start = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), h || 0, m || 0);
                             const end = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), h2 || (h || 0) + 1, m2 || 0);
 
+                            // Não mostrar disponibilidades passadas
+                            if (start < today) return;
+
                             combined.push({
                                 ...d,
                                 title: `Livre (${hIni} - ${hFim})`,
@@ -615,6 +641,9 @@ export default function Horario() {
                             if (dateObj.getDay() === Number(d.dia_semana)) {
                                 const start = new Date(year, month, day, h || 0, m || 0);
                                 const end = new Date(year, month, day, h2 || (h || 0) + 1, m2 || 0);
+
+                                // Não mostrar disponibilidades passadas
+                                if (start < today) continue;
 
                                 combined.push({
                                     ...d,
@@ -960,7 +989,7 @@ export default function Horario() {
                         date={currentDate}
                         onNavigate={date => setCurrentDate(date)}
                         min={new Date(0, 0, 0, 8, 0, 0)}
-                        max={new Date(0, 0, 0, 23, 0, 0)}
+                        max={new Date(0, 0, 0, 22, 0, 0)}
                         onSelectEvent={handleSelectEvent}
                         eventPropGetter={event => {
                             const base = eventStyleGetter(event)

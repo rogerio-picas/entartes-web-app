@@ -478,8 +478,8 @@ export default function EventDetailsView() {
                                     key={grupo.id_grupo}
                                     onClick={() => setSelectedGroup(grupo)}
                                     className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${selectedGroup?.id_grupo === grupo.id_grupo
-                                            ? 'bg-neutral-200 border-brand-800 shadow-sm'
-                                            : 'bg-white border-neutral-400 hover:border-brand-800'
+                                        ? 'bg-neutral-200 border-brand-800 shadow-sm'
+                                        : 'bg-white border-neutral-400 hover:border-brand-800'
                                         }`}
                                 >
                                     <div className={`w-10 h-10 rounded-full border flex items-center justify-center shrink-0 font-bold text-xs ${selectedGroup?.id_grupo === grupo.id_grupo ? 'border-brand-800 bg-brand-800 text-white' : 'border-neutral-400 bg-white text-brand-800'}`}>
@@ -519,8 +519,8 @@ export default function EventDetailsView() {
                                         <button onClick={() => handleDeleteGroup(selectedGroup.id_grupo)} className="p-2 text-feedback-error bg-white border border-feedback-error-light rounded-lg hover:bg-feedback-error-light/30 transition"><Trash2 size={16} /></button>
                                     </>
                                 )}
-                                <button onClick={() => setSelectedGroup(null)} className="w-10 h-10 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-600 hover:bg-black hover:text-white transition">
-                                    <ArrowLeft size={20} />
+                                <button onClick={() => setSelectedGroup(null)} className="w-10 h-10 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-600 hover:bg-red-100 hover:text-red-600 transition-colors">
+                                    <X size={20} />
                                 </button>
                             </div>
                         </div>
@@ -677,7 +677,7 @@ export default function EventDetailsView() {
                                     <p className="text-xs text-neutral-600">{participants.alunos.length + participants.docentes.length} inscritos neste evento</p>
                                 </div>
                             </div>
-                            <button onClick={() => setShowParticipants(false)} className="w-8 h-8 rounded-full hover:bg-brand-200 flex items-center justify-center text-neutral-600">
+                            <button onClick={() => setShowParticipants(false)} className="w-8 h-8 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors flex items-center justify-center text-neutral-600">
                                 <X size={16} />
                             </button>
                         </div>
@@ -731,25 +731,25 @@ export default function EventDetailsView() {
                 </div>
             )}
 
-        {confirmCtx && (
-            <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" onClick={() => setConfirmCtx(null)}>
-                <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-                <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm font-['Sora']" onClick={e => e.stopPropagation()}>
-                    <p className="font-semibold text-neutral-800 text-base mb-1">Tem a certeza?</p>
-                    <p className="text-sm text-neutral-500 mb-5">{confirmCtx.message}</p>
-                    <div className="flex gap-2">
-                        <button onClick={() => setConfirmCtx(null)} className="flex-1 py-2.5 text-sm border border-neutral-600/25 rounded-xl text-neutral-600 hover:bg-neutral-50 transition-colors">
-                            Cancelar
-                        </button>
-                        <button onClick={() => { setConfirmCtx(null); confirmCtx.onConfirm() }} className="flex-1 py-2.5 text-sm bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors">
-                            Confirmar
-                        </button>
+            {confirmCtx && (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" onClick={() => setConfirmCtx(null)}>
+                    <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+                    <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm font-['Sora']" onClick={e => e.stopPropagation()}>
+                        <p className="font-semibold text-neutral-800 text-base mb-1">Tem a certeza?</p>
+                        <p className="text-sm text-neutral-500 mb-5">{confirmCtx.message}</p>
+                        <div className="flex gap-2">
+                            <button onClick={() => setConfirmCtx(null)} className="flex-1 py-2.5 text-sm border border-neutral-600/25 rounded-xl text-neutral-600 hover:bg-neutral-50 transition-colors">
+                                Cancelar
+                            </button>
+                            <button onClick={() => { setConfirmCtx(null); confirmCtx.onConfirm() }} className="flex-1 py-2.5 text-sm bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors">
+                                Confirmar
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        )}
+            )}
 
-        {toast && <Toast msg={toast.title} type={toast.type} onClose={() => setToast(null)} />}
+            {toast && <Toast msg={toast.title} type={toast.type} onClose={() => setToast(null)} />}
         </div>
     )
 }
