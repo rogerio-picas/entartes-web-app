@@ -18,6 +18,8 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
     const [sucesso, setSucesso] = useState('')
+    const [availableModalidades, setAvailableModalidades] = useState([])
+    const [activeModalidades, setActiveModalidades] = useState([])
 
     // Fetch all users on mount
     useEffect(() => {
@@ -25,7 +27,25 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
         api.get('/users')
             .then(data => {
                 if (Array.isArray(data)) {
-                    setAllUsers(data)
+                    const usersWithMods = data.map(u => {
+                        const mods = [];
+                        if (u.aluno?.aluno_modalidade) {
+                            u.aluno.aluno_modalidade.forEach(am => {
+                                if (am.modalidade?.nome) mods.push(am.modalidade.nome);
+                            });
+                        }
+                        if (u.docente?.docente_modalidade) {
+                            u.docente.docente_modalidade.forEach(dm => {
+                                if (dm.modalidade?.nome) mods.push(dm.modalidade.nome);
+                            });
+                        }
+                        return { ...u, modalidades: mods };
+                    });
+                    setAllUsers(usersWithMods)
+
+                    const modsSet = new Set()
+                    usersWithMods.forEach(u => u.modalidades?.forEach(m => modsSet.add(m)))
+                    setAvailableModalidades(Array.from(modsSet).sort())
                 }
             })
             .catch(() => {})
@@ -45,6 +65,31 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
                 ? prev.filter(s => s.id_utilizador !== u.id_utilizador)
                 : [...prev, u]
         )
+    }
+
+    function toggleModalidade(modalidade) {
+        setActiveModalidades(prev => {
+            const isActive = prev.includes(modalidade)
+            const newActive = isActive ? prev.filter(m => m !== modalidade) : [...prev, modalidade]
+            
+            setSelected(currentSelected => {
+                if (!isActive) {
+                    // Toggle ON
+                    const toAdd = allUsers.filter(u => u.modalidades?.includes(modalidade))
+                    const currentIds = new Set(currentSelected.map(p => p.id_utilizador))
+                    const newUsers = toAdd.filter(u => !currentIds.has(u.id_utilizador))
+                    return [...currentSelected, ...newUsers]
+                } else {
+                    // Toggle OFF
+                    return currentSelected.filter(u => {
+                        if (!u.modalidades?.includes(modalidade)) return true;
+                        return u.modalidades.some(m => newActive.includes(m));
+                    })
+                }
+            })
+            
+            return newActive
+        })
     }
 
     async function handleAdd() {
@@ -119,6 +164,27 @@ export default function AddEventMemberPanel({ eventId, onClose, onSuccess }) {
                         autoFocus
                     />
                 </div>
+
+                {availableModalidades.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                        {availableModalidades.map(mod => {
+                            const isActive = activeModalidades.includes(mod)
+                            return (
+                                <button
+                                    key={mod}
+                                    onClick={() => toggleModalidade(mod)}
+                                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full transition-colors ${
+                                        isActive 
+                                            ? 'bg-brand-800 text-white' 
+                                            : 'text-brand-800 bg-brand-100 hover:bg-brand-200'
+                                    }`}
+                                >
+                                    {isActive ? '✓' : '+'} {mod}
+                                </button>
+                            )
+                        })}
+                    </div>
+                )}
 
                 {/* Selected chips */}
                 {selected.length > 0 && (

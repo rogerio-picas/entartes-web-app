@@ -18,16 +18,18 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
     const [selected, setSelected] = useState([])
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
+    const [availableModalidades, setAvailableModalidades] = useState([])
+    const [activeModalidades, setActiveModalidades] = useState([])
 
     useEffect(() => {
         api.get(`/evento/${eventId}/participantes`).then(data => {
-            // Backend returns { alunos: [...], docentes: [...] }
             const alunosList = (data.alunos || []).map(a => ({
                 id_utilizador: a.id_utilizador,
                 nome: a.nome,
                 apelido: a.apelido,
                 email: a.email,
                 codigo_username: a.codigo_username,
+                modalidades: a.modalidades || [],
                 tipo_utilizador: { id_tipo: 3 }
             }))
             const docentesList = (data.docentes || []).map(d => ({
@@ -36,10 +38,15 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                 apelido: d.apelido,
                 email: d.email,
                 codigo_username: d.codigo_username,
+                modalidades: d.modalidades || [],
                 tipo_utilizador: { id_tipo: 2 }
             }))
             const all = [...alunosList, ...docentesList]
             setAlunos(all)
+
+            const mods = new Set()
+            all.forEach(u => u.modalidades?.forEach(m => mods.add(m)))
+            setAvailableModalidades(Array.from(mods).sort())
 
             // Prefill if editing
             if (initialGroup && all.length > 0) {
@@ -66,6 +73,31 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                 ? prev.filter(s => s.id_utilizador !== u.id_utilizador)
                 : [...prev, u]
         )
+    }
+
+    function toggleModalidade(modalidade) {
+        setActiveModalidades(prev => {
+            const isActive = prev.includes(modalidade)
+            const newActive = isActive ? prev.filter(m => m !== modalidade) : [...prev, modalidade]
+            
+            setSelected(currentSelected => {
+                if (!isActive) {
+                    // Toggle ON
+                    const toAdd = alunos.filter(u => u.modalidades?.includes(modalidade))
+                    const currentIds = new Set(currentSelected.map(p => p.id_utilizador))
+                    const newUsers = toAdd.filter(u => !currentIds.has(u.id_utilizador))
+                    return [...currentSelected, ...newUsers]
+                } else {
+                    // Toggle OFF
+                    return currentSelected.filter(u => {
+                        if (!u.modalidades?.includes(modalidade)) return true;
+                        return u.modalidades.some(m => newActive.includes(m));
+                    })
+                }
+            })
+            
+            return newActive
+        })
     }
 
     async function handleCreate() {
@@ -189,6 +221,27 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
                         className="flex-1 bg-transparent text-sm text-neutral-600 focus:outline-none"
                     />
                 </div>
+
+                {availableModalidades.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                        {availableModalidades.map(mod => {
+                            const isActive = activeModalidades.includes(mod)
+                            return (
+                                <button
+                                    key={mod}
+                                    onClick={() => toggleModalidade(mod)}
+                                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full transition-colors ${
+                                        isActive 
+                                            ? 'bg-brand-800 text-white' 
+                                            : 'text-brand-800 bg-brand-100 hover:bg-brand-200'
+                                    }`}
+                                >
+                                    {isActive ? '✓' : '+'} {mod}
+                                </button>
+                            )
+                        })}
+                    </div>
+                )}
 
                 {selected.length > 0 && (
                     <div>
