@@ -195,30 +195,30 @@ describe('modalidadeService', () => {
       await expect(eliminarModalidade(99)).rejects.toThrow('Modalidade não encontrada.');
     });
 
-    it('lança erro quando existem marcações ativas', async () => {
+    it('lança erro quando existem marcações (ativas ou históricas)', async () => {
       mockPrisma.modalidade.findUnique.mockResolvedValue({
         id_modalidade: 1,
         nome: 'Ballet',
         docente_modalidade: [],
-        marcacao: [{ id_marcacoes: 1 }, { id_marcacoes: 2 }],
+        aluno_modalidade: [],
+        marcacao: [{ id_marcacoes: 1, id_estado: 1 }, { id_marcacoes: 2, id_estado: 1 }],
       });
 
-      await expect(eliminarModalidade(1)).rejects.toThrow('2 marcação(ões) ativa(s)');
+      await expect(eliminarModalidade(1)).rejects.toThrow('Não é possível eliminar');
     });
 
-    it('elimina associações de docentes antes de eliminar a modalidade', async () => {
+    it('elimina modalidade com docentes associados (cascade trata as associações)', async () => {
       mockPrisma.modalidade.findUnique.mockResolvedValue({
         id_modalidade: 1,
         nome: 'Ballet',
         docente_modalidade: [{ id_docente: 5 }],
+        aluno_modalidade: [],
         marcacao: [],
       });
-      mockPrisma.docente_modalidade.deleteMany.mockResolvedValue({});
       mockPrisma.modalidade.delete.mockResolvedValue({});
 
       await eliminarModalidade(1);
 
-      expect(mockPrisma.docente_modalidade.deleteMany).toHaveBeenCalledWith({ where: { id_modalidade: 1 } });
       expect(mockPrisma.modalidade.delete).toHaveBeenCalled();
     });
 
@@ -227,6 +227,7 @@ describe('modalidadeService', () => {
         id_modalidade: 1,
         nome: 'Ballet',
         docente_modalidade: [],
+        aluno_modalidade: [],
         marcacao: [],
       });
       mockPrisma.modalidade.delete.mockResolvedValue({});

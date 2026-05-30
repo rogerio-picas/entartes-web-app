@@ -86,6 +86,8 @@ const deleteModalidade = async (req, res) => {
             res.status(404).json({ error: error.message });
         } else if (error.message.includes('Não é possível')) {
             res.status(409).json({ error: error.message });
+        } else if (error.code === 'P2003') {
+            res.status(409).json({ error: 'Não é possível eliminar esta modalidade: existem registos associados.' });
         } else {
             res.status(500).json({ error: 'Internal server error' });
         }
