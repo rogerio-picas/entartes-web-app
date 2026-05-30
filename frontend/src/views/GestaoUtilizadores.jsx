@@ -42,6 +42,7 @@ export default function GestaoUtilizadores() {
 
     const [utilizadores, setUtilizadores] = useState([])
     const [docenteModalidades, setDocenteModalidades] = useState({})
+    const [alunoModalidades, setAlunoModalidades] = useState({})
     const [activeTab, setActiveTab] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
@@ -64,17 +65,23 @@ export default function GestaoUtilizadores() {
         try {
             const [users, modalidades] = await Promise.all([
                 utilizadorService.listar(),
-                modalidadeService.listar(null, true).catch(() => []),
+                modalidadeService.listar(null, true, true).catch(() => []),
             ])
             setUtilizadores(users)
-            const map = {}
+            const docenteMap = {}
+            const alunoMap = {}
             modalidades.forEach(m => {
                 ;(m.docente_modalidade ?? []).forEach(d => {
-                    if (!map[d.id_docente]) map[d.id_docente] = []
-                    map[d.id_docente].push(m.nome)
+                    if (!docenteMap[d.id_docente]) docenteMap[d.id_docente] = []
+                    docenteMap[d.id_docente].push(m.nome)
+                })
+                ;(m.aluno_modalidade ?? []).forEach(a => {
+                    if (!alunoMap[a.id_utilizador]) alunoMap[a.id_utilizador] = []
+                    alunoMap[a.id_utilizador].push(m.nome)
                 })
             })
-            setDocenteModalidades(map)
+            setDocenteModalidades(docenteMap)
+            setAlunoModalidades(alunoMap)
         } catch (err) {
             setError(err.message || 'Erro ao carregar utilizadores.')
         } finally {
@@ -237,6 +244,8 @@ export default function GestaoUtilizadores() {
                                 filtered.map((u, idx) => {
                                     const modalidades = u.id_tipo === 2
                                         ? (docenteModalidades[u.id_utilizador] ?? [])
+                                        : u.id_tipo === 3
+                                        ? (alunoModalidades[u.id_utilizador] ?? [])
                                         : []
                                     return (
                                         <tr

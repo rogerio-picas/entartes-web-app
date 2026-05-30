@@ -2,15 +2,16 @@ const modalidadeService = require('../services/modalidadeService');
 
 const listModalidades = async (req, res) => {
     try {
-        const { id_docente, id_aluno, docentes } = req.query;
+        const { id_docente, id_aluno, docentes, alunos } = req.query;
         const incluirDocentes = docentes === 'true';
+        const incluirAlunos = alunos === 'true';
 
         let alunoId = id_aluno;
         if (Number(req.user?.role) === 3 || Number(req.user?.id_tipo) === 3) {
             alunoId = req.user.id || req.user.id_utilizador;
         }
 
-        const resultado = await modalidadeService.listarModalidades(id_docente, incluirDocentes, alunoId);
+        const resultado = await modalidadeService.listarModalidades(id_docente, incluirDocentes, alunoId, incluirAlunos);
         res.json(resultado);
     } catch (error) {
         console.error('[listModalidades] Erro:', error);
@@ -135,4 +136,43 @@ const desassociarDocente = async (req, res) => {
     }
 };
 
-module.exports = { listModalidades, getModalidade, createModalidade, updateModalidade, deleteModalidade, associarDocente, desassociarDocente };
+const associarAluno = async (req, res) => {
+    try {
+        const id_modalidade = parseInt(req.params.id);
+        if (isNaN(id_modalidade)) return res.status(400).json({ error: 'ID da modalidade inválido' });
+
+        const { id_utilizador } = req.body;
+        if (!id_utilizador) return res.status(400).json({ error: 'O campo "id_utilizador" é obrigatório' });
+
+        const resultado = await modalidadeService.associarAluno(id_modalidade, id_utilizador);
+        res.status(201).json(resultado);
+    } catch (error) {
+        if (error.message.includes('não encontrada') || error.message.includes('não encontrado')) {
+            res.status(404).json({ error: error.message });
+        } else if (error.message.includes('já está associado')) {
+            res.status(409).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+};
+
+const desassociarAluno = async (req, res) => {
+    try {
+        const id_modalidade = parseInt(req.params.id);
+        const id_utilizador = parseInt(req.params.id_utilizador);
+        if (isNaN(id_modalidade)) return res.status(400).json({ error: 'ID da modalidade inválido' });
+        if (isNaN(id_utilizador)) return res.status(400).json({ error: 'ID do utilizador inválido' });
+
+        const resultado = await modalidadeService.desassociarAluno(id_modalidade, id_utilizador);
+        res.json(resultado);
+    } catch (error) {
+        if (error.message.includes('não encontrada') || error.message.includes('Associação não encontrada')) {
+            res.status(404).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+};
+
+module.exports = { listModalidades, getModalidade, createModalidade, updateModalidade, deleteModalidade, associarDocente, desassociarDocente, associarAluno, desassociarAluno };
