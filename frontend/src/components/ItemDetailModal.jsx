@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, CalendarDays, Clock, MapPin, User, Music, BookOpen, Trash2, Pencil } from 'lucide-react'
+import { X, CalendarDays, Clock, MapPin, User, Music, BookOpen, Trash2, Pencil, DoorOpen } from 'lucide-react'
 import { parseDate, addMinutesToTime } from '../utils/dateUtils'
 
 // Cores de exemplo (podem ser passadas via props ou mantidas como padrão)
@@ -183,7 +183,7 @@ export default function ItemDetailModal({
                                 onClick={() => { onChangeRoom(item); onClose(); }}
                                 className="flex-1 py-2.5 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 font-semibold text-sm hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
                             >
-                                <MapPin size={16} />
+                                <DoorOpen size={16} />
                                 Mudar Sala
                             </button>
                         )}
