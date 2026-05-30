@@ -112,7 +112,7 @@ export default function Modalidades() {
                 {/* Cabeçalho */}
                 <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
                     <div>
-                        <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">Gestão de Conteúdo</p>
+                        <p className="text-neutral-600 text-sm font-medium tracking-wide mb-1">Painel de Gestão · Admin</p>
                         <h1 className="text-neutral-800 font-normal text-3xl leading-tight tracking-tight">
                             Modalidades
                         </h1>
@@ -189,7 +189,7 @@ export default function Modalidades() {
                                         key={m.id_modalidade}
                                         className={`border-b border-neutral-600/10 hover:bg-brand-50 transition-colors ${idx % 2 === 0 ? '' : 'bg-brand-50'}`}
                                     >
-                                        <td className="px-4 py-4">
+                                        <td className="px-4 py-4 w-[720px]">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-1.5 h-8 rounded-full bg-brand-500 shrink-0" />
                                                 <span className="font-semibold text-neutral-800">{m.nome}</span>
@@ -197,23 +197,28 @@ export default function Modalidades() {
                                         </td>
                                         {isAdmin && (
                                             <>
-                                                <td className="px-4 py-4 text-gray-600">
+                                                <td className="px-4 py-4 text-gray-600 w-full">
                                                     {m.docente_modalidade?.length > 0 ? (
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {m.docente_modalidade.map(d => (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {m.docente_modalidade.slice(0, 5).map(d => (
                                                                 <span
                                                                     key={d.id_docente}
-                                                                    className="text-xs bg-brand-200 text-brand-800 px-2.5 py-1 rounded-full font-medium"
+                                                                    className="text-[11px] bg-brand-200 text-brand-800 px-1.5 py-0.5 rounded-full font-medium"
                                                                 >
                                                                     {[d.nome, d.apelido].filter(Boolean).join(' ') || d.codigo_username}
                                                                 </span>
                                                             ))}
+                                                            {m.docente_modalidade.length > 5 && (
+                                                                <span className="text-[11px] bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded-full font-medium">
+                                                                    +{m.docente_modalidade.length - 5}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     ) : (
                                                         <span className="text-xs text-gray-300">—</span>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-4 py-4 w-px whitespace-nowrap">
                                                     {confirmDeleteId === m.id_modalidade ? (
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-xs text-gray-500">Confirmar?</span>

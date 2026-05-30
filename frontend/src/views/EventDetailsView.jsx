@@ -207,7 +207,7 @@ export default function EventDetailsView() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[70vh] gap-3 text-brand-800">
                 <Loader2 className="animate-spin" size={32} />
-                <p className="text-sm font-medium animate-pulse">A carregar detalhes da base de dados...</p>
+                <p className="text-sm font-medium animate-pulse">A carregar...</p>
             </div>
         )
     }

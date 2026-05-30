@@ -505,19 +505,23 @@ export default function Aulas() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-neutral-50 border-b-2 border-neutral-600/20">
-                {['Modalidade', 'Data', 'Hora', 'Duração', 'Tipo Aula', 'Sala', 'Estado', 'Ação'].map((col, i) => (
-                  <th
-                    key={col || i}
-                    className="px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap"
-                  >
-                    {col && (
+                {['Modalidade', 'Data', 'Hora', 'Duração', 'Tipo Aula', 'Sala', 'Estado', 'Ação'].map((col, i) => {
+                  const sortable = !!SORT_KEYS[col]
+                  const active = sortable && sortConfig.key === SORT_KEYS[col]
+                  const Icon = active ? (sortConfig.dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
+                  return (
+                    <th
+                      key={col || i}
+                      onClick={sortable ? () => handleSort(col) : undefined}
+                      className={`px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap ${sortable ? 'cursor-pointer select-none hover:bg-neutral-100' : ''}`}
+                    >
                       <span className="flex items-center gap-1">
                         {col}
-                        {col && col !== '' && <ArrowUpDown size={10} className="text-brand-800/30" />}
+                        {sortable && <Icon size={10} className={active ? 'text-brand-800' : 'text-brand-800/30'} />}
                       </span>
-                    )}
-                  </th>
-                ))}
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
