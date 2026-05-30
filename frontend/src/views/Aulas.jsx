@@ -626,6 +626,17 @@ export default function Aulas() {
                               Cancelar
                             </button>
                           )
+                        ) : role === 1 && row.id_estado === 3 ? (
+                          <button onClick={() => {
+                            if (window.confirm("Tem a certeza que deseja cancelar esta aula? Esta ação não pode ser revertida.")) {
+                              handleReject(row.id);
+                            }
+                          }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
+                          >
+                            <X size={12} strokeWidth={3} />
+                            Cancelar
+                          </button>
                         ) : podeConfirmarPresenca ? (
                           <button
                             onClick={() => handleConfirm(row.id)}
