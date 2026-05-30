@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const prisma = require('../lib/prisma');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const tokenValidation = async (req, res, next) => {
     const authHeader = req.headers['authorization'];

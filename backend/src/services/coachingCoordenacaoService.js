@@ -2,7 +2,8 @@
 // Módulo da Coordenação — Gestão de Marcações de Coaching
 // Toda a lógica de negócio do lado da coordenadora no ciclo de vida das marcações
 
-const prisma = require('../lib/prisma');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTES DE DOMÍNIO

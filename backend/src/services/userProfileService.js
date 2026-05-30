@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
-const prisma = require('../lib/prisma');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 // Helpers de validação centralizados
 const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

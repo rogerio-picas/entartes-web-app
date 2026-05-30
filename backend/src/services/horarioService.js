@@ -1,4 +1,5 @@
-const prisma = require('../lib/prisma');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 /**
  * Retorna as marcações do utilizador autenticado conforme o seu role.

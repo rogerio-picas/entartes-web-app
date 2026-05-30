@@ -2,7 +2,8 @@
 // Módulo do Aluno — Marcações (Coaching)
 // Lógica de negócio seguindo as convenções do projeto Ent'artes
 
-const prisma = require('../lib/prisma');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTES DE DOMÍNIO

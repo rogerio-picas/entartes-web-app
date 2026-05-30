@@ -1,4 +1,5 @@
-const prisma = require('../lib/prisma');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const listNotificacoes = async (id_user) => {
     return await prisma.notificacao.findMany({
