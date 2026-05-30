@@ -87,6 +87,7 @@ export default function EditEventPanel({ onClose, onSuccess, initialEvent }) {
                 <p className="text-sm font-medium text-black">Detalhes principais</p>
 
                 <div className="relative">
+                    <label className="text-xs text-neutral-600 font-semibold mb-1 block">Nome do evento</label>
                     <input
                         value={nome} onChange={e => setNome(e.target.value)}
                         placeholder="Nome do evento"
@@ -95,6 +96,7 @@ export default function EditEventPanel({ onClose, onSuccess, initialEvent }) {
                 </div>
 
                 <div className="relative">
+                    <label className="text-xs text-neutral-600 font-semibold mb-1 block">Descrição</label>
                     <textarea
                         value={descricao} onChange={e => setDescricao(e.target.value)}
                         placeholder="Descrição opcional"
@@ -104,6 +106,7 @@ export default function EditEventPanel({ onClose, onSuccess, initialEvent }) {
                 </div>
 
                 <div className="relative">
+                    <label className="text-xs text-neutral-600 font-semibold mb-1 block">Local</label>
                     <input
                         value={local} onChange={e => setLocal(e.target.value)}
                         placeholder="Local (Ex: Auditório Principal)"

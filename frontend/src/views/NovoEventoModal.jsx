@@ -60,10 +60,10 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
     const initialDuration = initialData?.duracao_minutos || 60
     const [duracaoHoras, setDuracaoHoras] = useState(Math.floor(initialDuration / 60))
     const [duracaoMinutos, setDuracaoMinutos] = useState(initialDuration % 60)
-    
+
     let initialDescricao = initialData?.descricao || ''
     let initialFaqsList = []
-    
+
     if (initialDescricao.includes('---FAQS---')) {
         const parts = initialDescricao.split('---FAQS---')
         initialDescricao = parts[0].trim()
@@ -124,7 +124,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
 
         const todayStr = formatDateForInput(new Date())
         const currentTimeStr = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
-        
+
         if (data === todayStr && hora < currentTimeStr) {
             setErro('A hora de início não pode ser no passado.')
             return
@@ -135,7 +135,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
 
         try {
             const totalMinutos = (Number(duracaoHoras) * 60) + Number(duracaoMinutos)
-            
+
             let finalDescricao = descricao || ''
             if (faqs && faqs.length > 0) {
                 finalDescricao += (finalDescricao ? '\n\n' : '') + '---FAQS---\n' + JSON.stringify(faqs)
@@ -207,23 +207,23 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
                             <Field label="Nome" value={nome} onChange={setNome} placeholder="Nome do evento" />
                         </div>
                         <div className="flex-1 min-w-[150px]">
-                            <Field 
-                                label="Data" 
-                                value={data} 
+                            <Field
+                                label="Data"
+                                value={data}
                                 onChange={(val) => {
                                     setData(val)
                                     if (val === todayStr && hora < currentTimeStr) {
                                         setHora(currentTimeStr)
                                     }
-                                }} 
-                                type="date" 
-                                min={todayStr} 
+                                }}
+                                type="date"
+                                min={todayStr}
                             />
                         </div>
                         <div className="flex-1 min-w-[130px]">
-                            <Field 
-                                label="Início" 
-                                value={hora} 
+                            <Field
+                                label="Início"
+                                value={hora}
                                 onChange={(val) => {
                                     if (data === todayStr && val < currentTimeStr) {
                                         setHora(currentTimeStr)
@@ -235,9 +235,9 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
                                     } else {
                                         setErroHora('')
                                     }
-                                }} 
-                                type="time" 
-                                min={data === todayStr && currentTimeStr > '08:30' ? currentTimeStr : '08:30'} 
+                                }}
+                                type="time"
+                                min={data === todayStr && currentTimeStr > '08:30' ? currentTimeStr : '08:30'}
                                 max="21:30"
                                 erro={erroHora}
                             />
@@ -257,15 +257,13 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
                     {/* Toggle Privado/Público */}
                     <div
                         onClick={() => setPrivado(p => !p)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer select-none transition-all ${
-                            privado
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer select-none transition-all ${privado
                                 ? 'border-brand-800 bg-brand-50'
                                 : 'border-neutral-300 bg-white hover:border-neutral-400'
-                        }`}
+                            }`}
                     >
-                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                            privado ? 'bg-brand-800 text-white' : 'bg-neutral-100 text-neutral-500'
-                        }`}>
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${privado ? 'bg-brand-800 text-white' : 'bg-neutral-100 text-neutral-500'
+                            }`}>
                             {privado ? <Lock size={16} /> : <Globe size={16} />}
                         </div>
                         <div className="flex-1">
@@ -278,9 +276,8 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
                                     : 'Qualquer utilizador pode ver este evento'}
                             </p>
                         </div>
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors shrink-0 ${
-                            privado ? 'bg-brand-800 border-brand-800' : 'border-neutral-400'
-                        }`}>
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors shrink-0 ${privado ? 'bg-brand-800 border-brand-800' : 'border-neutral-400'
+                            }`}>
                             {privado && <Check size={11} className="text-white" strokeWidth={3} />}
                         </div>
                     </div>
