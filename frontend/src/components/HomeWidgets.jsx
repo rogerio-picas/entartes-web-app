@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Clock, User, Check, X, RefreshCw, ChevronRight, CalendarClock } from 'lucide-react'
+import { Clock, User, Check, X, RefreshCw, ChevronRight, CalendarClock  } from 'lucide-react'
 import { api } from '../services/api'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -636,7 +636,6 @@ export function SalasDoDiaWidget() {
     </div>
   )
 }
-
 export function Toast({ msg, type, onClose }) {
   return (
     <div className={`fixed bottom-6 right-6 z-[60] flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-white font-['Sora'] text-sm font-medium ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>

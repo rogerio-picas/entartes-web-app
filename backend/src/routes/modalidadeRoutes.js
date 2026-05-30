@@ -210,5 +210,7 @@ router.put('/:id', tokenValidation, authorize([1]), modalidadeController.updateM
 router.delete('/:id', tokenValidation, authorize([1]), modalidadeController.deleteModalidade);
 router.post('/:id/docentes', tokenValidation, authorize([1]), modalidadeController.associarDocente);
 router.delete('/:id/docentes/:id_docente', tokenValidation, authorize([1]), modalidadeController.desassociarDocente);
+router.post('/:id/alunos', tokenValidation, authorize([1]), modalidadeController.associarAluno);
+router.delete('/:id/alunos/:id_utilizador', tokenValidation, authorize([1]), modalidadeController.desassociarAluno);
 
 module.exports = router;

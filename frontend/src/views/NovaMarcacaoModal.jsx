@@ -78,13 +78,13 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
         setModalidades(mods)
       })
       .catch((err) => {
-        console.error('Erro ao carregar modalidades:', err);
-        setErro(err.response?.data?.details || 'Não foi possível carregar as modalidades.');
-      })
+              console.error('Erro ao carregar modalidades:', err);
+              setErro(err.response?.data?.details || 'Não foi possível carregar as modalidades.');
+            })      
       .finally(() => setLoadingMod(false))
   }, [initialSlot])
 
-  // Passo 2: carregar disponibilidades (slots genéricos)
+  // Passo 2: carregar disponibilidades para a modalidade escolhida
   useEffect(() => {
     if (step !== 2 || !modalidadeSel) return
     setLoadingSlots(true)
@@ -165,15 +165,18 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
     return true // dia_semana é sempre futuro
   })
 
-  // Calcular horas possíveis com base nos blocos reais devolvidos pelo backend
+  // Limite de horário permitido
+  const HORA_MIN = '08:30'
+  const HORA_MAX = '21:30'
+
+  // Calcular horas possíveis dentro do slot do docente selecionado, filtradas pelo horário permitido
   const horasPossiveis = (() => {
     if (!blocosReais || blocosReais.length === 0 || !duracao) return []
-    const parse = (s) => {
+      const parse = (s) => {
       if (!s) return null
       const d = new Date(s)
       return isNaN(d) ? null : d
     }
-    
     const horas = new Set()
     
     for (const bloco of blocosReais) {
@@ -187,8 +190,6 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
         cursor.setMinutes(cursor.getMinutes() + 30)
       }
     }
-    
-    // Converter o Set para Array e ordenar as horas de forma cronológica
     return Array.from(horas).sort()
   })()
 
@@ -495,8 +496,9 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
                     <Loader2 size={24} className="text-brand-800 animate-spin" />
                   </div>
                 ) : horasPossiveis.length === 0 ? (
-                  <div className="text-center py-3 text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                    Não é possível encaixar {duracao} min neste slot. Escolhe uma duração menor.
+                  <div className="text-center py-3 text-xs bg-amber-50 border border-amber-200 rounded-xl px-4">
+                    <p className="text-amber-700 font-semibold">O tempo escolhido não cabe aqui</p>
+                    <p className="text-amber-600 mt-1">Não é possível encaixar {duracao} min neste slot. Escolhe uma duração menor.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-4 gap-2">
@@ -688,3 +690,5 @@ function Row({ icon: Icon, label, value }) {
     </div>
   )
 }
+
+

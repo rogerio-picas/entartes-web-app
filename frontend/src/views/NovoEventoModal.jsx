@@ -3,8 +3,8 @@ import { X, Plus, ChevronRight, Check, AlertCircle, RefreshCw, Trash2 } from 'lu
 import { api } from '../services/api'
 import { formatTime, formatDateForInput, toWallClockISO } from '../utils/dateUtils'
 
-function Field({ label, value, onChange, type = 'text', placeholder, multiline = false, ...props }) {
-    const base = 'w-full bg-white border border-neutral-500 rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-brand-800 transition-colors'
+function Field({ label, value, onChange, type = 'text', placeholder, multiline = false, erro, ...props }) {
+    const base = `w-full bg-white border rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none transition-colors ${erro ? 'border-red-500 focus:border-red-500' : 'border-neutral-500 focus:border-brand-800'}`
 
     return (
         <div className="relative">
@@ -31,6 +31,12 @@ function Field({ label, value, onChange, type = 'text', placeholder, multiline =
                     {...props}
                 />
             )}
+            {erro && (
+                <p className="text-[10px] text-red-600 mt-1 flex items-center gap-1 whitespace-nowrap">
+                    <span className="inline-block w-3 h-3 rounded-full bg-red-500 text-white text-[8px] flex items-center justify-center font-bold">!</span>
+                    {erro}
+                </p>
+            )}
         </div>
     )
 }
@@ -38,6 +44,7 @@ function Field({ label, value, onChange, type = 'text', placeholder, multiline =
 export default function NovoEventoModal({ onClose, onSuccess, selectedDate, initialData }) {
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
+    const [erroHora, setErroHora] = useState('')
 
     const [nome, setNome] = useState(initialData?.nome || '')
     const [data, setData] = useState(() => {
@@ -105,6 +112,12 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
     async function handleSubmit() {
         if (!nome.trim()) {
             setErro('O nome do evento é obrigatório.')
+            return
+        }
+
+        if (hora < '08:30' || hora > '21:30') {
+            setErro('A hora do evento tem de estar entre 08:30 e 21:30.')
+            setErroHora('Fora do horário permitido (08:30–21:30)')
             return
         }
 
@@ -215,9 +228,16 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
                                     } else {
                                         setHora(val)
                                     }
+                                    if (val && (val < '08:30' || val > '21:30')) {
+                                        setErroHora('Fora do horário permitido (08:30–21:30)')
+                                    } else {
+                                        setErroHora('')
+                                    }
                                 }} 
                                 type="time" 
-                                min={data === todayStr ? currentTimeStr : undefined} 
+                                min={data === todayStr && currentTimeStr > '08:30' ? currentTimeStr : '08:30'} 
+                                max="21:30"
+                                erro={erroHora}
                             />
                         </div>
                         <div className="flex-1 min-w-[200px] flex gap-2">
