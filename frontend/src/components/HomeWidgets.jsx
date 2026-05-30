@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Clock, User, Check, X, RefreshCw, ChevronRight } from 'lucide-react'
+import { Clock, User, Check, X, RefreshCw, ChevronRight, CalendarClock  } from 'lucide-react'
 import { api } from '../services/api'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-export { formatDate, formatTime } from '../utils/dateUtils'
+import { formatDate, formatTime } from '../utils/dateUtils'
+export { formatDate, formatTime }
 export function formatDuration(min) {
   if (!min) return '—'
   const h = Math.floor(min / 60), m = min % 60
@@ -438,6 +439,203 @@ export function RoomOccupancyWidget({ data }) {
   )
 }
 
+// ─── SalasDoDiaWidget ─────────────────────────────────────────────────────────
+// Layout: cada SALA é uma COLUNA. As aulas empilham VERTICALMENTE dentro de cada
+// coluna, como um quadro de horários de estúdio (imagem de referência).
+
+const SESSION_PALETTE = [
+  { bg: '#CCE8E6', border: '#006A68', text: '#00504E', label: '#006A68' },
+  { bg: '#E8F5FF', border: '#90CAF9', text: '#1565C0', label: '#1565C0' },
+  { bg: '#F3E5F5', border: '#CE93D8', text: '#6A1B9A', label: '#6A1B9A' },
+  { bg: '#FFF3E0', border: '#FFCC80', text: '#E65100', label: '#E65100' },
+  { bg: '#FCE4EC', border: '#F48FB1', text: '#C62828', label: '#C62828' },
+  { bg: '#E0F7FA', border: '#80DEEA', text: '#00695C', label: '#00695C' },
+  { bg: '#E8F5E9', border: '#A5D6A7', text: '#2E7D32', label: '#2E7D32' },
+  { bg: '#FFF8E1', border: '#FFE082', text: '#F57F17', label: '#F57F17' },
+]
+
+
+export function SalasDoDiaWidget() {
+  const [salas, setSalas] = useState([])
+  const [loadingWidget, setLoadingWidget] = useState(true)
+
+  useEffect(() => {
+    const hoje = new Date()
+    const yyyy = hoje.getFullYear()
+    const mm   = String(hoje.getMonth() + 1).padStart(2, '0')
+    const dd   = String(hoje.getDate()).padStart(2, '0')
+    const dataStr = `${yyyy}-${mm}-${dd}`
+
+    Promise.all([
+      api.get('/salas').catch(() => []),
+      api.get('/coaching/pedidos-pendentes?estados=3').catch(() => [])
+    ])
+      .then(([salasRes, pendentesRes]) => {
+        const roomsList = Array.isArray(salasRes) ? salasRes : []
+        const classesList = Array.isArray(pendentesRes) ? pendentesRes : []
+
+        const classesHoje = classesList.filter(c => c.data && c.data.substring(0, 10) === dataStr)
+
+        const mappedSalas = roomsList.map(sala => {
+          const roomClasses = classesHoje.filter(c => c.sala_atual === sala.nome)
+          const ocupacoes = roomClasses.map(c => {
+            const startStr = formatTime(c.hora_inicio)
+            let endStr = '00:00'
+            if (startStr && startStr !== '—') {
+              const [h, m] = startStr.split(':').map(Number)
+              const totalMin = h * 60 + m + (c.duracao_minutos || 60)
+              const endH = String(Math.floor(totalMin / 60) % 24).padStart(2, '0')
+              const endM = String(totalMin % 60).padStart(2, '0')
+              endStr = `${endH}:${endM}`
+            }
+            return {
+              id: c.id_marcacao,
+              inicio: startStr,
+              fim: endStr,
+              docente: c.docente || '—',
+              modalidade: c.modalidade || 'Coaching',
+              duracao_minutos: c.duracao_minutos || 60,
+            }
+          })
+          ocupacoes.sort((a, b) => a.inicio.localeCompare(b.inicio))
+          return { id_sala: sala.id_sala, nome: sala.nome, descricao: sala.descricao, ocupacoes }
+        })
+
+        setSalas(mappedSalas)
+      })
+      .catch(() => setSalas([]))
+      .finally(() => setLoadingWidget(false))
+  }, [])
+
+  const hoje         = new Date()
+  const diaSemana    = hoje.toLocaleDateString('pt-PT', { weekday: 'long' })
+  const dataFmt      = hoje.toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })
+  const allUniqueTimes = [...new Set(salas.flatMap(s => s.ocupacoes.map(o => o.inicio)))].sort()
+  const timeColorMap = {}
+  allUniqueTimes.forEach((t, i) => { timeColorMap[t] = SESSION_PALETTE[i % SESSION_PALETTE.length] })
+
+  if (loadingWidget) {
+    return (
+      <div className="flex items-center justify-center py-8 text-brand-800">
+        <RefreshCw size={20} className="animate-spin" />
+      </div>
+    )
+  }
+
+  const colWidth = 150
+  const totalW   = salas.length * (colWidth + 8)
+
+  return (
+    <div className="flex flex-col">
+
+      {/* Sub-header */}
+      <div className="flex items-center gap-1.5 mb-3">
+        <CalendarClock size={14} className="text-brand-800" />
+        <span className="text-[11px] font-bold text-brand-800 capitalize">{diaSemana}, {dataFmt}</span>
+      </div>
+
+      {/* Date banner */}
+      <div className="bg-brand-200 border border-brand-500 rounded-xl px-3.5 py-1.5 text-center mb-2.5">
+        <span className="text-[11px] font-extrabold text-brand-800 uppercase tracking-widest">
+          {diaSemana.toUpperCase()} | {hoje.getDate()} DE {hoje.toLocaleDateString('pt-PT', { month: 'long' }).toUpperCase()} DE {hoje.getFullYear()}
+        </span>
+      </div>
+
+      {/* Grid */}
+      {salas.length === 0 ? (
+        <p className="text-[11px] text-neutral-300 italic text-center py-4">Sem salas disponíveis.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <div
+            className="border border-neutral-200 rounded-xl overflow-hidden"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${salas.length}, minmax(${colWidth}px, 1fr))`,
+              minWidth: `${totalW}px`,
+            }}
+          >
+            {/* Room headers */}
+            {salas.map((sala, si) => (
+              <div
+                key={`hdr-${sala.nome}`}
+                className="px-2.5 py-2.5 bg-brand-800 flex items-center justify-center"
+                style={{ borderRight: si < salas.length - 1 ? '1px solid #00504E' : 'none' }}
+              >
+                <span className="text-[11px] font-extrabold text-white uppercase tracking-wider text-center">
+                  {sala.nome}
+                </span>
+              </div>
+            ))}
+
+            {/* Cells */}
+            {allUniqueTimes.length === 0 ? (
+              salas.map((sala, si) => (
+                <div
+                  key={`empty-${sala.nome}`}
+                  className="flex items-center justify-center min-h-[100px] p-5"
+                  style={{
+                    background: si % 2 === 0 ? '#FFFFFF' : '#F8FFFE',
+                    borderRight: si < salas.length - 1 ? '1px solid #E8F0EF' : 'none',
+                    borderTop: '1px solid #E8F0EF',
+                  }}
+                >
+                  <span className="text-[10px] text-brand-800 font-semibold opacity-50 italic">Disponível</span>
+                </div>
+              ))
+            ) : (
+              allUniqueTimes.map(timeSlot =>
+                salas.map((sala, si) => {
+                  const oc = sala.ocupacoes.find(o => o.inicio === timeSlot)
+                  return (
+                    <div
+                      key={`cell-${sala.id_sala || sala.nome}-${timeSlot}`}
+                      className="flex flex-col justify-center min-h-[100px] p-2"
+                      style={{
+                        background: si % 2 === 0 ? '#FFFFFF' : '#F8FFFE',
+                        borderRight: si < salas.length - 1 ? '1px solid #E8F0EF' : 'none',
+                        borderTop: '1px solid #E8F0EF',
+                      }}
+                    >
+                      {oc ? (() => {
+                        const color = timeColorMap[oc.inicio] || SESSION_PALETTE[0]
+                        return (
+                          <div
+                            className="flex flex-col gap-0.5 rounded-lg px-2.5 py-2 cursor-default transition-all duration-100 hover:-translate-y-px"
+                            style={{ background: color.bg, border: `1.5px solid ${color.border}` }}
+                            onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 4px 12px ${color.border}55` }}
+                            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none' }}
+                          >
+                            <span className="text-[10px] font-extrabold uppercase tracking-wide truncate" style={{ color: color.text }}>
+                              {oc.modalidade}
+                            </span>
+                            <span className="text-[9px] font-bold opacity-90" style={{ color: color.text }}>
+                              {oc.inicio} – {oc.fim}
+                            </span>
+                            {oc.docente && (
+                              <span className="text-[9px] font-semibold opacity-75 truncate italic" style={{ color: color.text }}>
+                                ({oc.docente})
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })() : (
+                        sala.ocupacoes.length === 0 && timeSlot === allUniqueTimes[0] ? (
+                          <div className="flex items-center justify-center w-full h-full">
+                            <span className="text-[10px] text-neutral-300 italic">Disponível</span>
+                          </div>
+                        ) : null
+                      )}
+                    </div>
+                  )
+                })
+              )
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 export function Toast({ msg, type, onClose }) {
   return (
     <div className={`fixed bottom-6 right-6 z-[60] flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-white font-['Sora'] text-sm font-medium ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
