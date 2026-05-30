@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
-import { ArrowLeft, Loader2, AlertCircle, Plus, Megaphone, Send, Users, Clock, Trash2, Calendar, MapPin, Edit2, X, UserPlus, MessageCircle, ChevronRight, Lock } from 'lucide-react'
+import { ArrowLeft, Loader2, AlertCircle, Plus, Megaphone, Send, Users, Clock, Trash2, Calendar, MapPin, Edit2, X, UserPlus, MessageCircle, ChevronRight, Lock, Globe } from 'lucide-react'
 import CriarGrupoPanel from '../components/CriarGrupoPanel'
 import EditEventPanel from '../components/EditEventPanel'
 import AddEventMemberPanel from '../components/AddEventMemberPanel'
@@ -15,12 +15,15 @@ export default function EventDetailsView() {
     const navigate = useNavigate()
     const user = authService.getUser()
     const isAdmin = user?.role === 1 // Apenas Admin (Role 1) tem permissões de edição
-
     const [event, setEvent] = useState(null)
     const [groups, setGroups] = useState([])
     const [selectedGroup, setSelectedGroup] = useState(null)
     const [announcements, setAnnouncements] = useState([])
     const [participants, setParticipants] = useState({ alunos: [], docentes: [] })
+
+    // Docente participante do evento pode gerir grupos
+    const isDocenteOfEvent = user?.role === 2 && participants.docentes.some(d => d.id_utilizador === user?.id_utilizador)
+    const canManageGroups = isAdmin || isDocenteOfEvent || (user?.role === 2 && event && !event.privado)
 
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
@@ -58,7 +61,15 @@ export default function EventDetailsView() {
             ])
 
             if (evData.status === 'fulfilled') setEvent(evData.value)
-            else setError('Erro ao carregar o evento principal.')
+            else {
+                const err = evData.reason
+                const status = err?.response?.status || err?.status
+                if (status === 403) {
+                    setError('Não tens permissão para ver este evento privado.')
+                } else {
+                    setError('Erro ao carregar o evento principal.')
+                }
+            }
 
             if (grpData.status === 'fulfilled') setGroups(grpData.value || [])
 
@@ -203,6 +214,24 @@ export default function EventDetailsView() {
         })
     }
 
+    const handleRemoveParticipant = (participantId, type, name) => {
+        setConfirmCtx({
+            message: `Pretende realmente remover o ${type} ${name} deste evento? Esta ação irá também removê-lo de quaisquer grupos associados ao evento.`,
+            onConfirm: async () => {
+                try {
+                    const endpoint = type === 'aluno'
+                        ? `/evento/${id}/participantes/alunos/${participantId}`
+                        : `/evento/${id}/participantes/docentes/${participantId}`;
+                    await api.delete(endpoint)
+                    loadEventData()
+                    showToast('Participante removido do evento com sucesso!')
+                } catch (e) {
+                    showToast('Não foi possível remover o participante: ' + (e.response?.data?.error || e.message), 'error')
+                }
+            }
+        })
+    }
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[70vh] gap-3 text-brand-800">
@@ -255,7 +284,18 @@ export default function EventDetailsView() {
                 </button>
                 <div className="flex justify-between items-end">
                     <div>
-                        <h1 className="text-3xl font-bold text-neutral-800 leading-tight mb-2">{event?.nome || 'Evento sem nome'}</h1>
+                        <h1 className="text-3xl font-bold text-neutral-800 leading-tight mb-2 flex items-center gap-3">
+                            {event?.nome || 'Evento sem nome'}
+                            {event?.privado ? (
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-800 text-white">
+                                    <Lock size={11} /> Privado
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-600 border border-neutral-200">
+                                    <Globe size={11} /> Público
+                                </span>
+                            )}
+                        </h1>
                         <p className="text-neutral-600 flex items-center gap-2 text-sm font-medium">
                             <Calendar size={15} /> {formatDate(event?.data_de_realizacao)}
                         </p>
@@ -275,24 +315,28 @@ export default function EventDetailsView() {
                             </>
                         )}
 
-                        {/* Botao discreto de participantes */}
-                        <button
-                            onClick={() => setShowParticipants(true)}
-                            className="mt-2.5 inline-flex items-center gap-1.5 text-xs text-brand-800 font-semibold hover:underline"
-                        >
-                            <Users size={13} />
-                            {participants.alunos.length + participants.docentes.length} participantes inscritos
-                        </button>
+                        {/* Botao discreto de participantes - apenas em eventos privados */}
+                        {event?.privado && (
+                            <button
+                                onClick={() => setShowParticipants(true)}
+                                className="mt-2.5 inline-flex items-center gap-1.5 text-xs text-brand-800 font-semibold hover:underline"
+                            >
+                                <Users size={13} />
+                                {participants.alunos.length + participants.docentes.length} participantes inscritos
+                            </button>
+                        )}
                     </div>
 
                     {isAdmin && !isPastOrCancelled && (
                         <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => setShowAddMember(true)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-brand-200 text-brand-800 hover:bg-brand-200 rounded-xl text-sm font-semibold transition-colors border border-brand-800/30"
-                            >
-                                <UserPlus size={16} /> Adicionar Membro
-                            </button>
+                            {event?.privado && (
+                                <button
+                                    onClick={() => setShowAddMember(true)}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-brand-200 text-brand-800 hover:bg-brand-200 rounded-xl text-sm font-semibold transition-colors border border-brand-800/30"
+                                >
+                                    <UserPlus size={16} /> Adicionar Membro
+                                </button>
+                            )}
                             <button
                                 onClick={() => setShowEditEvent(true)}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-brand-50 text-brand-800 hover:bg-brand-200 rounded-xl text-sm font-semibold transition-colors border border-brand-800/20"
@@ -458,7 +502,7 @@ export default function EventDetailsView() {
                 <div className="w-full lg:w-[320px] flex flex-col gap-4 shrink-0">
                     <div className="flex items-center justify-between pb-2 border-b border-brand-800/20">
                         <h3 className="font-bold text-neutral-800 text-lg flex items-center gap-2"><Users size={18} /> Grupos</h3>
-                        {isAdmin && !isPastOrCancelled && (
+                        {canManageGroups && !isPastOrCancelled && (
                             <button
                                 onClick={() => setShowCreateGroup(true)}
                                 className="w-8 h-8 rounded-full bg-brand-800 flex items-center justify-center text-white hover:bg-brand-900 transition-colors shadow-sm"
@@ -513,7 +557,7 @@ export default function EventDetailsView() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                {isAdmin && !isPastOrCancelled && (
+                                {canManageGroups && !isPastOrCancelled && (
                                     <>
                                         <button onClick={() => { setEditGroupData(selectedGroup); setShowCreateGroup(true); }} className="px-3 py-1.5 text-sm bg-white border border-neutral-400 rounded-lg font-bold text-brand-800 hover:bg-neutral-50 transition">Editar Grupo</button>
                                         <button onClick={() => handleDeleteGroup(selectedGroup.id_grupo)} className="p-2 text-feedback-error bg-white border border-feedback-error-light rounded-lg hover:bg-feedback-error-light/30 transition"><Trash2 size={16} /></button>
@@ -693,14 +737,25 @@ export default function EventDetailsView() {
                                             <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-600 mb-3">Docentes · {participants.docentes.length}</p>
                                             <div className="space-y-2">
                                                 {participants.docentes.map((d, i) => (
-                                                    <div key={i} className="flex items-center gap-3 px-3 py-2.5 bg-white rounded-xl border border-brand-800/15">
-                                                        <div className="w-9 h-9 rounded-full bg-brand-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                                                            {((d.nome?.[0] || '') + (d.apelido?.[0] || '')).toUpperCase() || '?'}
+                                                    <div key={i} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white rounded-xl border border-brand-800/15">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-9 h-9 rounded-full bg-brand-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                                                                {((d.nome?.[0] || '') + (d.apelido?.[0] || '')).toUpperCase() || '?'}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-semibold text-neutral-900">{d.nome} {d.apelido}</p>
+                                                                <p className="text-[10px] text-neutral-600">{d.codigo_username || d.email || ''}</p>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-neutral-900">{d.nome} {d.apelido}</p>
-                                                            <p className="text-[10px] text-neutral-600">{d.codigo_username || d.email || ''}</p>
-                                                        </div>
+                                                        {isAdmin && (
+                                                            <button
+                                                                onClick={() => handleRemoveParticipant(d.id_utilizador, 'docente', `${d.nome} ${d.apelido}`)}
+                                                                className="w-8 h-8 rounded-lg text-neutral-600 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-all shrink-0"
+                                                                title="Remover docente"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -711,14 +766,25 @@ export default function EventDetailsView() {
                                             <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-600 mb-3">Alunos · {participants.alunos.length}</p>
                                             <div className="space-y-2">
                                                 {participants.alunos.map((a, i) => (
-                                                    <div key={i} className="flex items-center gap-3 px-3 py-2.5 bg-white rounded-xl border border-neutral-400">
-                                                        <div className="w-9 h-9 rounded-full bg-brand-200 flex items-center justify-center text-brand-800 text-xs font-bold shrink-0">
-                                                            {((a.nome?.[0] || '') + (a.apelido?.[0] || '')).toUpperCase() || '?'}
+                                                    <div key={i} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white rounded-xl border border-neutral-400">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-9 h-9 rounded-full bg-brand-200 flex items-center justify-center text-brand-800 text-xs font-bold shrink-0">
+                                                                {((a.nome?.[0] || '') + (a.apelido?.[0] || '')).toUpperCase() || '?'}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-semibold text-neutral-900">{a.nome} {a.apelido}</p>
+                                                                <p className="text-[10px] text-neutral-600">{a.codigo_username || a.email || ''}</p>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-neutral-900">{a.nome} {a.apelido}</p>
-                                                            <p className="text-[10px] text-neutral-600">{a.codigo_username || a.email || ''}</p>
-                                                        </div>
+                                                        {isAdmin && (
+                                                            <button
+                                                                onClick={() => handleRemoveParticipant(a.id_utilizador, 'aluno', `${a.nome} ${a.apelido}`)}
+                                                                className="w-8 h-8 rounded-lg text-neutral-600 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-all shrink-0"
+                                                                title="Remover aluno"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>

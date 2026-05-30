@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Plus, ChevronRight, Check, AlertCircle, RefreshCw, Trash2 } from 'lucide-react'
+import { X, Plus, ChevronRight, Check, AlertCircle, RefreshCw, Trash2, Lock, Globe } from 'lucide-react'
 import { api } from '../services/api'
 import { formatTime, formatDateForInput, toWallClockISO } from '../utils/dateUtils'
 
@@ -77,6 +77,7 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
     const [descricao, setDescricao] = useState(initialDescricao)
     const [whatsapp, setWhatsapp] = useState(initialData?.link_whatsapp || '')
     const [local, setLocal] = useState(initialData?.local || '')
+    const [privado, setPrivado] = useState(initialData?.privado ?? false)
 
     // FAQs
     const [faqs, setFaqs] = useState(initialFaqsList)
@@ -146,7 +147,8 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
                 data_de_realizacao: toWallClockISO(data, hora),
                 duracao_minutos: totalMinutos,
                 link_whatsapp: whatsapp || null,
-                local: local || null
+                local: local || null,
+                privado: privado,
             }
 
             if (initialData) {
@@ -251,6 +253,38 @@ export default function NovoEventoModal({ onClose, onSuccess, selectedDate, init
                     </div>
 
                     <Field label="Local" value={local} onChange={setLocal} placeholder="Ex: Auditório Principal..." />
+
+                    {/* Toggle Privado/Público */}
+                    <div
+                        onClick={() => setPrivado(p => !p)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer select-none transition-all ${
+                            privado
+                                ? 'border-brand-800 bg-brand-50'
+                                : 'border-neutral-300 bg-white hover:border-neutral-400'
+                        }`}
+                    >
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                            privado ? 'bg-brand-800 text-white' : 'bg-neutral-100 text-neutral-500'
+                        }`}>
+                            {privado ? <Lock size={16} /> : <Globe size={16} />}
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-semibold text-neutral-900">
+                                {privado ? 'Evento Privado' : 'Evento Público'}
+                            </p>
+                            <p className="text-xs text-neutral-500">
+                                {privado
+                                    ? 'Só participantes inscritos podem ver este evento'
+                                    : 'Qualquer utilizador pode ver este evento'}
+                            </p>
+                        </div>
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors shrink-0 ${
+                            privado ? 'bg-brand-800 border-brand-800' : 'border-neutral-400'
+                        }`}>
+                            {privado && <Check size={11} className="text-white" strokeWidth={3} />}
+                        </div>
+                    </div>
+
                     <Field label="Descrição" value={descricao} onChange={setDescricao} placeholder="Descrição do evento" multiline />
                     <Field label="Link Whatsapp" value={whatsapp} onChange={setWhatsapp} placeholder="https://chat.whatsapp.com/..." />
 
