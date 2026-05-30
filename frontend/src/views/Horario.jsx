@@ -1042,16 +1042,16 @@ export default function Horario() {
                     canEdit = !isAula; // O admin usa o botão "Mudar Sala" para aulas, não o "Editar"
                     canDelete = true;
                 } else if (role === 2) {
-                    // Docente gere suas disponibilidades e pode cancelar suas aulas
+                    // Docente gere suas disponibilidades e pode cancelar suas aulas (se pendentes)
                     if (isDisp) {
                         canEdit = true;
                         canDelete = true;
-                    } else if (isAula) {
+                    } else if (isAula && (selectedItem.id_estado === 1 || selectedItem.id_estado === 2)) {
                         canDelete = true; // "Cancelar"
                     }
                 } else if (role === 3) {
-                    // Aluno pode cancelar suas aulas
-                    if (isAula) {
+                    // Aluno pode cancelar suas aulas (se pendentes)
+                    if (isAula && (selectedItem.id_estado === 1 || selectedItem.id_estado === 2)) {
                         canDelete = true;
                     }
                 }
