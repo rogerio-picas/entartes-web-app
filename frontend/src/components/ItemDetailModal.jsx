@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import { X, CalendarDays, Clock, MapPin, User, Music, BookOpen, Trash2, Pencil } from 'lucide-react'
 import { parseDate, addMinutesToTime } from '../utils/dateUtils'
 
@@ -166,7 +166,10 @@ export default function ItemDetailModal({
                     <div className="flex gap-2 w-full">
                         {canDelete && (
                             <button
-                                onClick={() => { onDelete(item); onClose(); }}
+                                onClick={() => { 
+                                    const proceed = onDelete(item);
+                                    if (proceed !== false) onClose();
+                                }}
                                 className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-200 font-semibold text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
                             >
                                 <Trash2 size={16} />

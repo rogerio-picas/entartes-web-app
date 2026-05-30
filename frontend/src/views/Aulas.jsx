@@ -237,7 +237,12 @@ export default function Aulas() {
     setLoadingId(id)
     try {
       if (role === 1) {
-        await api.post('/coaching/rejeitar-marcacao', { id_marcacao: id, motivo: 'Cancelado na página Aulas' })
+        const classObj = marcacoes.find(m => m.id === id);
+        if (classObj && classObj.id_estado === 3) {
+          await api.post('/coaching/cancelar-marcacao', { id_marcacao: id, motivo: 'Cancelado pelo Admin' })
+        } else {
+          await api.post('/coaching/rejeitar-marcacao', { id_marcacao: id, motivo: 'Cancelado na página Aulas' })
+        }
       } else if (role === 2) {
         await api.post(`/coaching/cancelar-marcacao/${id}`)
       } else {
@@ -773,7 +778,18 @@ export default function Aulas() {
           item={modalAula}
           role={role}
           onClose={() => setModalAula(null)}
-          onDelete={(modalAula.id_estado === 1 || modalAula.id_estado === 2) ? () => handleReject(modalAula.id) : undefined}
+          onDelete={
+            (modalAula.id_estado === 1 || modalAula.id_estado === 2 || (role === 1 && modalAula.id_estado === 3))
+              ? () => {
+                  if (role === 1 && modalAula.id_estado === 3) {
+                    if (!window.confirm("Tem a certeza que deseja cancelar esta aula? Esta ação não pode ser revertida.")) {
+                      return false;
+                    }
+                  }
+                  handleReject(modalAula.id);
+                }
+              : undefined
+          }
         />
       )}
 
