@@ -74,6 +74,13 @@ export default function ItemDetailModal({
         canChangeRoom = false;
     }
 
+    // Se já estiver concluída ou cancelada, não permite qualquer alteração
+    if (item.id_estado === 4 || item.id_estado === 5 || item.id_evento_estado === 4 || item.id_evento_estado === 5) {
+        canEdit = false;
+        canDelete = false;
+        canChangeRoom = false;
+    }
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
