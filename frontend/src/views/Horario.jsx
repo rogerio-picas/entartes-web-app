@@ -1152,7 +1152,7 @@ export default function Horario() {
                     <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
                     <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm font-['Sora']" onClick={e => e.stopPropagation()}>
                         <p className="font-semibold text-neutral-800 text-base mb-1">
-                            {pendingDeleteItem._type === 'aula' ? 'Cancelar marcação?' : 'Eliminar registo?'}
+                            {pendingDeleteItem._isDisponibilidade || pendingDeleteItem._type === 'disponibilidade' ? 'Eliminar registo?' : (pendingDeleteItem._type === 'aula' ? 'Cancelar marcação?' : 'Cancelar evento?')}
                         </p>
                         <p className="text-sm text-neutral-500 mb-5">Esta ação não pode ser desfeita.</p>
                         <div className="flex gap-2">

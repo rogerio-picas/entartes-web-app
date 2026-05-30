@@ -176,7 +176,7 @@ export default function ItemDetailModal({
                                 className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-200 font-semibold text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
                             >
                                 <Trash2 size={16} />
-                                {item._type === 'aula' || item.id_marcacao ? 'Cancelar' : 'Eliminar'}
+                                {item._isDisponibilidade || item._type === 'disponibilidade' ? 'Eliminar' : 'Cancelar'}
                             </button>
                         )}
                         {canChangeRoom && (
