@@ -294,7 +294,7 @@ const listarParticipantes = async (id_evento) => {
       apelido: ea.aluno.utilizador.apelido,
       email: ea.aluno.utilizador.email,
       tipo: "Aluno",
-      modalidades: ea.aluno.aluno_modalidade.map(am => am.modalidade.nome)
+      modalidades: ea.aluno.aluno_modalidade?.map(am => am.modalidade?.nome) || []
     })),
     docentes: docentesEvento.map(ed => ({
       id_utilizador: ed.docente.id_utilizador,
@@ -302,7 +302,7 @@ const listarParticipantes = async (id_evento) => {
       apelido: ed.docente.utilizador.apelido,
       email: ed.docente.utilizador.email,
       tipo: "Docente",
-      modalidades: ed.docente.docente_modalidade.map(dm => dm.modalidade.nome)
+      modalidades: ed.docente.docente_modalidade?.map(dm => dm.modalidade?.nome) || []
     }))
   };
 };
