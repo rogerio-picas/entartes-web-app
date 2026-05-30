@@ -317,17 +317,17 @@ export function PresencaDocenteCard({ item, onConfirm, onReject, loading }) {
           <span className="text-xs font-semibold text-amber-700">A expirar nas próximas 48h</span>
         </div>
       </div>
-      <div className="flex flex-col items-end justify-center gap-2 pr-[5%]">
+      <div className="flex flex-col items-end justify-end gap-2">
         {loading === item.id
           ? <RefreshCw size={18} className="text-brand-800 animate-spin" />
-          : <div className="flex flex-col gap-2">
+          : <div className="flex gap-2">
             <button onClick={() => onReject(item.id)}
-              className="w-12 h-12 bg-transparent border-2 border-feedback-error text-feedback-error rounded-full flex items-center justify-center hover:bg-red-50 transition-colors">
-              <X size={32} strokeWidth={3} />
+              className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
+              <X size={22} strokeWidth={3} className="text-white" />
             </button>
             <button onClick={() => onConfirm(item.id)}
-              className="w-12 h-12 bg-transparent border-2 border-feedback-success text-feedback-success rounded-full flex items-center justify-center hover:bg-emerald-50 transition-colors">
-              <Check size={32} strokeWidth={3} />
+              className="w-12 h-12 bg-feedback-success border border-feedback-success-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
+              <Check size={22} strokeWidth={3} className="text-white" />
             </button>
           </div>
         }

@@ -73,7 +73,9 @@ function EventComponent({ event }) {
     const timeStr = event.hora || event.hora_inicio_str || event.hora_inicio || '—'
 
     let endTimeStr = ''
-    if (event.duracao_minutos) {
+    if (event._isDisponibilidade && event.hora_fim) {
+        endTimeStr = event.hora_fim
+    } else if (event.duracao_minutos) {
         endTimeStr = addMinutesToTime(timeStr, event.duracao_minutos)
     }
 
@@ -606,7 +608,7 @@ export default function Horario() {
 
                             combined.push({
                                 ...d,
-                                title: `Livre (${hIni} - ${hFim})`,
+                                title: 'Livre',
                                 start,
                                 end,
                                 _isEvent: false,
@@ -631,7 +633,7 @@ export default function Horario() {
 
                                 combined.push({
                                     ...d,
-                                    title: `Livre (${hIni} - ${hFim})`,
+                                    title: 'Livre',
                                     start,
                                     end,
                                     _isEvent: false,
@@ -800,7 +802,6 @@ export default function Horario() {
         }
         .rbc-time-header-content { border-left: none !important; }
         .rbc-time-content { margin-top: 0 !important; }
-        .rbc-event { margin-top: 1px !important; }
         .rbc-header:first-child { border-left: none !important; }
         
         /* Ocultar a área de "dia inteiro" (all-day) na vista semanal para remover o espaço em branco */
@@ -835,10 +836,20 @@ export default function Horario() {
         
         /* Estilo dos eventos dentro da célula */
         .rbc-event {
-            margin: 1px 4px !important;
+            margin: 1px 0 !important;
             padding: 0 !important;
             background: transparent !important;
             border: none !important;
+        }
+        /* Vista semanal: remover espaços laterais herdados da lib */
+        .rbc-day-slot .rbc-event {
+            margin: 1px 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            right: 0 !important;
+        }
+        .rbc-day-slot .rbc-events-container {
+            margin-right: 0 !important;
         }
         /* Ocultar label nativo do react-big-calendar (time grid) — o EventComponent já mostra o intervalo */
         .rbc-event-label { display: none !important; }

@@ -29,6 +29,42 @@ const DIAS_SEMANA = [
     { value: 6, label: 'Sábado' },
 ]
 
+const ALL_MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'))
+
+function TimeSelect({ value, onChange, hasError }) {
+    const parts = (value || '09:00').split(':')
+    const hh = parts[0] || '09'
+    const mm = parts[1] || '00'
+
+    const hours = Array.from({ length: 14 }, (_, i) => String(i + 8).padStart(2, '0')) // 08–21
+    const minutes = ALL_MINUTES.filter(m => {
+        if (hh === '08') return m >= '30'
+        if (hh === '21') return m <= '30'
+        return true
+    })
+
+    function handleHourChange(newHh) {
+        let newMm = mm
+        if (newHh === '08' && mm < '30') newMm = '30'
+        if (newHh === '21' && mm > '30') newMm = '30'
+        onChange(`${newHh}:${newMm}`)
+    }
+
+    const selCls = "bg-transparent text-sm text-neutral-900 focus:outline-none cursor-pointer font-['Sora'] py-3.5"
+    return (
+        <div className={`flex items-center gap-2 border rounded-lg bg-white px-4 transition-colors ${hasError ? 'border-red-500' : 'border-neutral-500 focus-within:border-brand-800'}`}>
+            <Clock size={14} className="text-neutral-400 shrink-0" />
+            <select value={hh} onChange={e => handleHourChange(e.target.value)} className={selCls}>
+                {hours.map(h => <option key={h} value={h}>{h}</option>)}
+            </select>
+            <span className="text-neutral-400 select-none font-medium text-sm">:</span>
+            <select value={minutes.includes(mm) ? mm : minutes[0]} onChange={e => onChange(`${hh}:${e.target.value}`)} className={selCls}>
+                {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+        </div>
+    )
+}
+
 function Field({ label, children }) {
     return (
         <div className="relative">
@@ -43,7 +79,7 @@ function Field({ label, children }) {
 const inputCls = "w-full border border-neutral-500 rounded-lg px-4 py-3.5 text-sm text-neutral-900 focus:outline-none focus:border-brand-800 bg-white transition-colors font['Sora']"
 
 export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedDate, initialData }) {
-    const [horaInicio, setHoraInicio] = useState(parseHoraParaInput(initialData?.hora_inicio) || '09:00')
+    const [horaInicio, setHoraInicio] = useState(parseHoraParaInput(initialData?.hora_inicio) || '08:30')
     const [horaFim, setHoraFim] = useState(parseHoraParaInput(initialData?.hora_fim) || '10:00')
     const [frequencia, setFrequencia] = useState(
         initialData
@@ -173,7 +209,7 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
                             type={frequencia === 'unica' ? 'date' : 'text'}
                             value={frequencia === 'unica' ? data : ''}
                             onChange={e => setData(e.target.value)}
-                            placeholder="DD/MM/YYYY"
+                            placeholder="DD/MM/AAAA"
                             disabled={frequencia === 'semanal'}
                             min={formatDateForInput(new Date())}
                             className={`${inputCls} ${frequencia === 'semanal' ? 'opacity-40 cursor-not-allowed' : ''}`}
@@ -185,18 +221,13 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
 
                     {/* Hora de início */}
                     <Field label="Hora de início">
-                        <input
-                            type="time"
+                        <TimeSelect
                             value={horaInicio}
-                            onChange={e => {
-                                const v = e.target.value
+                            onChange={v => {
                                 setHoraInicio(v)
                                 setErroHoraInicio(validarHora(v, true))
                             }}
-                            placeholder="HH:mm"
-                            min="08:30"
-                            max="21:30"
-                            className={`${inputCls} ${erroHoraInicio ? 'border-red-500 focus:border-red-500' : ''}`}
+                            hasError={!!erroHoraInicio}
                         />
                         {erroHoraInicio && (
                             <p className="text-[10px] text-red-600 mt-1 flex items-center gap-1 whitespace-nowrap">
@@ -208,18 +239,13 @@ export default function NovaDisponibilidadeModal({ onClose, onSuccess, selectedD
 
                     {/* Hora de fim */}
                     <Field label="Hora de fim">
-                        <input
-                            type="time"
+                        <TimeSelect
                             value={horaFim}
-                            onChange={e => {
-                                const v = e.target.value
+                            onChange={v => {
                                 setHoraFim(v)
                                 setErroHoraFim(validarHora(v, false))
                             }}
-                            placeholder="HH:mm"
-                            min="08:30"
-                            max="21:30"
-                            className={`${inputCls} ${erroHoraFim ? 'border-red-500 focus:border-red-500' : ''}`}
+                            hasError={!!erroHoraFim}
                         />
                         {erroHoraFim && (
                             <p className="text-[10px] text-red-600 mt-1 flex items-center gap-1 whitespace-nowrap">
