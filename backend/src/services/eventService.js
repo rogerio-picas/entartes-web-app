@@ -11,7 +11,7 @@ const EVENT_STATE = {
 };
 
 const criarEvento = async (dados, id_coordenadora) => {
-  const { nome, descricao, data_de_realizacao, duracao_minutos, link_whatsapp, local } = dados;
+  const { nome, descricao, data_de_realizacao, duracao_minutos, link_whatsapp, local, privado } = dados;
 
   if (!nome || nome.trim() === "") {
     throw new Error("O nome do evento é obrigatório.");
@@ -35,6 +35,7 @@ const criarEvento = async (dados, id_coordenadora) => {
         duracao_minutos: duracao_minutos ? parseInt(duracao_minutos) : 60,
         link_whatsapp: link_whatsapp ?? null,
         local: local ?? null,
+        privado: privado ?? false,
         id_evento_estado: EVENT_STATE.PLANEADO,
       },
     });
@@ -115,6 +116,13 @@ const buscarEventoPorId = async (id_evento) => {
       evento_aluno: {
         include: {
           aluno: {
+            include: { utilizador: { select: { nome: true, apelido: true } } },
+          },
+        },
+      },
+      evento_docente: {
+        include: {
+          docente: {
             include: { utilizador: { select: { nome: true, apelido: true } } },
           },
         },
@@ -524,7 +532,7 @@ const concluirEvento = async (id_evento, id_coordenadora) => {
  */
 const editarEvento = async (id_evento, dados) => {
   const eventoId = parseInt(id_evento);
-  const { nome, descricao, data_de_realizacao, duracao_minutos, link_whatsapp, local } = dados;
+  const { nome, descricao, data_de_realizacao, duracao_minutos, link_whatsapp, local, privado } = dados;
 
   // 1. Verificar se o evento existe
   const evento = await prisma.evento.findUnique({
@@ -553,6 +561,9 @@ const editarEvento = async (id_evento, dados) => {
   }
   if (local !== undefined) {
     dataAtualizar.local = local;
+  }
+  if (privado !== undefined) {
+    dataAtualizar.privado = privado;
   }
 
 
@@ -619,12 +630,16 @@ const listarEventosPaginados = async (params) => {
     AND.push({ id_evento_estado: 5 });
   }
 
-  if (id_utilizador && role) {
-    if (role === 2) {
-      AND.push({ evento_docente: { some: { id_docente: id_utilizador } } });
-    } else if (role === 3) {
-      AND.push({ evento_aluno: { some: { id_utilizador: id_utilizador } } });
-    }
+  // Eventos privados só visíveis para participantes (não-admins)
+  // Públicos: visíveis para todos | Privados: só para quem é participante
+  if (id_utilizador && role !== 1) {
+    AND.push({
+      OR: [
+        { privado: false },
+        { privado: true, evento_aluno: { some: { id_utilizador: id_utilizador } } },
+        { privado: true, evento_docente: { some: { id_docente: id_utilizador } } },
+      ]
+    });
   }
 
   const where = AND.length > 0 ? { AND } : {};
