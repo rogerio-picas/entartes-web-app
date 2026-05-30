@@ -52,6 +52,9 @@ const mockPrisma = {
         findUnique: jest.fn(),
         findFirst: jest.fn().mockResolvedValue(null),
     },
+    marcacao: {
+        count: jest.fn(),
+    },
     $transaction: jest.fn(),
 };
 
@@ -858,6 +861,7 @@ describe('userService › deleteUser', () => {
             docente: true,
             coordenadora: true,
         });
+        mockPrisma.marcacao.count.mockResolvedValue(0);
         await deleteUser('1');
         
         expect(mockPrisma.utilizador.findUnique).toHaveBeenCalledWith(
@@ -876,6 +880,7 @@ describe('userService › deleteUser', () => {
             docente: null,
             coordenadora: null,
         });
+        mockPrisma.marcacao.count.mockResolvedValue(0);
         await deleteUser('2');
         
         expect(mockTx.aluno.delete).not.toHaveBeenCalled();

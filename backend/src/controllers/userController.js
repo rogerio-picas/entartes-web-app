@@ -189,6 +189,12 @@ const deleteUser = async (req, res) => {
     if (error.message === 'Utilizador não encontrado') {
       return res.status(404).json({ message: error.message });
     }
+    if (error.message.includes('Não é possível eliminar')) {
+      return res.status(409).json({ message: error.message });
+    }
+    if (error.code === 'P2003') {
+      return res.status(409).json({ message: 'Não é possível eliminar este utilizador: existem registos associados.' });
+    }
     res.status(500).json({ message: 'Erro ao eliminar utilizador', error: error.message });
   }
 };
