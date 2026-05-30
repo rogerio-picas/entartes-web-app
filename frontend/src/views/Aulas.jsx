@@ -279,7 +279,7 @@ export default function Aulas() {
       const agora = new Date()
       const diffHoras = (inicio - agora) / (1000 * 60 * 60)
       if (diffHoras < 0 || diffHoras > 48) return false
-    
+
     }
 
     return true
@@ -360,8 +360,7 @@ export default function Aulas() {
         </div>
 
         {/* Filtros */}
-        {!loading &&  (
-          <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="flex flex-wrap items-center gap-3 mb-6">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-600">
               Filtrar:
             </div>
@@ -414,7 +413,6 @@ export default function Aulas() {
               {marcacoesFiltradas.length} aula{marcacoesFiltradas.length !== 1 ? 's' : ''}
             </span>
           </div>
-        )}
 
         {/* Erro */}
         {error && (
