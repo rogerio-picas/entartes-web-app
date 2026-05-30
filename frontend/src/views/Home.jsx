@@ -395,6 +395,7 @@ export default function Home() {
                 <SalasDoDiaWidget />
               </div>
           </div>
+          </div>
         )}
 
         {/* ── ADMIN/DOCENTE: pending requests 48h ──────────────── */}
