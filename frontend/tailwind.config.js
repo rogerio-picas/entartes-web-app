@@ -44,7 +44,8 @@ export default {
           success: { DEFAULT: '#049A59', dark: '#0A7659', clean: '#d1fae5' },
           error: { DEFAULT: '#BA1A1A', dark: '#93000A', light: '#FFDAD6' },
           info: { DEFAULT: '#324863', light: '#D2E4FF' },
-          warning: { DEFAULT: '#FF9500', light: '#FFF3E0' }
+          warning: { DEFAULT: '#FF9500', light: '#FFF3E0' },
+          pendente: { DEFAULT: '#fcd35d', pendenteLight: '#fef3ca', textPendente: '#b3541a' }
         }
       }
     },
