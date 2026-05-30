@@ -39,6 +39,7 @@ export default function ItemDetailModal({
     role,
     onEdit,
     onDelete,
+    onChangeRoom,
     onNavigate,
     navigateLabel = "Ver Detalhes"
 }) {
@@ -57,6 +58,7 @@ export default function ItemDetailModal({
     // Permissões de Ação (lógica vinda do Horario.jsx)
     let canEdit = !!onEdit;
     let canDelete = !!onDelete;
+    let canChangeRoom = !!onChangeRoom;
 
     // Verificar se o item está no passado (data estritamente anterior a hoje)
     const startValue = item.start || item.data || item.data_de_realizacao || item._data_raw;
@@ -174,6 +176,15 @@ export default function ItemDetailModal({
                             >
                                 <Trash2 size={16} />
                                 {item._type === 'aula' || item.id_marcacao ? 'Cancelar' : 'Eliminar'}
+                            </button>
+                        )}
+                        {canChangeRoom && (
+                            <button
+                                onClick={() => { onChangeRoom(item); onClose(); }}
+                                className="flex-1 py-2.5 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 font-semibold text-sm hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <MapPin size={16} />
+                                Mudar Sala
                             </button>
                         )}
                         {canEdit && (

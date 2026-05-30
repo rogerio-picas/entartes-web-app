@@ -9,6 +9,7 @@ import { eventService } from '../services/eventService'
 import { ClassCard, EventCard as SimpleEventCard } from '../components/Cards'
 import EventModal from '../components/EventModal'
 import NovoEventoModal from './NovoEventoModal'
+import EditSalaModal from '../components/EditSalaModal'
 import { ValidacaoModal, HistoricoModal } from '../components/EscolaModais'
 
 import {
@@ -93,10 +94,13 @@ export default function Home() {
   const [showPendentesModal, setShowPendentesModal] = useState(false)
   const [showConcluidasModal, setShowConcluidasModal] = useState(false)
   const [showAulasHojeModal, setShowAulasHojeModal] = useState(false)
+  const [showEditSala, setShowEditSala] = useState(false)
+  const [itemToEditRoom, setItemToEditRoom] = useState(null)
 
   // Shared Data
   const [eventos, setEventos] = useState([])
   const [aulasConfirmadas, setAulasConfirmadas] = useState([])
+  const [salas, setSalas] = useState([])
 
   // Admin Data
   const [stats, setStats] = useState({ hoje: 0, porValidar: 0, concluidas: 0 })
@@ -189,16 +193,19 @@ export default function Home() {
       }
 
       if (isAdmin) {
-        const [pendentes, todasRes, ocupacaoSalasRes] = await Promise.allSettled([
+        const [pendentes, todasRes, ocupacaoSalasRes, salasRes] = await Promise.allSettled([
           coachingService.listarPedidosPendentes({ estados: '1,2' }),
           coachingService.listarPedidosPendentes({ estados: '1,2,3,4,5' }),
           api.get('/relatorio/ocupacao-salas'),
+          api.get('/salas'),
         ])
         const rawPendentes = pendentes.status === 'fulfilled' ? (Array.isArray(pendentes.value) ? pendentes.value : (pendentes.value?.data || [])) : []
         const rawTodas = todasRes.status === 'fulfilled' ? (Array.isArray(todasRes.value) ? todasRes.value : (todasRes.value?.data || [])) : []
         const pedPendentes = rawPendentes.map(normalizeAula)
         const todas = rawTodas.map(normalizeAula)
         const ocupacao = ocupacaoSalasRes.status === 'fulfilled' && Array.isArray(ocupacaoSalasRes.value) ? ocupacaoSalasRes.value : []
+        const fetchedSalas = salasRes.status === 'fulfilled' ? (Array.isArray(salasRes.value) ? salasRes.value : (salasRes.value?.data || [])) : []
+        setSalas(fetchedSalas)
 
         setOcupacaoSalas(ocupacao)
         const limite48h = new Date(now.getTime() + 48 * 60 * 60 * 1000)
@@ -534,12 +541,33 @@ export default function Home() {
           item={selectedItem}
           role={role}
           onClose={() => setSelectedItem(null)}
+          onChangeRoom={isAdmin ? (item) => {
+            setItemToEditRoom(item);
+            setShowEditSala(true);
+          } : undefined}
           onNavigate={(item) => {
             if (item.id_evento || item._isEvent || item._type === 'evento') {
               navigate(`/eventos/${item.id}`);
             } else {
               navigate('/aulas');
             }
+          }}
+        />
+      )}
+
+      {showEditSala && itemToEditRoom && (
+        <EditSalaModal
+          item={itemToEditRoom}
+          salas={salas}
+          onClose={() => {
+            setShowEditSala(false);
+            setItemToEditRoom(null);
+          }}
+          onSuccess={() => {
+            setShowEditSala(false);
+            setItemToEditRoom(null);
+            showToast('Sala alterada com sucesso!', 'success');
+            loadData();
           }}
         />
       )}
