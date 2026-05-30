@@ -90,7 +90,7 @@ export function ClassCard({ item, statusType, onOpen }) {
   const isConfirmada = statusType === 'confirmada'
 
   return (
-    <div 
+    <div
       onClick={onOpen}
       className="bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex flex-col justify-between min-w-[340px] cursor-pointer hover:scale-[1.01] hover:shadow-md transition-all duration-300 group">
       <div className="flex justify-between items-start mb-4">
@@ -130,11 +130,11 @@ export function ClassCard({ item, statusType, onOpen }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className={`px-4 py-0.5 rounded-full border text-sm font-medium text-white ${isConfirmada
-          ? 'bg-feedback-success border-feedback-success-dark'
-          : 'bg-feedback-warning border-feedback-error-dark'
+        <div className={`px-4 py-0.5 rounded-full border text-sm font-medium ${isConfirmada
+          ? 'bg-feedback-success border-feedback-success-dark text-white'
+          : 'bg-amber-100 border-amber-200 text-amber-700'
           }`}>
-          {isConfirmada ? 'Confirmada' : 'Pendente'}
+          {isConfirmada ? <span className="font-semibold">Confirmada</span> : <span className="font-semibold">Pendente</span>}
         </div>
       </div>
     </div>

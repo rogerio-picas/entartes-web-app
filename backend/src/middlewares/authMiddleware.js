@@ -14,11 +14,14 @@ const tokenValidation = async (req, res, next) => {
         //busca e compara na BD a role atual do utilizador com o id do token
         const userReal = await prisma.utilizador.findUnique({
             where: { id_utilizador: verified.id },
-            select: { id_tipo: true, password: true }
+            select: { id_tipo: true, password: true, estado: true }
         });
         //se o utilizador nao existir na BD:
         if (!userReal) {
             return res.status(401).json({ message: "Utilizador nao encontrado" });
+        }
+        if (userReal.estado === 'INATIVO') {
+            return res.status(401).json({ message: "Conta inativa. Acesso negado." });
         }
         //se a role da BD for diferente da role do token:
         if (userReal.id_tipo !== verified.role) {

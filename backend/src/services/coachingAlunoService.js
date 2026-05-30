@@ -258,6 +258,23 @@ async function solicitarMarcacao(id_aluno, dados) {
     if (!alunoMod) throw new Error('Ação inválida: Não estás associado a esta modalidade.');
   }
 
+  // ── Validação Extra 2: todos os outros alunos têm de possuir a mesma modalidade
+  if (id_modalidade && outros_alunos.length > 0) {
+    for (const outro_aluno_id of outros_alunos) {
+      const outroMod = await prisma.aluno_modalidade.findFirst({
+        where: { id_utilizador: outro_aluno_id, id_modalidade }
+      });
+      if (!outroMod) {
+        const outroUser = await prisma.utilizador.findUnique({
+          where: { id_utilizador: outro_aluno_id },
+          select: { nome: true, apelido: true }
+        });
+        const nomeCompleto = outroUser ? `${outroUser.nome || ''} ${outroUser.apelido || ''}`.trim() : `ID ${outro_aluno_id}`;
+        throw new Error(`Ação inválida: O aluno ${nomeCompleto} não está associado a esta modalidade.`);
+      }
+    }
+  }
+
   // ── Validação 2: duração permitida (RF-COA-06)
   if (!DURACOES_PERMITIDAS.includes(duracao_minutos)) {
     throw new Error(
@@ -832,12 +849,24 @@ async function _cancelarMarcacaoPorExpiracao(id_marcacao) {
 // ─────────────────────────────────────────────────────────────
 // EXPORTAÇÕES
 // ─────────────────────────────────────────────────────────────
-const listarColegas = async (id_aluno_atual) => {
+const listarColegas = async (id_aluno_atual, id_modalidade = null) => {
+  const where = {
+    id_tipo: 3, // Aluno
+    id_utilizador: { not: id_aluno_atual }
+  };
+
+  if (id_modalidade) {
+    where.aluno = {
+      aluno_modalidade: {
+        some: {
+          id_modalidade: parseInt(id_modalidade)
+        }
+      }
+    };
+  }
+
   return await prisma.utilizador.findMany({
-    where: {
-      id_tipo: 3, // Aluno
-      id_utilizador: { not: id_aluno_atual }
-    },
+    where,
     select: {
       id_utilizador: true,
       nome: true,

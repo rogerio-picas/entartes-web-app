@@ -112,23 +112,28 @@ describe('Coaching Coordenacao Service - Testes Unitários', () => {
         duracao_minutos: 90,
       });
       prisma.sala.findUnique.mockResolvedValue({ id_sala: 5, nome: 'Sala T' });
-      // Simula conflito de sala: findFirst retorna um objeto em vez de null
-      prisma.marcacao.findFirst.mockResolvedValue({ id_marcacoes: 99 });
+      // Simula conflito de sala: findMany retorna reserva sobreposta
+      prisma.marcacao.findMany.mockResolvedValue([
+        {
+          hora_inicio: new Date('1970-01-01T20:30:00.000Z'),
+          duracao_minutos: 60,
+        }
+      ]);
 
       await expect(coachingCoordenacaoService.atribuirSalaEConfirmar(1, 100, 5))
         .rejects.toThrow('A sala "Sala T" já está ocupada neste horário. Escolhe outra sala.');
 
-      // BUG DE ATRIBUIÇÃO DE HORAS
-      // VERIFICAÇÃO ADICIONAL: Garante que a query de sobreposição (overlap) foi montada corretamente
-      // 20:00:00 + 90 mins = 21:30:00
-      const horaFimEsperada = new Date('1970-01-01T21:30:00.000Z');
-      expect(prisma.marcacao.findFirst).toHaveBeenCalledWith({
+      // VERIFICAÇÃO ADICIONAL: Garante que a query de marcações do dia foi montada corretamente
+      expect(prisma.marcacao.findMany).toHaveBeenCalledWith({
         where: {
           id_sala: 5,
           data_a_realizar: new Date('2026-06-05'),
           id_estado: { in: [2, 3] }, // EM_VALIDACAO (2) ou CONFIRMADA (3)
-          hora_inicio: { lt: horaFimEsperada }, // O conflito acontece se existir algo que comece antes da nossa aula acabar
           id_marcacoes: { not: 100 } // Exclui a própria marcação do check
+        },
+        select: {
+          hora_inicio: true,
+          duracao_minutos: true
         }
       });
     });
@@ -148,7 +153,7 @@ describe('Coaching Coordenacao Service - Testes Unitários', () => {
       prisma.marcacao.findUnique.mockResolvedValue(mockMarcacao);
       prisma.sala.findUnique.mockResolvedValue({ id_sala: 5, nome: 'Sala T' });
       // Sem conflito de sala
-      prisma.marcacao.findFirst.mockResolvedValue(null);
+      prisma.marcacao.findMany.mockResolvedValue([]);
       prisma.marcacao.update.mockResolvedValue({
         ...mockMarcacao,
         id_estado: coachingCoordenacaoService.ESTADO_MARCACAO.CONFIRMADA,
@@ -228,7 +233,12 @@ describe('Coaching Coordenacao Service - Testes Unitários', () => {
       });
       prisma.sala.findUnique.mockResolvedValue({ id_sala: 8, nome: 'Sala T' });
       // Simula conflito
-      prisma.marcacao.findFirst.mockResolvedValue({ id_marcacoes: 99 });
+      prisma.marcacao.findMany.mockResolvedValue([
+        {
+          hora_inicio: new Date('1970-01-01T20:30:00.000Z'),
+          duracao_minutos: 60,
+        }
+      ]);
 
       await expect(coachingCoordenacaoService.reatribuirSala(1, 100, 8))
         .rejects.toThrow('A sala "Sala T" já está ocupada neste horário.');
@@ -247,7 +257,7 @@ describe('Coaching Coordenacao Service - Testes Unitários', () => {
 
       prisma.marcacao.findUnique.mockResolvedValue(mockMarcacao);
       prisma.sala.findUnique.mockResolvedValue({ id_sala: 8, nome: 'Sala T' });
-      prisma.marcacao.findFirst.mockResolvedValue(null);
+      prisma.marcacao.findMany.mockResolvedValue([]);
       prisma.marcacao.update.mockResolvedValue({ ...mockMarcacao, id_sala: 8 });
 
       const result = await coachingCoordenacaoService.reatribuirSala(1, 100, 8);
@@ -348,11 +358,16 @@ describe('Coaching Coordenacao Service - Testes Unitários', () => {
         { id_sala: 2, nome: 'Sala B' }
       ]);
 
-      // Simula que Sala A está ocupada (findFirst encontra conflito)
-      // E Sala B está livre (findFirst retorna null)
-      prisma.marcacao.findFirst
-        .mockResolvedValueOnce({ id_marcacoes: 99 }) // conflito para sala A
-        .mockResolvedValueOnce(null); // sem conflito para sala B
+      // Simula que Sala A está ocupada (retorna reserva sobreposta)
+      // E Sala B está livre (retorna array vazio)
+      prisma.marcacao.findMany
+        .mockResolvedValueOnce([
+          {
+            hora_inicio: new Date('1970-01-01T20:30:00.000Z'),
+            duracao_minutos: 60,
+          }
+        ]) // conflito para sala A
+        .mockResolvedValueOnce([]); // sem conflito para sala B
 
       const result = await coachingCoordenacaoService.consultarSalasDisponiveis('2026-05-10', '20:00:00', 60);
 

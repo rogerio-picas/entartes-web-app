@@ -216,6 +216,71 @@ const atualizarUtilizador = async (id_utilizador, dados) => {
                 data: dataToUpdate,
             });
 
+            // Lógica de inativação do Docente
+            if (estado === 'INATIVO' && utilizadorAtual.estado !== 'INATIVO' && novoTipo === 2) {
+                // 1. Cancelar marcações PENDENTES (1) e CONFIRMADAS (3)
+                const marcacoesParaCancelar = await tx.marcacao.findMany({
+                    where: {
+                        id_docente: userId,
+                        id_estado: { in: [1, 3] }
+                    },
+                    include: {
+                        aluno_marcacao: {
+                            include: { aluno: { include: { utilizador: true } } }
+                        }
+                    }
+                });
+
+                for (const m of marcacoesParaCancelar) {
+                    await tx.marcacao.update({
+                        where: { id_marcacoes: m.id_marcacoes },
+                        data: { id_estado: 5 } // CANCELADA
+                    });
+                    await tx.marcacao_estado_historico.create({
+                        data: {
+                            id_marcacoes: m.id_marcacoes,
+                            id_estado: 5
+                        }
+                    });
+                    // Notificar alunos
+                    for (const am of m.aluno_marcacao) {
+                        if (am.aluno && am.aluno.utilizador) {
+                            await tx.notificacao.create({
+                                data: {
+                                    id_user: am.aluno.id_utilizador,
+                                    titulo: 'Sessão Cancelada',
+                                    mensagem: `A tua sessão agendada com o docente ${utilizadorAtual.nome} foi cancelada devido a indisponibilidade do docente.`,
+                                }
+                            });
+                        }
+                    }
+                }
+
+                // 2. Apagar disponibilidades
+                await tx.disponibilidade.deleteMany({
+                    where: { id_docente: userId }
+                });
+
+                // 3. Remover de todos os eventos em que o docente está envolvido
+                await tx.evento_docente.deleteMany({
+                    where: { id_docente: userId }
+                });
+
+                // 4. Desativar atividade
+                await tx.docente.update({
+                    where: { id_utilizador: userId },
+                    data: { estado_atividade: false }
+                });
+            }
+
+            // Lógica de reativação do Docente
+            if (estado === 'ATIVO' && utilizadorAtual.estado !== 'ATIVO' && novoTipo === 2) {
+                await tx.docente.update({
+                    where: { id_utilizador: userId },
+                    data: { estado_atividade: true }
+                });
+            }
+
             // Atualizar coaching e modalidades no aluno se o tipo é/continua a ser aluno
             if (novoTipo === 3 && novoTipo === tipoAtual && (coaching !== undefined || modalidades !== undefined)) {
                 const alunoDataToUpdate = {};
