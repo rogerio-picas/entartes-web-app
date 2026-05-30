@@ -541,13 +541,17 @@ export default function Home() {
           item={selectedItem}
           role={role}
           onClose={() => setSelectedItem(null)}
-          onChangeRoom={isAdmin ? (item) => {
+          onChangeRoom={(isAdmin && !selectedItem.id_evento && !selectedItem._isEvent && selectedItem._type !== 'evento') ? (item) => {
             setItemToEditRoom(item);
             setShowEditSala(true);
           } : undefined}
-          onNavigate={(item.id_evento || item._isEvent || item._type === 'evento') 
-            ? (item) => navigate(`/eventos/${item.id}`) 
-            : undefined}
+          onNavigate={(item) => {
+            if (item.id_evento || item._isEvent || item._type === 'evento') {
+              navigate(`/eventos/${item.id}`);
+            } else {
+              navigate('/aulas');
+            }
+          }}
         />
       )}
 

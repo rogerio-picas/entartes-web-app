@@ -58,7 +58,7 @@ export default function ItemDetailModal({
     // Permissões de Ação (lógica vinda do Horario.jsx)
     let canEdit = !!onEdit;
     let canDelete = !!onDelete;
-    let canChangeRoom = !!onChangeRoom;
+    const canChangeRoom = !!onChangeRoom;
 
     // Verificar se o item está no passado (data estritamente anterior a hoje)
     const startValue = item.start || item.data || item.data_de_realizacao || item._data_raw;
@@ -168,7 +168,7 @@ export default function ItemDetailModal({
                     <div className="flex gap-2 w-full">
                         {canDelete && (
                             <button
-                                onClick={() => { 
+                                onClick={() => {
                                     const proceed = onDelete(item);
                                     if (proceed !== false) onClose();
                                 }}

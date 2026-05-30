@@ -1045,7 +1045,7 @@ export default function Horario() {
 
                 if (role === 1) {
                     // Admin pode tudo em itens futuros
-                    canEdit = true;
+                    canEdit = !isAula; // O admin usa o botão "Mudar Sala" para aulas, não o "Editar"
                     canDelete = true;
                 } else if (role === 2) {
                     // Docente gere suas disponibilidades e pode cancelar suas aulas
@@ -1068,10 +1068,15 @@ export default function Horario() {
                         role={role}
                         onClose={() => setSelectedItem(null)}
                         onEdit={canEdit ? handleEditItem : null}
+                        onChangeRoom={(role === 1 && isAula) ? () => setShowEditSala(true) : undefined}
                         onDelete={canDelete ? handleDeleteItem : null}
-                        onNavigate={(selectedItem.id_evento || selectedItem._isEvent || selectedItem._type === 'evento') 
-                            ? (item) => navigate(`/eventos/${item.id}`) 
-                            : undefined}
+                        onNavigate={(item) => {
+                            if (item._isEvent || item._type === 'evento') {
+                                navigate(`/eventos/${item.id}`);
+                            } else {
+                                navigate('/aulas');
+                            }
+                        }}
                     />
                 );
             })()}
