@@ -627,16 +627,26 @@ export default function Aulas() {
                             </button>
                           )
                         ) : role === 1 && row.id_estado === 3 ? (
-                          <button onClick={() => {
-                            if (window.confirm("Tem a certeza que deseja cancelar esta aula? Esta ação não pode ser revertida.")) {
-                              handleReject(row.id);
-                            }
-                          }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
-                          >
-                            <X size={12} strokeWidth={3} />
-                            Cancelar
-                          </button>
+                          confirmId === row.id ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-neutral-500">Cancelar aula?</span>
+                              <button onClick={() => { setConfirmId(null); handleReject(row.id) }}
+                                className="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center hover:bg-red-700 transition-colors">
+                                <Check size={12} strokeWidth={3} className="text-white" />
+                              </button>
+                              <button onClick={() => setConfirmId(null)}
+                                className="w-7 h-7 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center hover:bg-neutral-200 transition-colors">
+                                <X size={12} strokeWidth={3} className="text-neutral-600" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setConfirmId(row.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
+                            >
+                              <X size={12} strokeWidth={3} />
+                              Cancelar
+                            </button>
+                          )
                         ) : podeConfirmarPresenca ? (
                           <button
                             onClick={() => handleConfirm(row.id)}
