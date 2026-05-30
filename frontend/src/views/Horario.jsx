@@ -1068,7 +1068,10 @@ export default function Horario() {
                         role={role}
                         onClose={() => setSelectedItem(null)}
                         onEdit={canEdit ? handleEditItem : null}
-                        onChangeRoom={(role === 1 && isAula) ? () => setShowEditSala(true) : undefined}
+                        onChangeRoom={(role === 1 && isAula) ? () => {
+                            setItemToEdit(selectedItem);
+                            setShowEditSala(true);
+                        } : undefined}
                         onDelete={canDelete ? handleDeleteItem : null}
                         onNavigate={(item) => {
                             if (item._isEvent || item._type === 'evento') {
