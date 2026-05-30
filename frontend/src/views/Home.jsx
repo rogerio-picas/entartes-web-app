@@ -373,7 +373,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ── ADMIN: Stats Row + Charts + Buttons + Salas ──────── */}
+        {/* ── ADMIN: Stats Row + Charts + Buttons ──────────────── */}
         {isAdmin && (
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap gap-4 items-start justify-between">
@@ -388,20 +388,20 @@ export default function Home() {
                   Consultar Coachings
                 </button>
               </div>
-            </div>
+              </div>
             <div className="flex gap-4 flex-wrap flex-1">
               <div className="border border-brand-800 rounded-xl p-4 bg-white flex-1 min-w-[300px] max-w-full overflow-hidden">
                 <p className="text-xs font-bold text-brand-800 mb-3">Ocupação de salas</p>
                 <SalasDoDiaWidget />
               </div>
-            </div>
+          </div>
           </div>
         )}
 
         {/* ── ADMIN/DOCENTE: pending requests 48h ──────────────── */}
         {(isAdmin || isDocente) && (
           <section>
-            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Coachings pendentes a expirar em 48h"} action="Ver todas" onAction={() => navigate('/coaching')} />
+            <SectionHeader icon={Clock} title={isAdmin ? "Coachings a validar a expirar em 48h" : "Coachings pendentes a expirar em 48h"} action="Ver todas" onAction={() => navigate('/aulas', { state: { filtro48h: true } })} />
             {coachings48h.length === 0 ? (
               <p className="text-sm text-neutral-600 italic">Sem coachings pendentes nas próximas 48h.</p>
             ) : (
