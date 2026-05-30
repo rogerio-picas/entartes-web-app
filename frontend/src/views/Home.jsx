@@ -378,9 +378,9 @@ export default function Home() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap gap-4 items-start justify-between">
               <div className="flex flex-wrap gap-3">
-                <StatCard count={stats.hoje} label="aulas hoje" color="text-neutral-800" bg="bg-brand-200" border="border-brand-800" />
-                <StatCard count={stats.porValidar} label="por validar" color="text-feedback-info" bg="bg-feedback-info-light" border="border-feedback-info" />
-                <StatCard count={stats.concluidas} label="concluída" color="text-feedback-error-dark" bg="bg-feedback-error-light" border="border-feedback-error-dark" />
+                <StatCard count={stats.hoje} label="aulas hoje" color="text-brand-800" bg="bg-brand-50" border="border-brand-500" />
+                <StatCard count={stats.porValidar} label="por validar" color="text-feedback-pendente-textPendente" bg="bg-feedback-pendente-pendenteLight" />
+                <StatCard count={stats.concluidas} label="concluídas" color="text-neutral-800" bg="bg-brand-200" />
               </div>
               <div className="flex flex-col gap-2 shrink-0">
                 <button onClick={() => navigate('/aulas')}
