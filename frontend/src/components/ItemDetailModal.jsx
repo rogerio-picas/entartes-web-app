@@ -58,7 +58,7 @@ export default function ItemDetailModal({
     // Permissões de Ação (lógica vinda do Horario.jsx)
     let canEdit = !!onEdit;
     let canDelete = !!onDelete;
-    const canChangeRoom = !!onChangeRoom;
+    let canChangeRoom = !!onChangeRoom;
 
     // Verificar se o item está no passado (data estritamente anterior a hoje)
     const startValue = item.start || item.data || item.data_de_realizacao || item._data_raw;
@@ -71,6 +71,7 @@ export default function ItemDetailModal({
     if (isPast) {
         canEdit = false;
         canDelete = false;
+        canChangeRoom = false;
     }
 
     return (
