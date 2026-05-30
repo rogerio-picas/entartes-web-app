@@ -364,6 +364,32 @@ export default function Home() {
     setPerfilAluno({ nome: nomeAluno, apelido: '', email: '—', telemovel: '—', codigo_username: '—' })
   }
 
+  const handleCancelItem = async (item) => {
+    try {
+      const id = item.id || item.id_marcacao;
+      if (item._type === 'evento' || item.id_evento) {
+        await eventService.delete(item.id_evento || id)
+      } else {
+        if (isAdmin) {
+          if (item.id_estado === 3) {
+            await coachingService.cancelarMarcacaoConfirmada(id, 'Cancelado via Dashboard')
+          } else {
+            await coachingService.rejeitarMarcacao(id, 'Cancelado via Dashboard')
+          }
+        } else if (isDocente) {
+          await coachingService.cancelarMarcacaoDocente(id, 'Cancelado via Dashboard')
+        } else if (isAluno) {
+          await coachingService.cancelarPedidoPendente(id)
+        }
+      }
+      setSelectedItem(null)
+      showToast('Cancelado com sucesso!', 'success')
+      loadData()
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || 'Erro ao cancelar.', 'error')
+    }
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center py-24 text-brand-800">
       <RefreshCw size={32} className="animate-spin" />
@@ -541,6 +567,11 @@ export default function Home() {
           item={selectedItem}
           role={role}
           onClose={() => setSelectedItem(null)}
+          onDelete={
+            (selectedItem.id_estado === 1 || selectedItem.id_estado === 2 || (isAdmin && selectedItem.id_estado === 3))
+              ? () => handleCancelItem(selectedItem)
+              : undefined
+          }
           onChangeRoom={(isAdmin && !selectedItem.id_evento && !selectedItem._isEvent && selectedItem._type !== 'evento') ? (item) => {
             setItemToEditRoom(item);
             setShowEditSala(true);

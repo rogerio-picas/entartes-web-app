@@ -144,7 +144,7 @@ export default function Aulas() {
 
   useEffect(() => {
     if (role === 1) {
-      api.get('/salas').then(d => setSalas(Array.isArray(d) ? d : [])).catch(() => {})
+      api.get('/salas').then(d => setSalas(Array.isArray(d) ? d : [])).catch(() => { })
     }
   }, [role])
 
@@ -154,10 +154,10 @@ export default function Aulas() {
     try {
       const data = await disponibilidadeService.listar()
       const rawList = Array.isArray(data) ? data : data.data || []
-      
+
       const hoje = new Date()
       hoje.setHours(0, 0, 0, 0)
-      
+
       const filtradas = rawList.filter(d => {
         if (d.data_especifica) {
           const dateStr = String(d.data_especifica).split('T')[0]
@@ -167,7 +167,7 @@ export default function Aulas() {
         }
         return true
       })
-      
+
       setDisponibilidades(filtradas)
     } catch { /* silencioso */ }
     finally { setLoadingDisp(false) }
@@ -311,15 +311,15 @@ export default function Aulas() {
 
   const marcacoesOrdenadas = sortConfig.key
     ? [...marcacoesFiltradas].sort((a, b) => {
-        const va = a[sortConfig.key] ?? ''
-        const vb = b[sortConfig.key] ?? ''
-        const cmp = typeof va === 'number' && typeof vb === 'number'
-          ? va - vb
-          : String(va).localeCompare(String(vb))
-        return sortConfig.dir === 'asc' ? cmp : -cmp
-      })
+      const va = a[sortConfig.key] ?? ''
+      const vb = b[sortConfig.key] ?? ''
+      const cmp = typeof va === 'number' && typeof vb === 'number'
+        ? va - vb
+        : String(va).localeCompare(String(vb))
+      return sortConfig.dir === 'asc' ? cmp : -cmp
+    })
     : marcacoesFiltradas
-  
+
   // Se o id_estado for null, pomos "Desconhecido" contido no 0
   const counts = marcacoes.reduce((acc, m) => {
     const id = m.id_estado || 0
@@ -339,7 +339,7 @@ export default function Aulas() {
               {role === 1 ? 'Gestão de Coachings' : 'Gestão de Presenças'}
             </p>
             <h1 className="text-neutral-800 font-normal text-3xl leading-tight tracking-tight">
-                Confirmação de Coachings
+              Confirmação de Coachings
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -367,7 +367,7 @@ export default function Aulas() {
                 {pendentes} pendente{pendentes > 1 ? 's' : ''}
               </div>
             )}
-            
+
             <button onClick={fetchMarcacoes} disabled={loading} title="Atualizar"
               className="w-9 h-9 rounded-full border border-neutral-600/30 flex items-center justify-center hover:bg-neutral-50 transition-colors disabled:opacity-40">
               <RefreshCw size={15} className={`text-neutral-600 ${loading ? 'animate-spin' : ''}`} />
@@ -377,58 +377,57 @@ export default function Aulas() {
 
         {/* Filtros */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-600">
-              Filtrar:
-            </div>
-            {/* Filtro modalidade */}
-            <div className="relative">
-              <select
-                value={filtroModalidade}
-                onChange={e => setFiltroModalidade(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-neutral-600/25 text-xs font-medium text-neutral-800 bg-white focus:outline-none focus:border-brand-800 cursor-pointer"
-              >
-                <option value="todas">Todas as modalidades</option>
-                {modalidades.filter(m => m !== 'todas').map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-            {/* Filtro estado */}
-            <div className="relative">
-              <select
-                value={filtroEstado}
-                onChange={e => setFiltroEstado(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-neutral-600/25 text-xs font-medium text-neutral-800 bg-white focus:outline-none focus:border-brand-800 cursor-pointer"
-              >
-                <option value="todos">Todos os estados</option>
-                {Object.entries(STATUS_CFG).map(([id, cfg]) => (
-                  <option key={id} value={id}>{cfg.label}</option>
-                ))}
-              </select>
-            </div>
-            <button
-              onClick={() => setFiltro48h(v => !v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
-                filtro48h
-                  ? 'bg-brand-800 text-white border-brand-800'
-                  : 'border-brand-800 text-brand-800 hover:bg-brand-100'
-              }`}
-            >
-              <Clock size={11} />
-              Próximas 48h
-            </button>
-            {(filtroEstado !== 'todos' || filtroModalidade !== 'todas' || filtro48h) && (
-              <button
-                onClick={() => { setFiltroEstado('todos'); setFiltroModalidade('todas'); setFiltro48h(false) }}
-                className="text-xs text-red-500 font-medium hover:text-red-700 flex items-center gap-1"
-              >
-                <X size={11} /> Limpar filtros
-              </button>
-            )}
-            <span className="ml-auto text-xs text-neutral-600">
-              {marcacoesFiltradas.length} aula{marcacoesFiltradas.length !== 1 ? 's' : ''}
-            </span>
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-600">
+            Filtrar:
           </div>
+          {/* Filtro modalidade */}
+          <div className="relative">
+            <select
+              value={filtroModalidade}
+              onChange={e => setFiltroModalidade(e.target.value)}
+              className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-neutral-600/25 text-xs font-medium text-neutral-800 bg-white focus:outline-none focus:border-brand-800 cursor-pointer"
+            >
+              <option value="todas">Todas as modalidades</option>
+              {modalidades.filter(m => m !== 'todas').map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+          {/* Filtro estado */}
+          <div className="relative">
+            <select
+              value={filtroEstado}
+              onChange={e => setFiltroEstado(e.target.value)}
+              className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-neutral-600/25 text-xs font-medium text-neutral-800 bg-white focus:outline-none focus:border-brand-800 cursor-pointer"
+            >
+              <option value="todos">Todos os estados</option>
+              {Object.entries(STATUS_CFG).map(([id, cfg]) => (
+                <option key={id} value={id}>{cfg.label}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={() => setFiltro48h(v => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${filtro48h
+                ? 'bg-brand-800 text-white border-brand-800'
+                : 'border-brand-800 text-brand-800 hover:bg-brand-100'
+              }`}
+          >
+            <Clock size={11} />
+            Próximas 48h
+          </button>
+          {(filtroEstado !== 'todos' || filtroModalidade !== 'todas' || filtro48h) && (
+            <button
+              onClick={() => { setFiltroEstado('todos'); setFiltroModalidade('todas'); setFiltro48h(false) }}
+              className="text-xs text-red-500 font-medium hover:text-red-700 flex items-center gap-1"
+            >
+              <X size={11} /> Limpar filtros
+            </button>
+          )}
+          <span className="ml-auto text-xs text-neutral-600">
+            {marcacoesFiltradas.length} aula{marcacoesFiltradas.length !== 1 ? 's' : ''}
+          </span>
+        </div>
 
         {/* Erro */}
         {error && (
@@ -813,20 +812,20 @@ export default function Aulas() {
           onDelete={
             (modalAula.id_estado === 1 || modalAula.id_estado === 2 || (role === 1 && modalAula.id_estado === 3))
               ? () => {
-                  if (role === 1 && modalAula.id_estado === 3) {
-                    setPendingCancelAula(modalAula);
-                    return false;
-                  }
-                  handleReject(modalAula.id);
+                if (role === 1 && modalAula.id_estado === 3) {
+                  setPendingCancelAula(modalAula);
+                  return false;
                 }
+                handleReject(modalAula.id);
+              }
               : undefined
           }
           onChangeRoom={
             (role === 1 && modalAula.id_estado === 3 && modalAula._type !== 'evento' && !modalAula.id_evento)
               ? (item) => {
-                  setItemToEditRoom(item);
-                  setShowEditSala(true);
-                }
+                setItemToEditRoom(item);
+                setShowEditSala(true);
+              }
               : undefined
           }
         />
