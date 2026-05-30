@@ -82,6 +82,7 @@ export default function Aulas() {
   const [confirmId, setConfirmId] = useState(null)
   const [salaPickerCtx, setSalaPickerCtx] = useState(null)
   const [selectedSalaPicker, setSelectedSalaPicker] = useState('')
+  const [pendingCancelAula, setPendingCancelAula] = useState(null)
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -803,9 +804,8 @@ export default function Aulas() {
             (modalAula.id_estado === 1 || modalAula.id_estado === 2 || (role === 1 && modalAula.id_estado === 3))
               ? () => {
                   if (role === 1 && modalAula.id_estado === 3) {
-                    if (!window.confirm("Tem a certeza que deseja cancelar esta aula? Esta ação não pode ser revertida.")) {
-                      return false;
-                    }
+                    setPendingCancelAula(modalAula);
+                    return false;
                   }
                   handleReject(modalAula.id);
                 }
@@ -855,6 +855,30 @@ export default function Aulas() {
                 className="flex-1 py-2.5 text-sm bg-brand-800 text-white font-bold rounded-xl hover:bg-brand-900 transition-colors disabled:opacity-50"
               >
                 Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingCancelAula && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4" onClick={() => setPendingCancelAula(null)}>
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+          <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm font-['Sora']" onClick={e => e.stopPropagation()}>
+            <p className="font-semibold text-neutral-800 text-base mb-1">
+              Cancelar aula?
+            </p>
+            <p className="text-sm text-neutral-500 mb-5">Tem a certeza que deseja cancelar esta aula? Esta ação não pode ser revertida.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setPendingCancelAula(null)} className="flex-1 py-2.5 text-sm border border-neutral-600/25 rounded-xl text-neutral-600 font-semibold hover:bg-neutral-50 transition-colors">
+                Não, manter
+              </button>
+              <button onClick={() => {
+                handleReject(pendingCancelAula.id);
+                setPendingCancelAula(null);
+                setModalAula(null);
+              }} className="flex-1 py-2.5 text-sm bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors">
+                Sim, cancelar
               </button>
             </div>
           </div>
