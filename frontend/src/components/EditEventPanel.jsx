@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Check, RefreshCw, AlertCircle } from 'lucide-react'
+import { X, Check, RefreshCw, AlertCircle, Lock, Globe } from 'lucide-react'
 import { api } from '../services/api'
 import { formatTime, toWallClockISO } from '../utils/dateUtils'
 
@@ -31,6 +31,7 @@ export default function EditEventPanel({ onClose, onSuccess, initialEvent }) {
     const [duracaoMinutos, setDuracaoMinutos] = useState(initialDuration % 60)
 
     const [whatsapp, setWhatsapp] = useState(initialEvent?.link_whatsapp || '')
+    const [privado, setPrivado] = useState(initialEvent?.privado ?? false)
 
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
@@ -51,7 +52,8 @@ export default function EditEventPanel({ onClose, onSuccess, initialEvent }) {
                 local: local.trim() || undefined,
                 data_de_realizacao: toWallClockISO(dataRealizacao, hora) || undefined,
                 duracao_minutos: totalMinutos,
-                link_whatsapp: whatsapp || undefined
+                link_whatsapp: whatsapp || undefined,
+                privado: privado,
             }
 
             await api.put(`/evento/${initialEvent.id_evento}`, payload)
@@ -156,6 +158,37 @@ export default function EditEventPanel({ onClose, onSuccess, initialEvent }) {
                         placeholder="https://chat.whatsapp.com/..."
                         className="w-full bg-white border border-neutral-500 rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-brand-800"
                     />
+                </div>
+
+                {/* Toggle Privado/Público */}
+                <div
+                    onClick={() => setPrivado(p => !p)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer select-none transition-all ${
+                        privado
+                            ? 'border-brand-800 bg-brand-50'
+                            : 'border-neutral-300 bg-white hover:border-neutral-400'
+                    }`}
+                >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        privado ? 'bg-brand-800 text-white' : 'bg-neutral-100 text-neutral-500'
+                    }`}>
+                        {privado ? <Lock size={16} /> : <Globe size={16} />}
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm font-semibold text-neutral-900">
+                            {privado ? 'Evento Privado' : 'Evento Público'}
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                            {privado
+                                ? 'Só participantes inscritos podem ver este evento'
+                                : 'Qualquer utilizador pode ver este evento'}
+                        </p>
+                    </div>
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors shrink-0 ${
+                        privado ? 'bg-brand-800 border-brand-800' : 'border-neutral-400'
+                    }`}>
+                        {privado && <Check size={11} className="text-white" strokeWidth={3} />}
+                    </div>
                 </div>
             </div>
 

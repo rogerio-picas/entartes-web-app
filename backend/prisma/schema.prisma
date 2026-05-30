@@ -116,6 +116,7 @@ model evento {
   local               String?               @db.VarChar(150)
   duracao_minutos     Int?                  @default(60)
   link_whatsapp       String?               @db.VarChar(255)
+  privado             Boolean               @default(false)
   anuncio             anuncio[]
   coordenadora_evento coordenadora_evento[]
   evento_estado       evento_estado?        @relation(fields: [id_evento_estado], references: [id_evento_estado], onDelete: NoAction, onUpdate: NoAction)

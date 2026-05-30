@@ -64,8 +64,8 @@ const listarEventosPaginados = async (req, res) => {
     
     const userRole = req.user.id_tipo || req.user.role;
     
-    // Se for Aluno, restringe aos seus eventos
-    if (userRole === 3) {
+    // Passa o utilizador para filtrar eventos privados (roles 2 e 3)
+    if (userRole === 2 || userRole === 3) {
       params.id_utilizador = req.user.id;
       params.role = userRole;
     }
@@ -85,6 +85,21 @@ const buscarEventoPorId = async (req, res) => {
     if (isNaN(id)) return res.status(400).json({ error: "ID do evento inválido." });
 
     const evento = await eventService.buscarEventoPorId(id);
+
+    // Verificar acesso a eventos privados
+    if (evento.privado) {
+      const userRole = req.user.id_tipo || req.user.role;
+      const userId = req.user.id;
+      if (userRole !== 1) { // não é admin
+        const isParticipant =
+          evento.evento_aluno?.some(ea => ea.id_utilizador === userId) ||
+          evento.evento_docente?.some(ed => ed.id_docente === userId);
+        if (!isParticipant) {
+          return res.status(403).json({ error: "Não tens acesso a este evento privado." });
+        }
+      }
+    }
+
     return res.status(200).json(evento);
   } catch (error) {
     return res.status(404).json({ error: error.message });
