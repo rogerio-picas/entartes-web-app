@@ -1069,13 +1069,9 @@ export default function Horario() {
                         onClose={() => setSelectedItem(null)}
                         onEdit={canEdit ? handleEditItem : null}
                         onDelete={canDelete ? handleDeleteItem : null}
-                        onNavigate={(item) => {
-                            if (item._isEvent || item._type === 'evento') {
-                                navigate(`/eventos/${item.id}`);
-                            } else {
-                                navigate('/aulas');
-                            }
-                        }}
+                        onNavigate={(selectedItem.id_evento || selectedItem._isEvent || selectedItem._type === 'evento') 
+                            ? (item) => navigate(`/eventos/${item.id}`) 
+                            : undefined}
                     />
                 );
             })()}

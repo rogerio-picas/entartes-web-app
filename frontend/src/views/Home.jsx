@@ -545,13 +545,9 @@ export default function Home() {
             setItemToEditRoom(item);
             setShowEditSala(true);
           } : undefined}
-          onNavigate={(item) => {
-            if (item.id_evento || item._isEvent || item._type === 'evento') {
-              navigate(`/eventos/${item.id}`);
-            } else {
-              navigate('/aulas');
-            }
-          }}
+          onNavigate={(item.id_evento || item._isEvent || item._type === 'evento') 
+            ? (item) => navigate(`/eventos/${item.id}`) 
+            : undefined}
         />
       )}
 
