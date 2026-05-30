@@ -19,7 +19,7 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
     const [loading, setLoading] = useState(false)
     const [erro, setErro] = useState('')
     const [availableModalidades, setAvailableModalidades] = useState([])
-    const [feedback, setFeedback] = useState(null)
+    const [activeModalidades, setActiveModalidades] = useState([])
 
     useEffect(() => {
         api.get(`/evento/${eventId}/participantes`).then(data => {
@@ -75,21 +75,29 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
         )
     }
 
-    function adicionarPorModalidade(modalidade) {
-        const toAdd = alunos.filter(u => u.modalidades?.includes(modalidade))
-        let addedCount = 0
-        setSelected(prev => {
-            const currentIds = new Set(prev.map(p => p.id_utilizador))
-            const newUsers = toAdd.filter(u => !currentIds.has(u.id_utilizador))
-            addedCount = newUsers.length
-            return [...prev, ...newUsers]
+    function toggleModalidade(modalidade) {
+        setActiveModalidades(prev => {
+            const isActive = prev.includes(modalidade)
+            const newActive = isActive ? prev.filter(m => m !== modalidade) : [...prev, modalidade]
+            
+            setSelected(currentSelected => {
+                if (!isActive) {
+                    // Toggle ON
+                    const toAdd = alunos.filter(u => u.modalidades?.includes(modalidade))
+                    const currentIds = new Set(currentSelected.map(p => p.id_utilizador))
+                    const newUsers = toAdd.filter(u => !currentIds.has(u.id_utilizador))
+                    return [...currentSelected, ...newUsers]
+                } else {
+                    // Toggle OFF
+                    return currentSelected.filter(u => {
+                        if (!u.modalidades?.includes(modalidade)) return true;
+                        return u.modalidades.some(m => newActive.includes(m));
+                    })
+                }
+            })
+            
+            return newActive
         })
-        if (addedCount > 0) {
-            setFeedback({ type: 'success', text: `${addedCount} participantes da modalidade ${modalidade} adicionados.` })
-        } else {
-            setFeedback({ type: 'warning', text: `Todos os participantes de ${modalidade} já estavam selecionados.` })
-        }
-        setTimeout(() => setFeedback(null), 3000)
     }
 
     async function handleCreate() {
@@ -216,21 +224,22 @@ export default function CriarGrupoPanel({ onClose, onSuccess, eventId, initialGr
 
                 {availableModalidades.length > 0 && (
                     <div className="flex flex-wrap gap-2 pt-1">
-                        {availableModalidades.map(mod => (
-                            <button
-                                key={mod}
-                                onClick={() => adicionarPorModalidade(mod)}
-                                className="px-3 py-1.5 text-[11px] font-semibold text-brand-800 bg-brand-100 rounded-full hover:bg-brand-200 transition-colors"
-                            >
-                                + {mod}
-                            </button>
-                        ))}
-                    </div>
-                )}
-                
-                {feedback && (
-                    <div className={`text-xs px-3 py-2 rounded-lg border ${feedback.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                        {feedback.text}
+                        {availableModalidades.map(mod => {
+                            const isActive = activeModalidades.includes(mod)
+                            return (
+                                <button
+                                    key={mod}
+                                    onClick={() => toggleModalidade(mod)}
+                                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full transition-colors ${
+                                        isActive 
+                                            ? 'bg-brand-800 text-white' 
+                                            : 'text-brand-800 bg-brand-100 hover:bg-brand-200'
+                                    }`}
+                                >
+                                    {isActive ? '✓' : '+'} {mod}
+                                </button>
+                            )
+                        })}
                     </div>
                 )}
 
