@@ -150,7 +150,8 @@ const listarColegas = async (req, res) => {
   try {
     // req.user is populated by tokenValidation
     const id_aluno = req.user.id || req.user.id_utilizador;
-    const colegas = await coachingAlunoService.listarColegas(id_aluno);
+    const { id_modalidade } = req.query;
+    const colegas = await coachingAlunoService.listarColegas(id_aluno, id_modalidade);
     return res.status(200).json(colegas);
   } catch (error) {
     return _handleError(res, error);

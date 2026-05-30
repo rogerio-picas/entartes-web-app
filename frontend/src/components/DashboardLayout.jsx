@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect, createContext, useContext } from 'react'
 import { Outlet } from 'react-router-dom'
 import DashboardHeader from './DashboardHeader'
 import NotificationPanel from './NotificationPanel'
@@ -7,8 +7,8 @@ import { notificacaoService } from '../services/notificacaoService'
 // ─── Notification Context (shared across all child pages) ─────────────────────
 const NotificationContext = createContext({
     unreadCount: 0,
-    openNotifications: () => {},
-    refreshUnread: () => {},
+    openNotifications: () => { },
+    refreshUnread: () => { },
 })
 
 export function useNotifications() {

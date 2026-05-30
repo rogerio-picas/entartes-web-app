@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { X, ChevronRight, ChevronLeft, Music, User, CalendarDays, Clock, Check, Loader2, AlertCircle, Search } from 'lucide-react'
 import { api } from '../services/api'
 import { formatDate, formatTime } from '../utils/dateUtils'
@@ -194,14 +194,15 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
 
   // Carregar colegas se for em grupo
   useEffect(() => {
-    if (step === 3 && numAlunos > 1 && colegas.length === 0) {
+    if (step === 3 && numAlunos > 1 && modalidadeSel) {
       setLoadingColegas(true)
-      api.get('/coaching/colegas')
+      const params = new URLSearchParams({ id_modalidade: modalidadeSel.id_modalidade })
+      api.get(`/coaching/colegas?${params}`)
         .then(r => setColegas(Array.isArray(r) ? r : r.data || []))
         .catch(() => setErro('Não foi possível carregar a lista de colegas.'))
         .finally(() => setLoadingColegas(false))
     }
-  }, [step, numAlunos])
+  }, [step, numAlunos, modalidadeSel])
 
   const toggleColega = (id) => {
     setColegasSel(prev => {
