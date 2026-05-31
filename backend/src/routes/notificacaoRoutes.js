@@ -35,8 +35,8 @@ const notificacaoController = require('../controllers/notificacaoController');
  *         description: Notificação não encontrada
  */
 
-// CORREÇÃO: middleware duplicado — router.use aplicava tokenValidation+authorize e cada rota repetia-os
 router.get('/', tokenValidation, authorize([1,2,3]), notificacaoController.listNotificacoes);
 router.patch('/:id/lida', tokenValidation, authorize([1,2,3]), notificacaoController.markAsRead);
+router.delete('/:id', tokenValidation, authorize([1,2,3]), notificacaoController.deleteNotificacao);
 
 module.exports = router;

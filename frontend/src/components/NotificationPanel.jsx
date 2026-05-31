@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, Bell, CheckCheck, RefreshCw, Inbox, AlertCircle } from 'lucide-react'
 import { notificacaoService } from '../services/notificacaoService'
 
@@ -46,6 +46,21 @@ export default function NotificationPanel({ isOpen, onClose, onUnreadChange }) {
             await notificacaoService.markAsRead(id)
             setNotificacoes(prev => prev.map(n => n.id === id ? { ...n, lida: true } : n))
             const unread = notificacoes.filter(n => !n.lida && n.id !== id).length
+            onUnreadChange?.(unread)
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setMarking(null)
+        }
+    }
+
+    async function handleDelete(id) {
+        setMarking(id)
+        try {
+            await notificacaoService.delete(id)
+            const remaining = notificacoes.filter(n => n.id !== id)
+            setNotificacoes(remaining)
+            const unread = remaining.filter(n => !n.lida).length
             onUnreadChange?.(unread)
         } catch (e) {
             console.error(e)
@@ -155,19 +170,32 @@ export default function NotificationPanel({ isOpen, onClose, onUnreadChange }) {
                                         <p className="text-[10px] text-gray-400 font-medium">{n.data}</p>
                                     </div>
 
-                                    {!n.lida && (
+                                    <div className="flex flex-col gap-1.5 shrink-0 justify-center">
+                                        {!n.lida && (
+                                            <button
+                                                onClick={() => handleMarkRead(n.id)}
+                                                disabled={marking === n.id}
+                                                className="w-7 h-7 rounded-lg bg-brand-200 flex items-center justify-center hover:bg-brand-800 hover:text-white text-brand-800 transition-colors"
+                                                title="Marcar como lida"
+                                            >
+                                                {marking === n.id
+                                                    ? <RefreshCw size={12} className="animate-spin" />
+                                                    : <CheckCheck size={12} />
+                                                }
+                                            </button>
+                                        )}
                                         <button
-                                            onClick={() => handleMarkRead(n.id)}
+                                            onClick={() => handleDelete(n.id)}
                                             disabled={marking === n.id}
-                                            className="shrink-0 mt-1 w-7 h-7 rounded-lg bg-brand-200 flex items-center justify-center hover:bg-brand-800 hover:text-white text-brand-800 transition-colors"
-                                            title="Marcar como lida"
+                                            className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                            title="Descartar notificação"
                                         >
                                             {marking === n.id
                                                 ? <RefreshCw size={12} className="animate-spin" />
-                                                : <CheckCheck size={12} />
+                                                : <X size={14} />
                                             }
                                         </button>
-                                    )}
+                                    </div>
                                 </li>
                             ))}
                         </ul>

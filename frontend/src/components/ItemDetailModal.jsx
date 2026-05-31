@@ -57,6 +57,20 @@ export default function ItemDetailModal({
     const statusClass = STATUS_COLOR[item.id_estado] ?? 'bg-gray-50 text-gray-600 border-gray-200'
     const statusLabel = STATUS_LABEL[item.id_estado] ?? item.estado_nome ?? '—'
 
+    // Process description
+    let cleanDescricao = item?.descricao || ''
+    if (isEvent && cleanDescricao.includes('---FAQS---')) {
+        const parts = cleanDescricao.split('---FAQS---')
+        cleanDescricao = parts[0].trim()
+    }
+    let displayDesc = cleanDescricao
+    if (isEvent && cleanDescricao) {
+        const words = cleanDescricao.split(/\s+/).filter(Boolean)
+        if (words.length > 100) {
+            displayDesc = words.slice(0, 100).join(' ') + '...'
+        }
+    }
+
     // Permissões de Ação (lógica vinda do Horario.jsx)
     let canEdit = !!onEdit;
     let canDelete = !!onDelete;
@@ -174,34 +188,26 @@ export default function ItemDetailModal({
                                 value={item.duracao || `${item.duracao_minutos} min`}
                             />
                         )}
-                        {isEvent && (item.duracao_minutos || item.duracao) && (() => {
-                            const dur = Number(item.duracao_minutos || item.duracao || 60);
-                            const startStr = item.hora || item.hora_inicio || (item.data_de_realizacao ? String(item.data_de_realizacao).substring(11, 16) : '00:00');
-                            if (isNaN(dur)) return null;
-                            const endStr = addMinutesToTime(startStr, dur);
-                            return <InfoItem icon={Clock} label="Data prevista de fim" value={endStr} />;
-                        })()}
-
                         {(item.sala || item.estudio) && <InfoItem icon={MapPin} label="Local" value={item.sala || item.estudio} />}
-                        {item.docente && (
+                        {!isEvent && item.docente && (
                             <InfoItem
                                 icon={User}
-                                label={role === 2 && !isEvent && !isDisponibilidade ? "Aluno(s)" : "Professor"}
+                                label={role === 2 && !isDisponibilidade ? "Aluno(s)" : "Professor"}
                                 value={item.docente}
                             />
                         )}
-                        {item.modalidade && <InfoItem icon={Music} label="Modalidade" value={item.modalidade} />}
-                        {(item.tipo_aula || item.tipo) && <InfoItem icon={BookOpen} label="Tipo" value={item.tipo_aula || item.tipo || 'Individual'} />}
+                        {!isEvent && item.modalidade && <InfoItem icon={Music} label="Modalidade" value={item.modalidade} />}
+                        {!isEvent && (item.tipo_aula || item.tipo) && <InfoItem icon={BookOpen} label="Tipo" value={item.tipo_aula || item.tipo || 'Individual'} />}
                     </div>
 
-                    {item.descricao && (
+                    {displayDesc && (
                         <div className="pt-2 border-t border-gray-100">
                             <p className="text-[10px] text-neutral-600 uppercase font-semibold mb-1">Descrição</p>
-                            <p className="text-sm text-gray-600 leading-relaxed">{item.descricao}</p>
+                            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{displayDesc}</p>
                         </div>
                     )}
 
-                    {item.alunos?.length > 0 && (
+                    {!isEvent && item.alunos?.length > 0 && (
                         <div className="pt-2">
                             <p className="text-[10px] text-neutral-600 uppercase font-semibold mb-2">
                                 Alunos ({item.alunos.length})
@@ -259,7 +265,7 @@ export default function ItemDetailModal({
                         )}
                         <button
                             onClick={onClose}
-                            className={`py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm ${onNavigate ? 'flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200' : 'w-full bg-brand-800 text-white hover:bg-brand-900'}`}
+                            className={`py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm ${onNavigate ? 'flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200' : 'w-full bg-red-600 text-white hover:bg-red-700'}`}
                         >
                             Fechar
                         </button>

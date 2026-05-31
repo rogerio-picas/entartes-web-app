@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, Calendar, Clock, Users, User, Loader2, AlertCircle } from 'lucide-react'
 import { eventService } from '../services/eventService'
 import { formatDate, formatTime } from '../utils/dateUtils'
@@ -233,8 +233,7 @@ export default function EventModal({ eventId, onClose }) {
             </span>
             <button
               onClick={onClose}
-              className="text-sm font-semibold text-white px-5 py-2 rounded-xl transition-opacity hover:opacity-80"
-              style={{ backgroundColor: '#006A68' }}
+              className="text-sm font-semibold text-white px-5 py-2 rounded-xl transition-colors bg-red-600 hover:bg-red-700 shadow-sm"
             >
               Fechar
             </button>

@@ -21,4 +21,16 @@ const markAsRead = async (id_notificacao, id_user) => {
     });
 };
 
-module.exports = { listNotificacoes, markAsRead };
+const deleteNotificacao = async (id_notificacao, id_user) => {
+    const note = await prisma.notificacao.findUnique({ where: { id_notificacao } });
+
+    if (!note || note.id_user !== id_user) {
+        throw new Error('Acesso negado');
+    }
+
+    return await prisma.notificacao.delete({
+        where: { id_notificacao }
+    });
+};
+
+module.exports = { listNotificacoes, markAsRead, deleteNotificacao };

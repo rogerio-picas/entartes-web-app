@@ -8,6 +8,7 @@ jest.mock('@prisma/client', () => {
       findMany: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     },
   };
   return { PrismaClient: jest.fn(() => mPrismaClient) };
@@ -107,6 +108,47 @@ describe('Notificacao Service - Testes Unitários', () => {
       // Garante que a função devolve a notificação já com o lida: true
       expect(result).toEqual(mockUpdatedNote);
       expect(result.lida).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------
+  // TESTES: deleteNotificacao
+  // ---------------------------------------------------------
+  describe('deleteNotificacao', () => {
+    it('deve lançar erro "Acesso negado" se a notificação não existir', async () => {
+      prisma.notificacao.findUnique.mockResolvedValue(null);
+
+      await expect(notificacaoService.deleteNotificacao(200, 10))
+        .rejects.toThrow('Acesso negado');
+
+      expect(prisma.notificacao.findUnique).toHaveBeenCalledWith({
+        where: { id_notificacao: 200 }
+      });
+      expect(prisma.notificacao.delete).not.toHaveBeenCalled();
+    });
+
+    it('deve lançar erro "Acesso negado" se a notificação pertencer a outro utilizador (segurança)', async () => {
+      const mockNoteOutroUser = { id_notificacao: 200, id_user: 99 };
+      prisma.notificacao.findUnique.mockResolvedValue(mockNoteOutroUser);
+
+      await expect(notificacaoService.deleteNotificacao(200, 10))
+        .rejects.toThrow('Acesso negado');
+
+      expect(prisma.notificacao.delete).not.toHaveBeenCalled();
+    });
+
+    it('deve eliminar a notificação com sucesso se pertencer ao utilizador', async () => {
+      const mockNote = { id_notificacao: 200, id_user: 10 };
+
+      prisma.notificacao.findUnique.mockResolvedValue(mockNote);
+      prisma.notificacao.delete.mockResolvedValue(mockNote);
+
+      const result = await notificacaoService.deleteNotificacao(200, 10);
+
+      expect(prisma.notificacao.delete).toHaveBeenCalledWith({
+        where: { id_notificacao: 200 }
+      });
+      expect(result).toEqual(mockNote);
     });
   });
 });

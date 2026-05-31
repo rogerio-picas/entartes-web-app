@@ -375,8 +375,8 @@ export function PerfilModal({ aluno, onClose }) {
             {aluno.codigo_username}</div>}
         </div>
         <div className="px-6 pb-5">
-          <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-brand-800 text-white
-            font-semibold text-sm hover:bg-brand-900 transition-colors">Fechar</button>
+          <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-red-600 text-white
+            font-semibold text-sm hover:bg-red-700 transition-colors">Fechar</button>
         </div>
       </div>
     </div>

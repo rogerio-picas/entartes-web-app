@@ -2,6 +2,15 @@ import { Clock, CalendarCheck, CalendarDays, X, Check, Megaphone, User, Calendar
 import { formatDate } from '../utils/dateUtils'
 
 export function EventCard({ event, onOpen }) {
+  let cleanDescricao = event.descricao || ''
+  if (cleanDescricao.includes('---FAQS---')) {
+    const parts = cleanDescricao.split('---FAQS---')
+    cleanDescricao = parts[0].trim()
+  }
+  const words = cleanDescricao.split(/\s+/).filter(Boolean)
+  const isTruncated = words.length > 50
+  const displayDesc = isTruncated ? words.slice(0, 50).join(' ') + '...' : cleanDescricao
+
   return (
     <div
       onClick={onOpen}
@@ -18,7 +27,13 @@ export function EventCard({ event, onOpen }) {
         </span>
       </div>
 
-      <div className="flex items-center gap-1.5 text-sm text-neutral-600 font-medium w-full">
+      {cleanDescricao && (
+        <p className="text-sm text-neutral-600 leading-relaxed font-sans line-clamp-3">
+          {displayDesc}
+        </p>
+      )}
+
+      <div className="flex items-center gap-1.5 text-sm text-neutral-600 font-medium w-full mt-auto">
         <MapPin size={14} className="shrink-0" />
         <span className="truncate" title={event.local || 'Local a definir'}>{event.local || 'Local a definir'}</span>
       </div>

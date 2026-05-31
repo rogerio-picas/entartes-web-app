@@ -25,5 +25,14 @@ export const notificacaoService = {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
             }
         }).then(r => r.json())
+    },
+
+    async delete(id) {
+        return fetch(`/api/notificacoes/${id}`, {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+        }).then(r => r.json())
     }
 }

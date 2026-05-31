@@ -31,4 +31,21 @@ const markAsRead = async (req, res) => {
     }
 }
 
-module.exports = { listNotificacoes, markAsRead };
+const deleteNotificacao = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ error: 'ID inválido' });
+        }
+
+        await notificacaoService.deleteNotificacao(id, req.user.id);
+        res.json({ mensagem: 'Notificação descartada com sucesso' });
+    } catch (error) {
+        if (error.message === 'Acesso negado') {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+        res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+}
+
+module.exports = { listNotificacoes, markAsRead, deleteNotificacao };

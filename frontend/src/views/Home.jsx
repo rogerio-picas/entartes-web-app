@@ -22,7 +22,7 @@ import {
   StatCard,
   LiveClassCard, CoachingCard, ConfirmedCard, RequisicaoCard, PresencaDocenteCard,
   SalasDoDiaWidget,
-  PerfilModal, SectionHeader, ScrollRow, Toast
+  PerfilModal, SectionHeader, Toast
 } from '../components/HomeWidgets'
 import ItemDetailModal from '../components/ItemDetailModal'
 
@@ -621,13 +621,13 @@ export default function Home() {
             {coachings48h.length === 0 ? (
               <p className="text-sm text-neutral-600 italic">Sem coachings pendentes nas próximas 48h.</p>
             ) : (
-              <ScrollRow>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {coachings48h.slice(0, 3).map(a => (
                   isAdmin
                     ? <CoachingCard key={a.id} aula={a} onConfirm={handleConfirmAdminDocente} onReject={handleRejectAdminDocente} loading={loadingAction} />
                     : <RequisicaoCard key={a.id} item={a} onReject={() => setCancelModalItem(a)} loading={loadingAction} onVerPerfil={handleVerPerfil} />
                 ))}
-              </ScrollRow>
+              </div>
             )}
           </section>
         )}
@@ -639,11 +639,11 @@ export default function Home() {
             {presencasDocente.length === 0 ? (
               <p className="text-sm text-gray-400 italic">Sem presenças a confirmar.</p>
             ) : (
-              <ScrollRow>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {presencasDocente.slice(0, 3).map(item => (
                   <PresencaDocenteCard key={item.id} item={item} onConfirm={handleConfirmPresencaDocente} onReject={handleRejectDocente} loading={loadingAction} />
                 ))}
-              </ScrollRow>
+              </div>
             )}
           </section>
         )}
@@ -652,11 +652,11 @@ export default function Home() {
         {isAluno && presencasAluno.length > 0 && (
           <section>
             <SectionHeader icon={Clock} title="Presenças por confirmar" />
-            <ScrollRow>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {presencasAluno.slice(0, 3).map(item => (
                 <PresencaAlunoCard key={item.id} item={item} onConfirm={handleConfirmarPresencaAluno} onReject={handleRecusarPresencaAluno} loading={loadingAction} />
               ))}
-            </ScrollRow>
+            </div>
           </section>
         )}
 
@@ -666,13 +666,13 @@ export default function Home() {
           {aulasConfirmadas.length === 0 ? (
             <p className="text-sm text-neutral-600 italic">Sem coachings confirmados.</p>
           ) : (
-            <ScrollRow>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {aulasConfirmadas.slice(0, 3).map(a => (
                 (isAdmin || isDocente)
                   ? <ConfirmedCard key={a.id} aula={a} onOpen={() => setSelectedItem(a)} role={role} />
                   : <ClassCard key={a.id} item={a} statusType="confirmada" onOpen={() => setSelectedItem(a)} />
               ))}
-            </ScrollRow>
+            </div>
           )}
         </section>
 
@@ -680,11 +680,11 @@ export default function Home() {
         {isAluno && inscricoesAluno.length > 0 && (
           <section>
             <SectionHeader icon={CalendarCheck} title="Inscrições pendentes" action="Ver todas" onAction={() => navigate('/aulas')} />
-            <ScrollRow>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {inscricoesAluno.slice(0, 3).map((item, idx) => (
                 <ClassCard key={item.id || idx} item={item} statusType="pendente" onOpen={() => setSelectedItem(item)} />
               ))}
-            </ScrollRow>
+            </div>
           </section>
         )}
 
