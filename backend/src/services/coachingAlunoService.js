@@ -76,7 +76,7 @@ async function consultarDisponibilidades(filtros = {}) {
       ...(data && {
         OR: [
           { data_especifica: new Date(data) },
-          { dia_semana: new Date(data).getDay() }, // 0=Dom, 1=Seg, …
+          { dia_semana: new Date(`${data.split('T')[0]}T00:00:00.000Z`).getUTCDay() }, // 0=Dom, 1=Seg, …
         ],
       }),
     },
@@ -99,7 +99,7 @@ async function consultarDisponibilidades(filtros = {}) {
   const slotsBrutos = await Promise.all(
     disponibilidades.map(async (disp) => {
       let blocosLivres = [{ start: new Date(disp.hora_inicio), end: new Date(disp.hora_fim) }];
-      
+
       if (data) {
         const dataRealizarDate = new Date(`${data.split('T')[0]}T00:00:00.000Z`);
         const [ano, mes, dia] = data.split('T')[0].split('-').map(Number);
@@ -152,7 +152,7 @@ async function consultarDisponibilidades(filtros = {}) {
               marcacao: { select: { hora_inicio: true, duracao_minutos: true } },
             },
           });
-          
+
           for (const ma of marcacoesAluno) {
             const mInicio = new Date(ma.marcacao.hora_inicio);
             const mFim = new Date(mInicio.getTime() + ma.marcacao.duracao_minutos * 60 * 1000);
@@ -162,7 +162,7 @@ async function consultarDisponibilidades(filtros = {}) {
 
         // Subtrair os intervalos ocupados dos blocos livres
         ocupados.sort((a, b) => a.start - b.start);
-        
+
         for (const occ of ocupados) {
           const novosBlocos = [];
           for (const bloco of blocosLivres) {
@@ -303,6 +303,23 @@ async function solicitarMarcacao(id_aluno, dados) {
   const diaSemana = new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay();
   // Normaliza a data para T00:00:00.000Z (mesmo formato que as disponibilidades guardadas)
   const dataRealizarDate = new Date(`${data_a_realizar.split('T')[0]}T00:00:00.000Z`);
+
+  // ── Validação Extra: Antecedência mínima de 30 minutos para marcações no próprio dia
+  const [hora, minuto, segundo = 0] = hora_inicio.split(':').map(Number);
+  const dataHoraMarcacao = new Date(ano, mes - 1, dia, hora, minuto, segundo);
+  const agora = new Date();
+
+  if (
+    dataHoraMarcacao.getFullYear() === agora.getFullYear() &&
+    dataHoraMarcacao.getMonth() === agora.getMonth() &&
+    dataHoraMarcacao.getDate() === agora.getDate()
+  ) {
+    const diferencaMinutos = (dataHoraMarcacao.getTime() - agora.getTime()) / (1000 * 60);
+    if (diferencaMinutos < 30) {
+      throw new Error("Para marcações no próprio dia, o horário de início deve ter pelo menos 30 minutos de antecedência em relação à hora atual.");
+    }
+  }
+
   const disponibilidadeValida = await prisma.disponibilidade.findFirst({
     where: {
       id_docente,

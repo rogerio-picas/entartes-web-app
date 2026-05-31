@@ -78,9 +78,9 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
         setModalidades(mods)
       })
       .catch((err) => {
-              console.error('Erro ao carregar modalidades:', err);
-              setErro(err.response?.data?.details || 'Não foi possível carregar as modalidades.');
-            })      
+        console.error('Erro ao carregar modalidades:', err);
+        setErro(err.response?.data?.details || 'Não foi possível carregar as modalidades.');
+      })
       .finally(() => setLoadingMod(false))
   }, [initialSlot])
 
@@ -110,8 +110,8 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
     api.get(`/coaching/disponibilidades/consultar?${params}`)
       .then(r => {
         const disponibilidadesCompletas = Array.isArray(r) ? r : r.data || []
-        // Filtrar apenas os blocos cortados que pertencem a este docente
-        const blocosDocente = disponibilidadesCompletas.filter(b => b.id_docente === docenteSel.id_docente)
+        // Filtrar apenas os blocos cortados que pertencem a esta disponibilidade específica
+        const blocosDocente = disponibilidadesCompletas.filter(b => b.id_disponibilidade === slotSel.id_disponibilidade)
         setBlocosReais(blocosDocente)
       })
       .catch(() => setErro('Não foi possível consultar os horários livres para este dia.'))
@@ -172,25 +172,39 @@ export default function NovaMarcacaoModal({ onClose, onSuccess, initialSlot }) {
   // Calcular horas possíveis dentro do slot do docente selecionado, filtradas pelo horário permitido
   const horasPossiveis = (() => {
     if (!blocosReais || blocosReais.length === 0 || !duracao) return []
-      const parse = (s) => {
+    const parse = (s) => {
       if (!s) return null
       const d = new Date(s)
       return isNaN(d) ? null : d
     }
     const horas = new Set()
-    
+
     for (const bloco of blocosReais) {
       const inicio = parse(bloco.hora_inicio)
       const fim = parse(bloco.hora_fim)
       if (!inicio || !fim) continue
-      
+
       const cursor = new Date(inicio)
       while (new Date(cursor.getTime() + duracao * 60000) <= fim) {
         horas.add(cursor.toISOString().substring(11, 19)) // "HH:MM:SS"
         cursor.setMinutes(cursor.getMinutes() + 30)
       }
     }
-    return Array.from(horas).sort()
+    let horasArray = Array.from(horas).sort()
+    
+    // Filtrar as horas que já passaram ou que estão a menos de 30 mins (se for o dia de hoje)
+    const hojeLocal = formatLocalYYYYMMDD(new Date())
+    if (data === hojeLocal) {
+      const agora = new Date()
+      horasArray = horasArray.filter(h => {
+        const [hh, mm, ss] = h.split(':').map(Number)
+        const slotDate = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), hh, mm, ss || 0)
+        const diffMinutos = (slotDate.getTime() - agora.getTime()) / 60000
+        return diffMinutos >= 30
+      })
+    }
+
+    return horasArray
   })()
 
   // Carregar colegas se for em grupo
