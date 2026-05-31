@@ -2,8 +2,8 @@
 // Gestão de Modalidades — apenas a coordenadora pode criar/editar/eliminar
 // Docentes e alunos podem listar (para uso nos formulários de marcação)
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+
+const prisma = require('../prismaClient');
 
 // ─────────────────────────────────────────────────────────────
 // 1. listarModalidades
@@ -198,30 +198,24 @@ const eliminarModalidade = async (id_modalidade) => {
     where: { id_modalidade: id },
     include: {
       docente_modalidade: true,
-      marcacao: {
-        where: {
-          id_estado: { in: [1, 2, 3] }, // Pendente, Em Validação, Confirmada
-        },
-      },
+      aluno_modalidade: true,
+      marcacao: true,
     },
   });
 
   if (!modalidade) throw new Error('Modalidade não encontrada.');
 
-  // Não permite eliminar se tiver marcações ativas
+  // Não permite eliminar se tiver qualquer marcação (onDelete: NoAction na BD)
   if (modalidade.marcacao.length > 0) {
+    const ativas = modalidade.marcacao.filter((m) => [1, 2, 3].includes(m.id_estado)).length;
+    const total = modalidade.marcacao.length;
+    const detalhe = ativas > 0 ? `${ativas} ativa(s), ${total} no total` : `${total} no total (históricas)`;
     throw new Error(
-      `Não é possível eliminar "${modalidade.nome}": existem ${modalidade.marcacao.length} marcação(ões) ativa(s) associada(s).`
+      `Não é possível eliminar "${modalidade.nome}": existem marcações associadas (${detalhe}).`
     );
   }
 
-  // Avisa se tiver docentes associados mas permite eliminar (remove as associações também)
-  if (modalidade.docente_modalidade.length > 0) {
-    // Remove primeiro as associações docente_modalidade em cascata
-    await prisma.docente_modalidade.deleteMany({
-      where: { id_modalidade: id },
-    });
-  }
+  // docente_modalidade and aluno_modalidade cascade on delete — no manual cleanup needed
 
   await prisma.modalidade.delete({ where: { id_modalidade: id } });
 

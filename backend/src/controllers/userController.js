@@ -28,15 +28,22 @@ const getUsers = async (req, res) => {
             aluno_modalidade: {
               select: {
                 id_modalidade: true,
-                modalidade: {
-                  select: {
-                    nome: true
-                  }
-                }
+                modalidade: { select: { nome: true } }
               }
             }
           }
         },
+        docente: {
+          select: {
+            estado_atividade: true,
+            docente_modalidade: {
+              select: {
+                id_modalidade: true,
+                modalidade: { select: { nome: true } }
+              }
+            }
+          }
+        }
       },
     });
 
@@ -181,6 +188,12 @@ const deleteUser = async (req, res) => {
   } catch (error) {
     if (error.message === 'Utilizador não encontrado') {
       return res.status(404).json({ message: error.message });
+    }
+    if (error.message.includes('Não é possível eliminar')) {
+      return res.status(409).json({ message: error.message });
+    }
+    if (error.code === 'P2003') {
+      return res.status(409).json({ message: 'Não é possível eliminar este utilizador: existem registos associados.' });
     }
     res.status(500).json({ message: 'Erro ao eliminar utilizador', error: error.message });
   }

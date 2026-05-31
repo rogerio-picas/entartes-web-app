@@ -1,6 +1,6 @@
-﻿import React from 'react'
-import { X, CalendarDays, Clock, MapPin, User, Music, BookOpen, Trash2, Pencil } from 'lucide-react'
-import { parseDate, addMinutesToTime } from '../utils/dateUtils'
+import React, { useState } from 'react'
+import { X, CalendarDays, Clock, MapPin, User, Music, BookOpen, Trash2, Pencil, DoorOpen, AlertCircle } from 'lucide-react'
+import { parseDate, addMinutesToTime, formatTime } from '../utils/dateUtils'
 
 // Cores de exemplo (podem ser passadas via props ou mantidas como padrão)
 const STATUS_COLOR = {
@@ -39,9 +39,12 @@ export default function ItemDetailModal({
     role,
     onEdit,
     onDelete,
+    onChangeRoom,
     onNavigate,
     navigateLabel = "Ver Detalhes"
 }) {
+    const [pendingDelete, setPendingDelete] = useState(false);
+
     if (!item) return null
 
     // Lógica de cores baseada no tipo
@@ -57,18 +60,40 @@ export default function ItemDetailModal({
     // Permissões de Ação (lógica vinda do Horario.jsx)
     let canEdit = !!onEdit;
     let canDelete = !!onDelete;
+    let canChangeRoom = !!onChangeRoom;
 
     // Verificar se o item está no passado (data estritamente anterior a hoje)
     const startValue = item.start || item.data || item.data_de_realizacao || item._data_raw;
-    const itemDate = parseDate(startValue);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const isPast = itemDate && itemDate < today;
+    const rawTimeValue = item.hora_inicio || item.hora || item.hora_inicio_raw;
+    const isPast = (() => {
+        if (!startValue) return false;
+        const itemDate = parseDate(startValue);
+        if (!itemDate) return false;
+        
+        const now = new Date();
+        const timeValue = rawTimeValue ? formatTime(rawTimeValue) : null;
+        if (timeValue && typeof timeValue === 'string' && timeValue.includes(':')) {
+            const [h, m] = timeValue.split(':').map(Number);
+            itemDate.setHours(h, m, 0, 0);
+            return itemDate < now;
+        } else {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return itemDate < today;
+        }
+    })();
 
     if (isPast) {
         canEdit = false;
         canDelete = false;
+        canChangeRoom = false;
+    }
+
+    // Se já estiver concluída ou cancelada, não permite qualquer alteração
+    if (item.id_estado === 4 || item.id_estado === 5 || item.id_evento_estado === 4 || item.id_evento_estado === 5) {
+        canEdit = false;
+        canDelete = false;
+        canChangeRoom = false;
     }
 
     return (
@@ -78,6 +103,36 @@ export default function ItemDetailModal({
                 className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 font-['Sora']"
                 onClick={e => e.stopPropagation()}
             >
+                {pendingDelete && (
+                    <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+                        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                            <AlertCircle size={32} className="text-red-600" />
+                        </div>
+                        <h4 className="font-bold text-gray-800 text-lg mb-2">
+                            {item._type === 'aula' || item.id_marcacao ? 'Cancelar evento?' : 'Eliminar registo?'}
+                        </h4>
+                        <p className="text-sm text-gray-500 mb-6">
+                            Tem a certeza que deseja {item._type === 'aula' || item.id_marcacao ? 'cancelar esta aula' : 'eliminar este registo'}? Esta ação não pode ser revertida.
+                        </p>
+                        <div className="flex gap-3 w-full">
+                            <button
+                                onClick={() => setPendingDelete(false)}
+                                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors"
+                            >
+                                Não, voltar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    onDelete(item);
+                                    onClose();
+                                }}
+                                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors"
+                            >
+                                Sim, {item._type === 'aula' || item.id_marcacao ? 'cancelar' : 'eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <div
                     className="px-6 py-5 flex items-start justify-between"
                     style={{ backgroundColor: color.bg, borderBottom: `2px solid ${color.border}` }}
@@ -166,11 +221,20 @@ export default function ItemDetailModal({
                     <div className="flex gap-2 w-full">
                         {canDelete && (
                             <button
-                                onClick={() => { onDelete(item); onClose(); }}
+                                onClick={() => setPendingDelete(true)}
                                 className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-200 font-semibold text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
                             >
                                 <Trash2 size={16} />
-                                {item._type === 'aula' || item.id_marcacao ? 'Cancelar' : 'Eliminar'}
+                                {item._isDisponibilidade || item._type === 'disponibilidade' ? 'Eliminar' : 'Cancelar'}
+                            </button>
+                        )}
+                        {canChangeRoom && (
+                            <button
+                                onClick={() => { onChangeRoom(item); onClose(); }}
+                                className="flex-1 py-2.5 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 font-semibold text-sm hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <DoorOpen size={16} />
+                                Mudar Sala
                             </button>
                         )}
                         {canEdit && (

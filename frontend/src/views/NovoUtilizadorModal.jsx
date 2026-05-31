@@ -158,7 +158,6 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
                 ...(form.descricao.trim() && { descricao: form.descricao.trim() }),
                 ...(parseInt(form.id_tipo) === 3 && {
                     coaching: form.coaching,
-                    modalidades: selectedModalidades.map(m => m.id_modalidade)
                 }),
                 estado: form.estado,
             }
@@ -396,67 +395,6 @@ export default function NovoUtilizadorModal({ onClose, onSuccess, utilizador }) 
 
                             {errors.modalidades && (
                                 <p className="mt-2 text-[11px] text-red-600">{errors.modalidades}</p>
-                            )}
-
-                            {availableModalidades.length === 0 && selectedModalidades.length === 0 && (
-                                <p className="text-xs text-neutral-600">Nenhuma modalidade disponível.</p>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Modalidades — apenas para Aluno */}
-                    {parseInt(form.id_tipo) === 3 && (
-                        <div>
-                            <p className="text-sm font-medium mb-3 text-black">
-                                Modalidades
-                            </p>
-
-                            {selectedModalidades.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {[...selectedModalidades].sort((a, b) => a.nome.localeCompare(b.nome)).map(m => (
-                                        <span
-                                            key={m.id_modalidade}
-                                            className="inline-flex items-center gap-1.5 text-xs bg-brand-200 text-brand-800 px-2.5 py-1 rounded-full font-medium"
-                                        >
-                                            {m.nome}
-                                            <button
-                                                onClick={() => removeModalidade(m.id_modalidade)}
-                                                className="hover:text-red-600 transition-colors"
-                                            >
-                                                <UserMinus size={12} />
-                                            </button>
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-
-                            {availableModalidades.length > 0 && (
-                                <div className="flex gap-2">
-                                    <div className="relative flex-1">
-                                        <label className="absolute -top-2.5 left-3 bg-brand-50 text-[11px] text-neutral-700 font-medium px-1 z-10">
-                                            Adicionar modalidade
-                                        </label>
-                                        <select
-                                            value={addingModalidadeId}
-                                            onChange={e => setAddingModalidadeId(e.target.value)}
-                                            className="w-full bg-white border border-neutral-500 rounded-lg px-4 py-3 text-sm text-neutral-900 focus:outline-none focus:border-brand-800 transition-colors appearance-none"
-                                        >
-                                            <option value="">Selecionar...</option>
-                                            {availableModalidades.map(m => (
-                                                <option key={m.id_modalidade} value={m.id_modalidade}>
-                                                    {m.nome}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <button
-                                        onClick={addModalidade}
-                                        disabled={!addingModalidadeId}
-                                        className="self-end w-11 h-11 rounded-xl bg-brand-800 text-white flex items-center justify-center hover:bg-brand-900 transition-colors disabled:opacity-40"
-                                    >
-                                        <Plus size={18} />
-                                    </button>
-                                </div>
                             )}
 
                             {availableModalidades.length === 0 && selectedModalidades.length === 0 && (

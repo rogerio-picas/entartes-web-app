@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { formatDate, formatTime } from '../utils/dateUtils'
+import { formatDate, formatTime, parseDate } from '../utils/dateUtils'
 import { useLocation } from 'react-router-dom'
 import {
   Clock, CheckCircle2,
@@ -12,6 +12,7 @@ import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovaMarcacaoModal from './NovaMarcacaoModal'
 import { disponibilidadeService } from '../services/disponibilidadeService'
 import ItemDetailModal from '../components/ItemDetailModal'
+import EditSalaModal from '../components/EditSalaModal'
 
 // ─── Mapeamento de estados e Funções Auxiliares ───────────
 const STATUS_CFG = {
@@ -82,6 +83,10 @@ export default function Aulas() {
   const [confirmId, setConfirmId] = useState(null)
   const [salaPickerCtx, setSalaPickerCtx] = useState(null)
   const [selectedSalaPicker, setSelectedSalaPicker] = useState('')
+  const [pendingCancelAula, setPendingCancelAula] = useState(null)
+  const [salas, setSalas] = useState([])
+  const [showEditSala, setShowEditSala] = useState(false)
+  const [itemToEditRoom, setItemToEditRoom] = useState(null)
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -137,16 +142,22 @@ export default function Aulas() {
 
   useEffect(() => { fetchMarcacoes() }, [fetchMarcacoes])
 
+  useEffect(() => {
+    if (role === 1) {
+      api.get('/salas').then(d => setSalas(Array.isArray(d) ? d : [])).catch(() => { })
+    }
+  }, [role])
+
   const fetchDisponibilidades = useCallback(async () => {
     if (role !== 2) return
     setLoadingDisp(true)
     try {
       const data = await disponibilidadeService.listar()
       const rawList = Array.isArray(data) ? data : data.data || []
-      
+
       const hoje = new Date()
       hoje.setHours(0, 0, 0, 0)
-      
+
       const filtradas = rawList.filter(d => {
         if (d.data_especifica) {
           const dateStr = String(d.data_especifica).split('T')[0]
@@ -156,7 +167,7 @@ export default function Aulas() {
         }
         return true
       })
-      
+
       setDisponibilidades(filtradas)
     } catch { /* silencioso */ }
     finally { setLoadingDisp(false) }
@@ -237,7 +248,12 @@ export default function Aulas() {
     setLoadingId(id)
     try {
       if (role === 1) {
-        await api.post('/coaching/rejeitar-marcacao', { id_marcacao: id, motivo: 'Cancelado na página Aulas' })
+        const classObj = marcacoes.find(m => m.id === id);
+        if (classObj && classObj.id_estado === 3) {
+          await api.post('/coaching/cancelar-marcacao', { id_marcacao: id, motivo: 'Cancelado pelo Admin' })
+        } else {
+          await api.post('/coaching/rejeitar-marcacao', { id_marcacao: id, motivo: 'Cancelado na página Aulas' })
+        }
       } else if (role === 2) {
         await api.post(`/coaching/cancelar-marcacao/${id}`)
       } else {
@@ -279,7 +295,7 @@ export default function Aulas() {
       const agora = new Date()
       const diffHoras = (inicio - agora) / (1000 * 60 * 60)
       if (diffHoras < 0 || diffHoras > 48) return false
-    
+
     }
 
     return true
@@ -295,15 +311,15 @@ export default function Aulas() {
 
   const marcacoesOrdenadas = sortConfig.key
     ? [...marcacoesFiltradas].sort((a, b) => {
-        const va = a[sortConfig.key] ?? ''
-        const vb = b[sortConfig.key] ?? ''
-        const cmp = typeof va === 'number' && typeof vb === 'number'
-          ? va - vb
-          : String(va).localeCompare(String(vb))
-        return sortConfig.dir === 'asc' ? cmp : -cmp
-      })
+      const va = a[sortConfig.key] ?? ''
+      const vb = b[sortConfig.key] ?? ''
+      const cmp = typeof va === 'number' && typeof vb === 'number'
+        ? va - vb
+        : String(va).localeCompare(String(vb))
+      return sortConfig.dir === 'asc' ? cmp : -cmp
+    })
     : marcacoesFiltradas
-  
+
   // Se o id_estado for null, pomos "Desconhecido" contido no 0
   const counts = marcacoes.reduce((acc, m) => {
     const id = m.id_estado || 0
@@ -323,7 +339,7 @@ export default function Aulas() {
               {role === 1 ? 'Gestão de Coachings' : 'Gestão de Presenças'}
             </p>
             <h1 className="text-neutral-800 font-normal text-3xl leading-tight tracking-tight">
-                Confirmação de Coachings
+              Confirmação de Coachings
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -351,7 +367,7 @@ export default function Aulas() {
                 {pendentes} pendente{pendentes > 1 ? 's' : ''}
               </div>
             )}
-            
+
             <button onClick={fetchMarcacoes} disabled={loading} title="Atualizar"
               className="w-9 h-9 rounded-full border border-neutral-600/30 flex items-center justify-center hover:bg-neutral-50 transition-colors disabled:opacity-40">
               <RefreshCw size={15} className={`text-neutral-600 ${loading ? 'animate-spin' : ''}`} />
@@ -360,61 +376,58 @@ export default function Aulas() {
         </div>
 
         {/* Filtros */}
-        {!loading &&  (
-          <div className="flex flex-wrap items-center gap-3 mb-6">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-600">
-              Filtrar:
-            </div>
-            {/* Filtro modalidade */}
-            <div className="relative">
-              <select
-                value={filtroModalidade}
-                onChange={e => setFiltroModalidade(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-neutral-600/25 text-xs font-medium text-neutral-800 bg-white focus:outline-none focus:border-brand-800 cursor-pointer"
-              >
-                <option value="todas">Todas as modalidades</option>
-                {modalidades.filter(m => m !== 'todas').map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-            {/* Filtro estado */}
-            <div className="relative">
-              <select
-                value={filtroEstado}
-                onChange={e => setFiltroEstado(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-neutral-600/25 text-xs font-medium text-neutral-800 bg-white focus:outline-none focus:border-brand-800 cursor-pointer"
-              >
-                <option value="todos">Todos os estados</option>
-                {Object.entries(STATUS_CFG).map(([id, cfg]) => (
-                  <option key={id} value={id}>{cfg.label}</option>
-                ))}
-              </select>
-            </div>
-            <button
-              onClick={() => setFiltro48h(v => !v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
-                filtro48h
-                  ? 'bg-brand-800 text-white border-brand-800'
-                  : 'border-brand-800 text-brand-800 hover:bg-brand-100'
-              }`}
-            >
-              <Clock size={11} />
-              Próximas 48h
-            </button>
-            {(filtroEstado !== 'todos' || filtroModalidade !== 'todas' || filtro48h) && (
-              <button
-                onClick={() => { setFiltroEstado('todos'); setFiltroModalidade('todas'); setFiltro48h(false) }}
-                className="text-xs text-red-500 font-medium hover:text-red-700 flex items-center gap-1"
-              >
-                <X size={11} /> Limpar filtros
-              </button>
-            )}
-            <span className="ml-auto text-xs text-neutral-600">
-              {marcacoesFiltradas.length} aula{marcacoesFiltradas.length !== 1 ? 's' : ''}
-            </span>
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-600">
+            Filtrar:
           </div>
-        )}
+          {/* Filtro modalidade */}
+          <div className="relative">
+            <select
+              value={filtroModalidade}
+              onChange={e => setFiltroModalidade(e.target.value)}
+              className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-neutral-600/25 text-xs font-medium text-neutral-800 bg-white focus:outline-none focus:border-brand-800 cursor-pointer"
+            >
+              <option value="todas">Todas as modalidades</option>
+              {modalidades.filter(m => m !== 'todas').map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+          {/* Filtro estado */}
+          <div className="relative">
+            <select
+              value={filtroEstado}
+              onChange={e => setFiltroEstado(e.target.value)}
+              className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-neutral-600/25 text-xs font-medium text-neutral-800 bg-white focus:outline-none focus:border-brand-800 cursor-pointer"
+            >
+              <option value="todos">Todos os estados</option>
+              {Object.entries(STATUS_CFG).map(([id, cfg]) => (
+                <option key={id} value={id}>{cfg.label}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={() => setFiltro48h(v => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${filtro48h
+                ? 'bg-brand-800 text-white border-brand-800'
+                : 'border-brand-800 text-brand-800 hover:bg-brand-100'
+              }`}
+          >
+            <Clock size={11} />
+            Próximas 48h
+          </button>
+          {(filtroEstado !== 'todos' || filtroModalidade !== 'todas' || filtro48h) && (
+            <button
+              onClick={() => { setFiltroEstado('todos'); setFiltroModalidade('todas'); setFiltro48h(false) }}
+              className="text-xs text-red-500 font-medium hover:text-red-700 flex items-center gap-1"
+            >
+              <X size={11} /> Limpar filtros
+            </button>
+          )}
+          <span className="ml-auto text-xs text-neutral-600">
+            {marcacoesFiltradas.length} aula{marcacoesFiltradas.length !== 1 ? 's' : ''}
+          </span>
+        </div>
 
         {/* Erro */}
         {error && (
@@ -507,19 +520,23 @@ export default function Aulas() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-neutral-50 border-b-2 border-neutral-600/20">
-                {['Modalidade', 'Data', 'Hora', 'Duração', 'Tipo Aula', 'Sala', 'Estado', 'Ação'].map((col, i) => (
-                  <th
-                    key={col || i}
-                    className="px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap"
-                  >
-                    {col && (
+                {['Modalidade', 'Data', 'Hora', 'Duração', 'Tipo Aula', 'Sala', 'Estado', 'Ação'].map((col, i) => {
+                  const sortable = !!SORT_KEYS[col]
+                  const active = sortable && sortConfig.key === SORT_KEYS[col]
+                  const Icon = active ? (sortConfig.dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
+                  return (
+                    <th
+                      key={col || i}
+                      onClick={sortable ? () => handleSort(col) : undefined}
+                      className={`px-4 py-3.5 text-left text-xs font-bold text-brand-800 uppercase tracking-wider whitespace-nowrap ${sortable ? 'cursor-pointer select-none hover:bg-neutral-100' : ''}`}
+                    >
                       <span className="flex items-center gap-1">
                         {col}
-                        {col && col !== '' && <ArrowUpDown size={10} className="text-brand-800/30" />}
+                        {sortable && <Icon size={10} className={active ? 'text-brand-800' : 'text-brand-800/30'} />}
                       </span>
-                    )}
-                  </th>
-                ))}
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
@@ -538,6 +555,26 @@ export default function Aulas() {
                 marcacoesOrdenadas.map((row, idx) => {
                   const isLoading = loadingId === row.id
                   const isPendente = row.id_estado === 1 || row.id_estado === 2
+
+                  const isPast = (() => {
+                    const startValue = row._data_raw || row.data;
+                    const rawTimeValue = row.hora_inicio_raw || row.hora;
+                    if (!startValue) return false;
+                    const itemDate = parseDate(startValue);
+                    if (!itemDate) return false;
+                    
+                    const now = new Date();
+                    const timeValue = rawTimeValue ? formatTime(rawTimeValue) : null;
+                    if (timeValue && typeof timeValue === 'string' && timeValue.includes(':')) {
+                        const [h, m] = timeValue.split(':').map(Number);
+                        itemDate.setHours(h, m, 0, 0);
+                        return itemDate < now;
+                    }
+                    
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return itemDate < today;
+                  })();
 
                   // Janela de confirmação de presença (role 2 e 3): estado Confirmada + aula já passou + ≤48h
                   const podeConfirmarPresenca = (() => {
@@ -606,6 +643,27 @@ export default function Aulas() {
                           confirmId === row.id ? (
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs text-neutral-500">Confirmar?</span>
+                              <button onClick={() => { setConfirmId(null); handleReject(row.id) }}
+                                className="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center hover:bg-red-700 transition-colors">
+                                <Check size={12} strokeWidth={3} className="text-white" />
+                              </button>
+                              <button onClick={() => setConfirmId(null)}
+                                className="w-7 h-7 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center hover:bg-neutral-200 transition-colors">
+                                <X size={12} strokeWidth={3} className="text-neutral-600" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setConfirmId(row.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-200 transition-colors"
+                            >
+                              <X size={12} strokeWidth={3} />
+                              Cancelar
+                            </button>
+                          )
+                        ) : role === 1 && row.id_estado === 3 && !isPast ? (
+                          confirmId === row.id ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-neutral-500">Cancelar aula?</span>
                               <button onClick={() => { setConfirmId(null); handleReject(row.id) }}
                                 className="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center hover:bg-red-700 transition-colors">
                                 <Check size={12} strokeWidth={3} className="text-white" />
@@ -775,7 +833,36 @@ export default function Aulas() {
           item={modalAula}
           role={role}
           onClose={() => setModalAula(null)}
-          onDelete={(modalAula.id_estado === 1 || modalAula.id_estado === 2) ? () => handleReject(modalAula.id) : undefined}
+          onDelete={
+            (modalAula.id_estado === 1 || modalAula.id_estado === 2 || (role === 1 && modalAula.id_estado === 3))
+              ? () => handleReject(modalAula.id)
+              : undefined
+          }
+          onChangeRoom={
+            (role === 1 && modalAula.id_estado === 3 && modalAula._type !== 'evento' && !modalAula.id_evento)
+              ? (item) => {
+                setItemToEditRoom(item);
+                setShowEditSala(true);
+              }
+              : undefined
+          }
+        />
+      )}
+
+      {showEditSala && itemToEditRoom && (
+        <EditSalaModal
+          item={itemToEditRoom}
+          salas={salas}
+          onClose={() => {
+            setShowEditSala(false);
+            setItemToEditRoom(null);
+          }}
+          onSuccess={() => {
+            setShowEditSala(false);
+            setItemToEditRoom(null);
+            showToast('Sala alterada com sucesso!', 'success');
+            fetchMarcacoes();
+          }}
         />
       )}
 
@@ -825,7 +912,6 @@ export default function Aulas() {
           </div>
         </div>
       )}
-
       {/* Toast */}
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-white font-['Sora'] text-sm font-medium

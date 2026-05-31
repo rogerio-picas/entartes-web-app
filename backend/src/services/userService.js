@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+
+const prisma = require('../prismaClient');
 
 const getUsers = async (options = {}) => {
     const queryOptions = { ...options };
@@ -41,6 +41,23 @@ const deleteUser = async (id_utilizador) => {
 
     if (!utilizador) {
         throw new Error('Utilizador não encontrado');
+    }
+
+    // Check FK constraints that have onDelete: NoAction
+    const marcacoesComoDocente = utilizador.docente
+        ? await prisma.marcacao.count({ where: { id_docente: userId } })
+        : 0;
+    if (marcacoesComoDocente > 0) {
+        throw new Error(
+            `Não é possível eliminar este utilizador: existem ${marcacoesComoDocente} marcação(ões) associadas como docente.`
+        );
+    }
+
+    const marcacoesComoCriador = await prisma.marcacao.count({ where: { id_user_criador: userId } });
+    if (marcacoesComoCriador > 0) {
+        throw new Error(
+            `Não é possível eliminar este utilizador: existem ${marcacoesComoCriador} marcação(ões) criadas por este utilizador.`
+        );
     }
 
     // Remover das tabelas específicas primeiro

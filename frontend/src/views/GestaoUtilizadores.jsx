@@ -73,11 +73,11 @@ export default function GestaoUtilizadores() {
             modalidades.forEach(m => {
                 ;(m.docente_modalidade ?? []).forEach(d => {
                     if (!docenteMap[d.id_docente]) docenteMap[d.id_docente] = []
-                    docenteMap[d.id_docente].push(m.nome)
+                    docenteMap[d.id_docente].push({ id_modalidade: m.id_modalidade, nome: m.nome })
                 })
                 ;(m.aluno_modalidade ?? []).forEach(a => {
                     if (!alunoMap[a.id_utilizador]) alunoMap[a.id_utilizador] = []
-                    alunoMap[a.id_utilizador].push(m.nome)
+                    alunoMap[a.id_utilizador].push({ id_modalidade: m.id_modalidade, nome: m.nome })
                 })
             })
             setDocenteModalidades(docenteMap)
@@ -129,26 +129,6 @@ export default function GestaoUtilizadores() {
         if (av > bv) return sortDir === 'asc' ? 1 : -1
         return 0
     }) : baseFiltered
-
-    const handleRemoveModalidade = async (userTarget, id_modalidade) => {
-        try {
-            if (userTarget.id_tipo === 2) {
-                await modalidadeService.desassociarDocente(id_modalidade, userTarget.id_utilizador)
-                showToast('Modalidade removida do docente com sucesso.')
-            } else if (userTarget.id_tipo === 3) {
-                const currentIds = (userTarget.aluno?.aluno_modalidade || []).map(am => am.id_modalidade)
-                const newIds = currentIds.filter(id => id !== id_modalidade)
-                await utilizadorService.atualizar(userTarget.id_utilizador, {
-                    id_tipo: 3,
-                    modalidades: newIds
-                })
-                showToast('Modalidade removida do aluno com sucesso.')
-            }
-            fetchData()
-        } catch (err) {
-            showToast(err.message || 'Erro ao remover modalidade.', 'error')
-        }
-    }
 
     const handleDelete = async (id) => {
         setDeletingId(id)
@@ -288,24 +268,22 @@ export default function GestaoUtilizadores() {
                                                     {[u.nome, u.apelido].filter(Boolean).join(' ') || u.codigo_username}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3.5">
+                                            <td className="px-4 py-3.5 max-w-[220px]">
                                                 {modalidades.length > 0 ? (
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {modalidades.map(m => (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {modalidades.slice(0, 3).map(m => (
                                                             <span
                                                                 key={m.id_modalidade}
-                                                                className="inline-flex items-center gap-1 text-xs bg-brand-200 text-brand-800 px-2 py-0.5 rounded-full font-medium"
+                                                                className="inline-flex items-center text-[11px] bg-brand-200 text-brand-800 px-1.5 py-0.5 rounded-full font-medium"
                                                             >
                                                                 {m.nome}
-                                                                <button
-                                                                    onClick={() => handleRemoveModalidade(u, m.id_modalidade)}
-                                                                    title="Remover modalidade"
-                                                                    className="hover:text-red-600 transition-colors ml-0.5 flex items-center justify-center"
-                                                                >
-                                                                    <X size={10} strokeWidth={3} />
-                                                                </button>
                                                             </span>
                                                         ))}
+                                                        {modalidades.length > 3 && (
+                                                            <span className="inline-flex items-center text-[11px] bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded-full font-medium">
+                                                                +{modalidades.length - 3}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 ) : (
                                                     <span className="text-gray-300 text-xs">—</span>

@@ -317,17 +317,17 @@ export function PresencaDocenteCard({ item, onConfirm, onReject, loading }) {
           <span className="text-xs font-semibold text-amber-700">A expirar nas próximas 48h</span>
         </div>
       </div>
-      <div className="flex flex-col items-end justify-center gap-2 pr-[5%]">
+      <div className="flex flex-col items-end justify-end gap-2">
         {loading === item.id
           ? <RefreshCw size={18} className="text-brand-800 animate-spin" />
-          : <div className="flex flex-col gap-2">
+          : <div className="flex gap-2">
             <button onClick={() => onReject(item.id)}
-              className="w-12 h-12 bg-transparent border-2 border-feedback-error text-feedback-error rounded-full flex items-center justify-center hover:bg-red-50 transition-colors">
-              <X size={32} strokeWidth={3} />
+              className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
+              <X size={22} strokeWidth={3} className="text-white" />
             </button>
             <button onClick={() => onConfirm(item.id)}
-              className="w-12 h-12 bg-transparent border-2 border-feedback-success text-feedback-success rounded-full flex items-center justify-center hover:bg-emerald-50 transition-colors">
-              <Check size={32} strokeWidth={3} />
+              className="w-12 h-12 bg-feedback-success border border-feedback-success-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
+              <Check size={22} strokeWidth={3} className="text-white" />
             </button>
           </div>
         }
@@ -459,7 +459,7 @@ const SESSION_PALETTE = [
 ]
 
 
-export function SalasDoDiaWidget() {
+export function SalasDoDiaWidget({ onItemClick }) {
   const [salas, setSalas] = useState([])
   const [loadingWidget, setLoadingWidget] = useState(true)
 
@@ -499,6 +499,21 @@ export function SalasDoDiaWidget() {
               docente: c.docente || '—',
               modalidade: c.modalidade || 'Coaching',
               duracao_minutos: c.duracao_minutos || 60,
+              _rawClass: {
+                id: c.id_marcacao,
+                id_marcacao: c.id_marcacao,
+                modalidade: c.modalidade || 'Coaching',
+                data: formatDate(c.data),
+                hora: formatTime(c.hora_inicio),
+                duracao: `${c.duracao_minutos || 60} min`,
+                tipo_aula: (c.numero_alunos_pretendidos > 1) ? 'Grupo' : 'Individual',
+                sala: sala.nome,
+                docente: c.docente || '—',
+                id_estado: c.id_estado,
+                estado_nome: c.estado || 'Confirmada',
+                alunos: c.alunos?.map(a => typeof a === 'object' ? a.nome : a) || [],
+                _data_raw: c.data
+              }
             }
           })
           ocupacoes.sort((a, b) => a.inicio.localeCompare(b.inicio))
@@ -531,12 +546,6 @@ export function SalasDoDiaWidget() {
 
   return (
     <div className="flex flex-col">
-
-      {/* Sub-header */}
-      <div className="flex items-center gap-1.5 mb-3">
-        <CalendarClock size={14} className="text-brand-800" />
-        <span className="text-[11px] font-bold text-brand-800 capitalize">{diaSemana}, {dataFmt}</span>
-      </div>
 
       {/* Date banner */}
       <div className="bg-brand-200 border border-brand-500 rounded-xl px-3.5 py-1.5 text-center mb-2.5">
@@ -604,10 +613,11 @@ export function SalasDoDiaWidget() {
                         const color = timeColorMap[oc.inicio] || SESSION_PALETTE[0]
                         return (
                           <div
-                            className="flex flex-col gap-0.5 rounded-lg px-2.5 py-2 cursor-default transition-all duration-100 hover:-translate-y-px"
+                            className="flex flex-col gap-0.5 rounded-lg px-2.5 py-2 cursor-pointer transition-all duration-100 hover:-translate-y-px"
                             style={{ background: color.bg, border: `1.5px solid ${color.border}` }}
                             onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 4px 12px ${color.border}55` }}
                             onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none' }}
+                            onClick={() => onItemClick && onItemClick(oc._rawClass)}
                           >
                             <span className="text-[10px] font-extrabold uppercase tracking-wide truncate" style={{ color: color.text }}>
                               {oc.modalidade}

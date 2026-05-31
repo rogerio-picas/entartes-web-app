@@ -15,16 +15,11 @@ export function EventCard({ event, onOpen }) {
         </span>
       </div>
 
-      <div className="flex items-center gap-1.5 text-sm text-neutral-600 font-medium">
-        <MapPin size={14} />
-        {event.local || 'Local a definir'}
+      <div className="flex items-center gap-1.5 text-sm text-neutral-600 font-medium w-full">
+        <MapPin size={14} className="shrink-0" />
+        <span className="truncate" title={event.local || 'Local a definir'}>{event.local || 'Local a definir'}</span>
       </div>
 
-      {event.descricao && (
-        <p className="text-neutral-600 text-sm leading-relaxed line-clamp-3 font-['Sora']">
-          {event.descricao.split('---FAQS---')[0].trim()}
-        </p>
-      )}
 
       <div className="mt-auto pt-4 border-t border-neutral-600/10 flex items-center justify-end">
         <button onClick={onOpen} className="text-xs font-semibold text-brand-800 hover:underline">Ver detalhes</button>
@@ -161,14 +156,11 @@ export function EventDashCard({ item }) {
             <span className="text-brand-900 font-medium">Duração: </span>
             <span className="text-brand-800">{item.duracao || 'A definir'}</span>
           </p>
-          <p className="text-sm">
+          <p className="text-sm truncate w-full" title={item.local || 'Lugar a anunciar'}>
             <span className="text-brand-900 font-medium">Local: </span>
             <span className="text-brand-900">{item.local || 'Lugar a anunciar'}</span>
           </p>
         </div>
-        <p className="text-xs text-neutral-500 leading-relaxed mb-6 line-clamp-3">
-          {item.descricao ? item.descricao.split('---FAQS---')[0].trim() : 'Nenhuma descrição detalhada disponível para este evento.'}
-        </p>
       </div>
 
       <div className="flex justify-end mt-auto">

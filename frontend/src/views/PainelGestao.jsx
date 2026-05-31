@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Network, CheckCircle2, BookOpen, User } from 'lucide-react'
-import { notificacaoService } from '../services/notificacaoService'
 import { authService } from '../services/authService'
 import {
     ValidacaoCoachingModal, ListagemCoachingModal, HorasCoachingModal
@@ -25,20 +24,6 @@ const CARDS = [
     { label: 'Gerir Modalidades', path: '/modalidades', icon: BookOpen, description: 'Configurar modalidades disponíveis' },
 ]
 
-function NotifSkeleton() {
-    return (
-        <div className="animate-pulse space-y-3 mt-2">
-            {[...Array(9)].map((_, i) => (
-                <div
-                    key={i}
-                    className="h-7 bg-brand-800/20 rounded-lg"
-                    style={{ width: `${70 + (i % 3) * 10}%` }}
-                />
-            ))}
-        </div>
-    )
-}
-
 export default function PainelGestao() {
     const navigate = useNavigate()
     const user = authService.getUser()
@@ -47,16 +32,6 @@ export default function PainelGestao() {
     useEffect(() => {
         if (user?.role !== 1) navigate('/', { replace: true })
     }, [user, navigate])
-
-    const [notifs, setNotifs] = useState([])
-    const [loadingNotifs, setLoadingNotifs] = useState(true)
-
-    useEffect(() => {
-        notificacaoService.getAll()
-            .then(data => setNotifs(data.slice(0, 9)))
-            .catch(() => setNotifs([]))
-            .finally(() => setLoadingNotifs(false))
-    }, [])
 
     return (
         <>

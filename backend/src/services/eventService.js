@@ -1,5 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+
+const prisma = require('../prismaClient');
 const groupService = require('./groupService');
 
 const EVENT_STATE = {
@@ -264,11 +264,25 @@ const listarParticipantes = async (id_evento) => {
   const [alunosEvento, docentesEvento] = await Promise.all([
     prisma.evento_aluno.findMany({
       where: { id_evento: parseInt(id_evento) },
-      include: { aluno: { include: { utilizador: { select: { nome: true, apelido: true, email: true } } } } },
+      include: { 
+        aluno: { 
+          include: { 
+            utilizador: { select: { nome: true, apelido: true, email: true } },
+            aluno_modalidade: { include: { modalidade: true } }
+          } 
+        } 
+      },
     }),
     prisma.evento_docente.findMany({
       where: { id_evento: parseInt(id_evento) },
-      include: { docente: { include: { utilizador: { select: { nome: true, apelido: true, email: true } } } } },
+      include: { 
+        docente: { 
+          include: { 
+            utilizador: { select: { nome: true, apelido: true, email: true } },
+            docente_modalidade: { include: { modalidade: true } }
+          } 
+        } 
+      },
     })
   ]);
 
@@ -279,14 +293,16 @@ const listarParticipantes = async (id_evento) => {
       nome: ea.aluno.utilizador.nome,
       apelido: ea.aluno.utilizador.apelido,
       email: ea.aluno.utilizador.email,
-      tipo: "Aluno"
+      tipo: "Aluno",
+      modalidades: ea.aluno.aluno_modalidade?.map(am => am.modalidade?.nome) || []
     })),
     docentes: docentesEvento.map(ed => ({
       id_utilizador: ed.docente.id_utilizador,
       nome: ed.docente.utilizador.nome,
       apelido: ed.docente.utilizador.apelido,
       email: ed.docente.utilizador.email,
-      tipo: "Docente"
+      tipo: "Docente",
+      modalidades: ed.docente.docente_modalidade?.map(dm => dm.modalidade?.nome) || []
     }))
   };
 };

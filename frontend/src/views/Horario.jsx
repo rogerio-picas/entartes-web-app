@@ -5,8 +5,8 @@ import { pt } from 'date-fns/locale'
 import { useNavigate } from 'react-router-dom'
 import {
     ChevronLeft, ChevronRight, Plus, X, RefreshCw,
-    Clock, MapPin, User, CalendarDays,
-    Check, AlertCircle, Music, ChevronDown, Trash2, Pencil
+    Clock, MapPin, User,
+    Check, AlertCircle, ChevronDown
 } from 'lucide-react'
 import { horarioService } from '../services/horarioService'
 import { eventService } from '../services/eventService'
@@ -19,6 +19,7 @@ import { formatDate, formatTime, parseDate, parseDateTime, addMinutesToTime, toW
 import NovaDisponibilidadeModal from './NovaDisponibilidadeModal'
 import NovoEventoModal from './NovoEventoModal'
 import NovaMarcacaoModal from './NovaMarcacaoModal'
+import EditSalaModal from '../components/EditSalaModal'
 // ─── Localizer para português ───────────────────────────────────────────────
 const localizer = dateFnsLocalizer({
     format,
@@ -71,81 +72,47 @@ function EventComponent({ event }) {
 
     const timeStr = event.hora || event.hora_inicio_str || event.hora_inicio || '—'
 
-    // Calcular fim se tiver duração
     let endTimeStr = ''
-    if (event.duracao_minutos) {
+    if (event._isDisponibilidade && event.hora_fim) {
+        endTimeStr = event.hora_fim
+    } else if (event.duracao_minutos) {
         endTimeStr = addMinutesToTime(timeStr, event.duracao_minutos)
     }
 
+    const tooltip = [
+        endTimeStr ? `${timeStr} – ${endTimeStr}` : timeStr,
+        event.title,
+        event.sala && event.sala !== '—' && event.sala !== 'Por atribuir' ? `Sala: ${event.sala}` : '',
+        event.docente && event.docente !== '—' ? `Docente: ${event.docente}` : '',
+    ].filter(Boolean).join('\n')
+
     return (
         <div
+            title={tooltip}
             style={{
                 backgroundColor: color.bg,
                 color: color.text,
-                border: `1px solid ${color.border}`,
+                borderLeft: `3px solid ${color.border}`,
+                borderRight: `1px solid ${color.border}`,
+                borderTop: `1px solid ${color.border}`,
+                borderBottom: `1px solid ${color.border}`,
+                height: '100%',
+                minHeight: '1.5rem',
             }}
-            className="rounded px-1.5 py-0.5 text-[11px] font-medium overflow-hidden truncate leading-tight shadow-sm"
+            className="rbc-event-inner rounded-r px-1 py-0.5 text-[9px] font-medium overflow-hidden leading-tight shadow-sm"
         >
-            <span className="font-bold mr-1">{timeStr}</span>
-            <span className="opacity-90">{event.title}</span>
-        </div>
-    )
-}
-
-function EditSalaModal({ item, salas, onClose, onSuccess }) {
-    const [loading, setLoading] = useState(false)
-    const [erro, setErro] = useState('')
-    const [idSala, setIdSala] = useState(item?.id_sala || '')
-
-    if (!item) return null;
-
-
-    async function handleSubmit() {
-        if (!idSala) { setErro('Seleciona uma sala.'); return }
-        setLoading(true)
-        try {
-            await coachingService.reatribuirSala(item.id, Number(idSala))
-            onSuccess()
-        } catch (e) {
-            setErro(e.response?.data?.message || 'Erro ao mudar sala')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    return (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={onClose}>
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
-                <div className="px-6 py-5 bg-[#F4FBF9] border-b-2 border-[#80D5D2] flex items-center justify-between">
-                    <h3 className="font-bold text-lg text-[#006A68]">Mudar Sala</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
-                </div>
-                <div className="p-6 space-y-4">
-                    {erro && <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100">{erro}</div>}
-                    <div>
-                        <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Sala Atual: {item.sala || 'Nenhuma'}</label>
-                        <select
-                            value={idSala}
-                            onChange={e => setIdSala(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#006A68]"
-                        >
-                            <option value="">Selecionar nova sala...</option>
-                            {salas.map(s => <option key={s.id_sala} value={s.id_sala}>{s.nome}</option>)}
-                        </select>
-                    </div>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="w-full py-2.5 bg-[#006A68] text-white font-bold rounded-xl hover:bg-[#00504E] disabled:opacity-50 transition-colors"
-                    >
-                        {loading ? 'A guardar...' : 'Confirmar Alteração'}
-                    </button>
-                </div>
+            <div className="font-bold flex flex-wrap gap-x-1 leading-tight">
+                <span className="whitespace-nowrap">{timeStr}{endTimeStr ? ` – ${endTimeStr}` : ''}</span>
+                <span className="break-words">{event.title}</span>
             </div>
+            {event.sala && event.sala !== '—' && event.sala !== 'Por atribuir' && (
+                <div className="opacity-70 truncate">{event.sala}</div>
+            )}
         </div>
     )
 }
+
+
 
 // 2. Componente para renderizar o FUNDO do dia (a célula do calendário)
 const DateCellWrapper = ({ children, value, onAdd, currentMonth }) => {
@@ -463,7 +430,6 @@ export default function Horario() {
     const [itemToEdit, setItemToEdit] = useState(null)
     const [showEditSala, setShowEditSala] = useState(false)
     const [toast, setToast] = useState(null)
-    const [pendingDeleteItem, setPendingDeleteItem] = useState(null)
 
     function showToast(msg, type = 'success') {
         setToast({ msg, type })
@@ -546,8 +512,18 @@ export default function Horario() {
         const aulasToUse = aulas
 
         const mappedAulas = aulasToUse.map(a => {
-            const dur = a.duracao_minutos || 60
-            const start = parseDateTime(a.data_de_realizacao || a._data_raw)
+            const dur = a.duracao_minutos || (typeof a.duracao === 'number' ? a.duracao : parseInt(a.duracao, 10)) || 60
+            // data_a_realizar = @db.Date (só data, midnight UTC)
+            // hora_inicio     = @db.Time (época 1970 + hora real)
+            // Combinar os dois para obter o datetime correcto
+            const dateBase = parseDateTime(a.data_de_realizacao || a._data_raw)
+            const timeBase = a.hora_inicio ? parseDateTime(a.hora_inicio) : null
+            const start = dateBase
+                ? timeBase
+                    ? new Date(dateBase.getFullYear(), dateBase.getMonth(), dateBase.getDate(),
+                               timeBase.getHours(), timeBase.getMinutes(), timeBase.getSeconds())
+                    : dateBase
+                : null
             const end = start ? new Date(start.getTime() + dur * 60000) : null
             return {
                 ...a,
@@ -561,7 +537,12 @@ export default function Horario() {
                 duracao_minutos: dur,
                 duracao: `${dur} min`,
             }
-        }).filter(e => e.start && e.id_estado !== 4 && e.id_estado !== 5)
+        }).filter(e => {
+            if (!e.start) return false
+            if (e.id_estado === 4 || e.id_estado === 5) return false
+            const h = e.start.getHours(), m = e.start.getMinutes()
+            return (h > 8 || (h === 8 && m >= 0)) && (h < 21 || (h === 21 && m <= 30))
+        })
 
         const mappedEventos = eventos.map(e => {
             const dur = e.duracao_minutos || 60
@@ -588,7 +569,12 @@ export default function Horario() {
                 _data_raw: e.data_de_realizacao,
                 _inserido: e._inserido
             }
-        }).filter(e => e.start && e.id_evento_estado !== 5)
+        }).filter(e => {
+            if (!e.start) return false
+            if (e.id_evento_estado === 5) return false
+            const h = e.start.getHours(), m = e.start.getMinutes()
+            return (h > 8 || (h === 8 && m >= 0)) && (h < 21 || (h === 21 && m <= 30))
+        })
 
         let combined = [...mappedAulas, ...mappedEventos]
 
@@ -622,7 +608,7 @@ export default function Horario() {
 
                             combined.push({
                                 ...d,
-                                title: `Livre (${hIni} - ${hFim})`,
+                                title: 'Livre',
                                 start,
                                 end,
                                 _isEvent: false,
@@ -647,7 +633,7 @@ export default function Horario() {
 
                                 combined.push({
                                     ...d,
-                                    title: `Livre (${hIni} - ${hFim})`,
+                                    title: 'Livre',
                                     start,
                                     end,
                                     _isEvent: false,
@@ -735,12 +721,7 @@ export default function Horario() {
         }
     }
 
-    const handleDeleteItem = (item) => {
-        setPendingDeleteItem(item)
-    }
-
-    const executeDeleteItem = async (item) => {
-        setPendingDeleteItem(null)
+    const handleDeleteItem = async (item) => {
         try {
             if (item._type === 'disponibilidade') {
                 await disponibilidadeService.eliminar(item.id_disponibilidade)
@@ -809,16 +790,18 @@ export default function Horario() {
         .rbc-month-row { border-top: none !important; }
         .rbc-month-row + .rbc-month-row { border-top: 1px solid #E3E9E8 !important; }
 
-        .rbc-header { 
-            padding: 15px 0 !important; 
-            font-weight: 700 !important; 
-            text-transform: uppercase; 
-            font-size: 12px; 
-            color: #4A6362; 
+        .rbc-header {
+            padding: 8px 0 !important;
+            font-weight: 700 !important;
+            text-transform: uppercase;
+            font-size: 12px;
+            color: #4A6362;
             background: #F8FAFA;
             border-bottom: 1px solid #D1D5D4 !important;
             border-left: 1px solid #D1D5D4 !important;
         }
+        .rbc-time-header-content { border-left: none !important; }
+        .rbc-time-content { margin-top: 0 !important; }
         .rbc-header:first-child { border-left: none !important; }
         
         /* Ocultar a área de "dia inteiro" (all-day) na vista semanal para remover o espaço em branco */
@@ -852,11 +835,32 @@ export default function Horario() {
         .rbc-now .rbc-button-link { color: #1A73E8; }
         
         /* Estilo dos eventos dentro da célula */
-        .rbc-event { 
-            margin: 1px 4px !important; 
-            padding: 0 !important; 
-            background: transparent !important; 
-            border: none !important; 
+        .rbc-event {
+            margin: 1px 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: none !important;
+        }
+        /* Vista semanal: remover espaços laterais herdados da lib */
+        .rbc-day-slot .rbc-event {
+            margin: 1px 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            right: 0 !important;
+        }
+        .rbc-day-slot .rbc-events-container {
+            margin-right: 0 !important;
+        }
+        /* Ocultar label nativo do react-big-calendar (time grid) — o EventComponent já mostra o intervalo */
+        .rbc-event-label { display: none !important; }
+        .rbc-event-content { height: 100% !important; }
+        /* Hover: expande o evento por cima dos sobrepostos */
+        .rbc-event:hover { z-index: 50 !important; overflow: visible !important; }
+        .rbc-event:hover .rbc-event-content { overflow: visible !important; }
+        .rbc-event:hover .rbc-event-inner {
+            min-width: 140px;
+            overflow: visible !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
         }
 
         /* Popup de "Ver mais" */
@@ -876,15 +880,19 @@ export default function Horario() {
             color: #006A68 !important;
         }
 
-        .rbc-show-more { 
-            color: #5F6368 !important; 
-            font-weight: 600; 
-            font-size: 12px; 
-            padding: 2px 8px !important;
-            border-radius: 4px;
-            margin-left: 4px;
+        .rbc-show-more {
+            display: inline-flex;
+            align-items: center;
+            color: #006A68 !important;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 1px 6px !important;
+            border-radius: 10px;
+            margin: 1px 4px;
+            background: #EFF5F4;
+            border: 1px solid #80D5D2;
         }
-        .rbc-show-more:hover { background-color: #F1F3F4; }
+        .rbc-show-more:hover { background: #CCE8E6 !important; }
     `;
 
     const filterOptions = useMemo(() => {
@@ -976,7 +984,13 @@ export default function Horario() {
                 )}
 
                 {/* Calendar */}
-                <div className="rounded-2xl border border-[#4a6362]/20 overflow-hidden bg-white shadow-lg">
+                {loading ? (
+                    <div className="rounded-2xl border border-[#4a6362]/20 bg-white shadow-lg flex flex-col items-center justify-center gap-3" style={{ height: 850 }}>
+                        <RefreshCw size={28} className="text-[#006A68] animate-spin" />
+                        <p className="text-sm font-semibold text-[#4A6362]">A carregar horário…</p>
+                    </div>
+                ) : (
+                    <div className="rounded-2xl border border-[#4a6362]/20 overflow-hidden bg-white shadow-lg">
                     <Calendar
                         className="!pt-2"
                         localizer={localizer}
@@ -1056,6 +1070,10 @@ export default function Horario() {
                             showMore: count => `+${count} mais`,
                         }}
                         culture="pt"
+                        formats={{
+                            dayFormat: (date, culture, localizer) =>
+                                localizer.format(date, 'EEE dd MMMM', culture),
+                        }}
                         popup={true}
                         selectable={false}
                         length={30}
@@ -1063,27 +1081,8 @@ export default function Horario() {
                         dayLayoutAlgorithm="no-overlap"
                     />
                 </div>
-
-                {/* Legend */}
-                {!loading && events.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                        {[...new Set(events.filter(it => it.modalidade).map(it => it.modalidade))].slice(0, 5).map(m => {
-                            const c = getModalityColor(m)
-                            return (
-                                <div key={m} className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium"
-                                    style={{ backgroundColor: c.bg, borderColor: c.border, color: c.text }}>
-                                    <Music size={10} /> {m}
-                                </div>
-                            )
-                        })}
-                        {events.some(it => it._isEvent) && (
-                            <div className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium"
-                                style={{ backgroundColor: EVENT_COLOR.bg, borderColor: EVENT_COLOR.border, color: EVENT_COLOR.text }}>
-                                <CalendarDays size={10} /> Eventos
-                            </div>
-                        )}
-                    </div>
                 )}
+
             </div>
 
             {/* Modals */}
@@ -1097,19 +1096,19 @@ export default function Horario() {
 
                 if (role === 1) {
                     // Admin pode tudo em itens futuros
-                    canEdit = true;
+                    canEdit = !isAula; // O admin usa o botão "Mudar Sala" para aulas, não o "Editar"
                     canDelete = true;
                 } else if (role === 2) {
-                    // Docente gere suas disponibilidades e pode cancelar suas aulas
+                    // Docente gere suas disponibilidades e pode cancelar suas aulas (se pendentes)
                     if (isDisp) {
                         canEdit = true;
                         canDelete = true;
-                    } else if (isAula) {
+                    } else if (isAula && (selectedItem.id_estado === 1 || selectedItem.id_estado === 2)) {
                         canDelete = true; // "Cancelar"
                     }
                 } else if (role === 3) {
-                    // Aluno pode cancelar suas aulas
-                    if (isAula) {
+                    // Aluno pode cancelar suas aulas (se pendentes)
+                    if (isAula && (selectedItem.id_estado === 1 || selectedItem.id_estado === 2)) {
                         canDelete = true;
                     }
                 }
@@ -1120,6 +1119,10 @@ export default function Horario() {
                         role={role}
                         onClose={() => setSelectedItem(null)}
                         onEdit={canEdit ? handleEditItem : null}
+                        onChangeRoom={(role === 1 && isAula) ? () => {
+                            setItemToEdit(selectedItem);
+                            setShowEditSala(true);
+                        } : undefined}
                         onDelete={canDelete ? handleDeleteItem : null}
                         onNavigate={(item) => {
                             if (item._isEvent || item._type === 'evento') {
@@ -1192,27 +1195,6 @@ export default function Horario() {
                         fetchAll()
                     }}
                 />
-            )}
-
-
-            {pendingDeleteItem && (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4" onClick={() => setPendingDeleteItem(null)}>
-                    <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-                    <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm font-['Sora']" onClick={e => e.stopPropagation()}>
-                        <p className="font-semibold text-neutral-800 text-base mb-1">
-                            {pendingDeleteItem._type === 'aula' ? 'Cancelar marcação?' : 'Eliminar registo?'}
-                        </p>
-                        <p className="text-sm text-neutral-500 mb-5">Esta ação não pode ser desfeita.</p>
-                        <div className="flex gap-2">
-                            <button onClick={() => setPendingDeleteItem(null)} className="flex-1 py-2.5 text-sm border border-neutral-600/25 rounded-xl text-neutral-600 hover:bg-neutral-50 transition-colors">
-                                Cancelar
-                            </button>
-                            <button onClick={() => executeDeleteItem(pendingDeleteItem)} className="flex-1 py-2.5 text-sm bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors">
-                                Confirmar
-                            </button>
-                        </div>
-                    </div>
-                </div>
             )}
 
             {toast && <Toast {...toast} onClose={() => setToast(null)} />}

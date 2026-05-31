@@ -236,7 +236,7 @@ export default function EventDetailsView() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[70vh] gap-3 text-brand-800">
                 <Loader2 className="animate-spin" size={32} />
-                <p className="text-sm font-medium animate-pulse">A carregar detalhes da base de dados...</p>
+                <p className="text-sm font-medium animate-pulse">A carregar...</p>
             </div>
         )
     }
@@ -355,14 +355,14 @@ export default function EventDetailsView() {
             </div>
 
             {/* Layout Divisório 70/30 */}
-            <div className="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto px-4 lg:px-8 gap-8 pb-10">
+            <div className="flex-1 flex flex-col lg:flex-row w-full pr-8 pl-0 gap-8 pb-10">
 
                 {/* 70% Mural Principal */}
                 <div className="flex-1 flex flex-col gap-6">
 
                     {/* === INFORMAÇÕES DO EVENTO === */}
                     {(cleanDescricao || event?.link_whatsapp || faqsList.length > 0) && (
-                        <div className="bg-white rounded-2xl border border-brand-800/20 p-6 flex flex-col gap-4 shadow-sm">
+                        <div className="bg-white rounded-2xl border border-brand-800/20 py-6 pr-6 pl-8 flex flex-col gap-4 shadow-sm">
                             {cleanDescricao && (
                                 <div>
                                     <h3 className="text-lg font-bold text-neutral-800 mb-2">Sobre o Evento</h3>
@@ -408,7 +408,7 @@ export default function EventDetailsView() {
                     )}
 
                     {/* === MURAL DE ANÚNCIOS === */}
-                    <div className="bg-white rounded-2xl border border-brand-800/20 p-6 flex items-center justify-between shadow-sm">
+                    <div className="bg-white rounded-2xl border border-brand-800/20 py-6 pr-6 pl-8 flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
                             <Megaphone size={28} className="text-brand-800" />
                             <div>
@@ -421,7 +421,7 @@ export default function EventDetailsView() {
 
                     {/* Caixa de Criação de Anúncios — apenas Admin */}
                     {isAdmin && !isPastOrCancelled && (
-                        <div className="bg-white rounded-2xl border border-brand-800/20 p-5 shadow-sm">
+                        <div className="bg-white rounded-2xl border border-brand-800/20 py-5 pr-5 pl-8 shadow-sm">
                             <input
                                 type="text"
                                 placeholder="Título do anúncio..."
@@ -458,7 +458,7 @@ export default function EventDetailsView() {
                             announcements.map((anuncio, idx) => {
                                 const isEditing = editingAnuncio?.id_anuncio === anuncio.id_anuncio && !editingAnuncio?.isGroupContext
                                 return (
-                                    <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-transparent hover:border-brand-800/20 transition-all flex flex-col gap-3">
+                                    <div key={idx} className="bg-white py-5 pr-5 pl-8 rounded-2xl shadow-sm border border-transparent hover:border-brand-800/20 transition-all flex flex-col gap-3">
                                         <div className="flex justify-between items-start">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-8 h-8 rounded-full bg-brand-200 text-brand-800 flex items-center justify-center font-bold text-xs">A</div>
