@@ -15,7 +15,7 @@ import { ValidacaoModal, HistoricoModal } from '../components/EscolaModais'
 import {
   CalendarCheck, CalendarDays, Clock,
   RefreshCw, Check, X, Plus,
-  User, Star, Megaphone
+  User, Star, Megaphone, AlertTriangle
 } from 'lucide-react'
 
 import {
@@ -74,6 +74,70 @@ function ViewMoreCard({ onClick, label = "Ver mais" }) {
   )
 }
 
+export function ConfirmCancelModal({ isOpen, onClose, onConfirm, modalidade, data, hora, loading }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 font-['Sora']" onClick={onClose}>
+      <div className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm transition-opacity" />
+      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="px-6 py-6 bg-gradient-to-br from-red-50 to-white border-b border-red-100 flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                <AlertTriangle size={16} />
+              </div>
+              <h3 className="font-bold text-xl text-neutral-800 tracking-tight">Cancelar Coaching</h3>
+            </div>
+            <p className="text-xs text-neutral-500 font-medium ml-10">
+              Tem a certeza de que deseja cancelar esta aula?
+            </p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/50 hover:bg-neutral-100 flex items-center justify-center text-neutral-500 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          <div className="bg-neutral-50 rounded-2xl p-4 border border-neutral-150 mb-6 text-sm text-neutral-700 space-y-1.5">
+            <div>
+              <span className="text-neutral-500 font-medium">Modalidade: </span>
+              <span className="font-semibold text-neutral-800">{modalidade}</span>
+            </div>
+            <div>
+              <span className="text-neutral-500 font-medium">Data: </span>
+              <span className="font-semibold text-neutral-800">{data}</span>
+            </div>
+            <div>
+              <span className="text-neutral-500 font-medium">Hora: </span>
+              <span className="font-semibold text-neutral-800">{hora}</span>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold text-sm rounded-xl transition-colors border border-neutral-200"
+            >
+              Voltar
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-1.5"
+            >
+              {loading ? <RefreshCw size={14} className="animate-spin" /> : 'Confirmar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
   const navigate = useNavigate()
   const user = authService.getUser()
@@ -85,6 +149,7 @@ export default function Home() {
 
   // Shared UI states
   const [loading, setLoading] = useState(true)
+  const [cancelModalItem, setCancelModalItem] = useState(null)
   const [loadingAction, setLoadingAction] = useState(null)
   const [toast, setToast] = useState(null)
   const [selectedEventId, setSelectedEventId] = useState(null)
@@ -209,10 +274,26 @@ export default function Home() {
 
         setOcupacaoSalas(ocupacao)
         const limite48h = new Date(now.getTime() + 48 * 60 * 60 * 1000)
-        const pendentes48h = pedPendentes.filter(a => {
-          const dataAula = new Date(a._data_raw)
-          return dataAula <= limite48h
-        })
+        const pendentes48h = pedPendentes
+          .filter(a => {
+            const dataAula = new Date(a._data_raw)
+            return dataAula >= now && dataAula <= limite48h
+          })
+          .map(a => {
+            const d = new Date(a._data_raw)
+            const diffMs = d.getTime() - now.getTime()
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+            let tempoRestante = 'A expirar nas próximas 48h'
+            if (diffMs > 0) {
+              if (diffHours > 0) {
+                tempoRestante = `${diffHours}h ${diffMins}m restantes`
+              } else {
+                tempoRestante = `${diffMins}m restantes`
+              }
+            }
+            return { ...a, tempoRestante }
+          })
         setCoachings48h(pendentes48h)
 
         const hoje = todas.filter(a => new Date(a._data_raw).toDateString() === now.toDateString())
@@ -233,9 +314,35 @@ export default function Home() {
         const raw = Array.isArray(res) ? res : (res?.data || [])
         const minhasAulas = raw.map(normalizeAula)
 
-        // Docente não vê Pedidos Pendentes de Coaching (a Coordenação trata da confirmação).
-        // Vê apenas Confirmadas e Concluídas.
         const sortAsc = (a, b) => new Date(a._data_raw) - new Date(b._data_raw);
+
+        // Coachings pendentes a expirar nas próximas 48h (iniciam no futuro, ≤ 48h)
+        const limite48h = new Date(now.getTime() + 48 * 60 * 60 * 1000)
+        const pendentesDocente = minhasAulas
+          .filter(a => {
+            if (a.id_estado !== 1) return false
+            const d = new Date(a._data_raw)
+            return d >= now && d <= limite48h
+          })
+          .map(a => {
+            const d = new Date(a._data_raw)
+            const diffMs = d.getTime() - now.getTime()
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+            let tempoRestante = 'A expirar nas próximas 48h'
+            if (diffMs > 0) {
+              if (diffHours > 0) {
+                tempoRestante = `${diffHours}h ${diffMins}m restantes`
+              } else {
+                tempoRestante = `${diffMins}m restantes`
+              }
+            }
+            return { ...a, tempoRestante }
+          })
+          .sort(sortAsc)
+
+        setCoachings48h(pendentesDocente)
+
         setAulasConfirmadas(minhasAulas.filter(a => {
           const d = new Date(a._data_raw)
           return a.id_estado === 3 && d >= now
@@ -381,6 +488,19 @@ export default function Home() {
     finally { setLoadingAction(null) }
   }
 
+  async function handleCancelarCoachingDocente(id_marcacao) {
+    setLoadingAction(id_marcacao)
+    try {
+      await api.post(`/coaching/cancelar-marcacao/${id_marcacao}`, { motivo: 'Cancelado via Dashboard (Docente)' })
+      showToast('Coaching cancelado com sucesso.', 'success')
+      loadData()
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Erro ao cancelar o coaching.', 'error')
+    } finally {
+      setLoadingAction(null)
+    }
+  }
+
   // ── Actions (Aluno) ──
   async function handleConfirmarPresencaAluno(id_marcacao) {
     setLoadingAction(id_marcacao)
@@ -505,7 +625,7 @@ export default function Home() {
                 {coachings48h.slice(0, 3).map(a => (
                   isAdmin
                     ? <CoachingCard key={a.id} aula={a} onConfirm={handleConfirmAdminDocente} onReject={handleRejectAdminDocente} loading={loadingAction} />
-                    : <RequisicaoCard key={a.id} item={a} onAccept={handleConfirmAdminDocente} onReject={handleRejectAdminDocente} loading={loadingAction} onVerPerfil={handleVerPerfil} />
+                    : <RequisicaoCard key={a.id} item={a} onReject={() => setCancelModalItem(a)} loading={loadingAction} onVerPerfil={handleVerPerfil} />
                 ))}
               </ScrollRow>
             )}
@@ -661,6 +781,21 @@ export default function Home() {
 
       {showAulasHojeModal && (
         <HistoricoModal initialFiltro="3" onlyToday onClose={() => setShowAulasHojeModal(false)} />
+      )}
+
+      {cancelModalItem && (
+        <ConfirmCancelModal
+          isOpen={!!cancelModalItem}
+          onClose={() => setCancelModalItem(null)}
+          onConfirm={async () => {
+            await handleCancelarCoachingDocente(cancelModalItem.id)
+            setCancelModalItem(null)
+          }}
+          modalidade={cancelModalItem.modalidade}
+          data={cancelModalItem.data}
+          hora={cancelModalItem.hora}
+          loading={loadingAction === cancelModalItem.id}
+        />
       )}
     </>
   )

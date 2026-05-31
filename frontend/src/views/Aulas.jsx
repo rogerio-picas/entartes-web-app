@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { formatDate, formatTime, parseDate } from '../utils/dateUtils'
+import { formatDate, formatTime, parseDate, parseDateTime } from '../utils/dateUtils'
 import { useLocation } from 'react-router-dom'
 import {
   Clock, CheckCircle2,
-  XCircle, AlertCircle, RefreshCw, Plus, X, BookOpen, ArrowUpDown, ArrowUp, ArrowDown, Check
+  XCircle, AlertCircle, RefreshCw, Plus, X, BookOpen, ArrowUpDown, ArrowUp, ArrowDown, Check,
+  ChevronLeft, ChevronRight
 } from 'lucide-react'
 import coachingService from '../services/coachingService'
 import { api } from '../services/api'
@@ -75,6 +76,11 @@ export default function Aulas() {
   const [filtroModalidade, setFiltroModalidade] = useState('todas')
   const [filtro48h, setFiltro48h] = useState(location.state?.filtro48h ?? false)
   const [sortConfig, setSortConfig] = useState({ key: null, dir: 'asc' })
+  const [currentPage, setCurrentPage] = useState(1)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filtroEstado, filtroModalidade, filtro48h, sortConfig])
   const [showNovaDisponibilidade, setShowNovaDisponibilidade] = useState(false)
   const [showNovaMarcacao, setShowNovaMarcacao] = useState(false)
   const [disponibilidades, setDisponibilidades] = useState([])
@@ -284,6 +290,23 @@ export default function Aulas() {
     ? marcacoes.filter(precisaConfirmacao)
     : []
 
+  // Aulas pendentes a expirar nas próximas 48h para o docente (se id_estado === 1 e data da aula estiver nas próximas 48h no futuro)
+  const aulasPendentesExpirando = role === 2
+    ? marcacoes.filter(aula => {
+        if (aula.id_estado !== 1) return false
+        if (!aula._data_raw) return false
+        const datePart = aula._data_raw ? aula._data_raw.split('T')[0] : ''
+        const timePart = aula.hora_inicio_raw
+          ? (aula.hora_inicio_raw.includes('T') ? aula.hora_inicio_raw.split('T')[1].substring(0, 8) : aula.hora_inicio_raw.substring(0, 8))
+          : '00:00:00'
+        const startDateTime = parseDateTime(`${datePart}T${timePart}`)
+        if (!startDateTime) return false
+        const agora = new Date()
+        const diffHoras = (startDateTime - agora) / (1000 * 60 * 60)
+        return diffHoras >= 0 && diffHoras <= 48
+      })
+    : []
+
   // Filtros
   const modalidades = ['todas', ...new Set(marcacoes.map(a => a.modalidade).filter(Boolean))]
 
@@ -319,6 +342,10 @@ export default function Aulas() {
       return sortConfig.dir === 'asc' ? cmp : -cmp
     })
     : marcacoesFiltradas
+
+  const itemsPerPage = 10
+  const totalPages = Math.ceil(marcacoesOrdenadas.length / itemsPerPage)
+  const paginatedMarcacoes = marcacoesOrdenadas.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   // Se o id_estado for null, pomos "Desconhecido" contido no 0
   const counts = marcacoes.reduce((acc, m) => {
@@ -515,6 +542,65 @@ export default function Aulas() {
           </div>
         )}
 
+        {/* ── Banner 48h (só para docente) ──────────────────────────────────── */}
+        {role === 2 && aulasPendentesExpirando.length > 0 && (
+          <div className="mb-6 rounded-2xl border-2 border-amber-300 bg-amber-50 overflow-hidden shadow-sm">
+            <div className="flex items-center gap-3 px-5 py-3.5 bg-amber-100 border-b border-amber-200">
+              <div className="w-8 h-8 rounded-full bg-amber-400 flex items-center justify-center shrink-0">
+                <AlertCircle size={16} className="text-white" />
+              </div>
+              <div>
+                <p className="text-amber-900 font-bold text-sm">
+                  {aulasPendentesExpirando.length === 1
+                    ? 'Tens 1 coaching pendente a expirar nas próximas 48h sem confirmação da administração'
+                    : `Tens ${aulasPendentesExpirando.length} coachings pendentes a expirar nas próximas 48h sem confirmação da administração`}
+                </p>
+                <p className="text-amber-700 text-xs mt-0.5">
+                  Estes coachings expiram se não forem confirmados pela administração antes do início da aula.
+                </p>
+              </div>
+            </div>
+            <div className="divide-y divide-amber-200">
+              {aulasPendentesExpirando.map(aula => {
+                const datePart = aula._data_raw ? aula._data_raw.split('T')[0] : ''
+                const timePart = aula.hora_inicio_raw
+                  ? (aula.hora_inicio_raw.includes('T') ? aula.hora_inicio_raw.split('T')[1].substring(0, 8) : aula.hora_inicio_raw.substring(0, 8))
+                  : '00:00:00'
+                const startDateTime = parseDateTime(`${datePart}T${timePart}`)
+                const diffHoras = (startDateTime - new Date()) / (1000 * 60 * 60)
+                const horasRestantes = Math.max(0, diffHoras)
+                return (
+                  <div key={aula.id} className="flex flex-wrap items-center gap-3 px-5 py-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-neutral-800 text-sm">{aula.modalidade}</span>
+                        <span className="text-xs text-amber-700 bg-amber-200 px-2 py-0.5 rounded-full font-semibold">
+                          {horasRestantes < 1
+                            ? `${Math.round(horasRestantes * 60)} min restantes`
+                            : `${horasRestantes.toFixed(0)}h restantes`}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {aula.data} · {aula.hora} · {aula.duracao}
+                        {aula.sala && aula.sala !== '—' ? ` · ${aula.sala}` : ''}
+                        {aula.docente && aula.docente !== 'A aguardar alunos' ? ` · Alunos: ${aula.docente}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setModalAula(aula)}
+                        className="px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-100 transition-colors"
+                      >
+                        Ver detalhe
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Tabela */}
         <div className="rounded-2xl border border-neutral-600/20 overflow-hidden shadow-sm bg-white">
           <table className="w-full text-sm">
@@ -552,7 +638,7 @@ export default function Aulas() {
                   </td>
                 </tr>
               ) : (
-                marcacoesOrdenadas.map((row, idx) => {
+                paginatedMarcacoes.map((row, idx) => {
                   const isLoading = loadingId === row.id
                   const isPendente = row.id_estado === 1 || row.id_estado === 2
 
@@ -705,6 +791,28 @@ export default function Aulas() {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-6">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed text-brand-800 transition-colors shadow-sm"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <span className="text-sm text-neutral-600 font-medium">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed text-brand-800 transition-colors shadow-sm"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
 
         {/* Resumo */}
         {!loading && marcacoes.length > 0 && (

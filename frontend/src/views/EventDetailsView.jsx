@@ -261,6 +261,9 @@ export default function EventDetailsView() {
         selectedGroup.docente_grupo?.some(dg => dg.id_docente === user?.id_utilizador)
     ));
 
+    const selectedGroupIndex = selectedGroup ? groups.findIndex(g => g.id_grupo === selectedGroup.id_grupo) : -1;
+    const selectedGroupDisplayId = selectedGroupIndex !== -1 ? selectedGroupIndex + 1 : (selectedGroup?.id_grupo || '');
+
     let cleanDescricao = event?.descricao || ''
     let faqsList = []
 
@@ -275,16 +278,16 @@ export default function EventDetailsView() {
     }
 
     return (
-        <div className="font-['Sora'] bg-brand-50 min-h-screen flex flex-col">
+        <div className="font-['Sora'] bg-brand-50 min-h-screen flex flex-col p-5 border border-b border-brand-800/20 rounded-xl">
 
             {/* Header da Página */}
-            <div className="bg-white border-b border-brand-800/20 px-8 py-6 mb-6">
+            <div className="bg-white px-8 py-6 mb-6 border border-b border-brand-800/20 rounded-xl">
                 <button onClick={() => navigate('/eventos')} className="flex items-center gap-2 text-neutral-600 hover:text-brand-800 text-sm font-semibold mb-4 w-fit transition-colors">
                     <ArrowLeft size={16} /> Voltar à Agenda
                 </button>
                 <div className="flex justify-between items-end">
                     <div>
-                        <h1 className="text-3xl font-bold text-neutral-800 leading-tight mb-2 flex items-center gap-3">
+                        <h1 className="text-3xl font-bold text-brand-800 leading-tight mb-2 flex items-center gap-3">
                             {event?.nome || 'Evento sem nome'}
                             {event?.privado ? (
                                 <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-800 text-white">
@@ -517,7 +520,7 @@ export default function EventDetailsView() {
                         {groups.length === 0 ? (
                             <p className="text-xs text-center p-4 text-neutral-600 italic">Nenhum grupo configurado.</p>
                         ) : (
-                            groups.map((grupo) => (
+                            groups.map((grupo, idx) => (
                                 <button
                                     key={grupo.id_grupo}
                                     onClick={() => setSelectedGroup(grupo)}
@@ -527,7 +530,7 @@ export default function EventDetailsView() {
                                         }`}
                                 >
                                     <div className={`w-10 h-10 rounded-full border flex items-center justify-center shrink-0 font-bold text-xs ${selectedGroup?.id_grupo === grupo.id_grupo ? 'border-brand-800 bg-brand-800 text-white' : 'border-neutral-400 bg-white text-brand-800'}`}>
-                                        G{grupo.id_grupo}
+                                        G{idx + 1}
                                     </div>
                                     <div className="flex flex-col flex-1 min-w-0">
                                         <span className={`font-bold text-sm truncate ${selectedGroup?.id_grupo === grupo.id_grupo ? 'text-brand-800' : 'text-black'}`}>{grupo.nome}</span>
@@ -549,7 +552,7 @@ export default function EventDetailsView() {
                         <div className="bg-white border-b border-brand-800/20 p-5 shrink-0 flex justify-between items-center">
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 rounded-full border-2 border-brand-800 bg-brand-200 flex items-center justify-center text-brand-800 font-bold text-lg">
-                                    G{selectedGroup.id_grupo}
+                                    G{selectedGroupDisplayId}
                                 </div>
                                 <div>
                                     <h2 className="text-xl font-bold text-neutral-800">{selectedGroup.nome}</h2>

@@ -3,7 +3,10 @@ import { formatDate } from '../utils/dateUtils'
 
 export function EventCard({ event, onOpen }) {
   return (
-    <div className="bg-white rounded-xl border border-neutral-600/20 shadow-sm hover:shadow-md transition-all p-6 flex flex-col gap-3 group">
+    <div
+      onClick={onOpen}
+      className="bg-white rounded-xl border border-neutral-600/20 shadow-sm cursor-pointer hover:scale-[1.01] hover:shadow-md transition-all duration-300 p-6 flex flex-col gap-3 group"
+    >
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-neutral-800 font-semibold text-lg leading-snug group-hover:text-brand-800 transition-colors">
           {event.nome}
@@ -18,11 +21,6 @@ export function EventCard({ event, onOpen }) {
       <div className="flex items-center gap-1.5 text-sm text-neutral-600 font-medium w-full">
         <MapPin size={14} className="shrink-0" />
         <span className="truncate" title={event.local || 'Local a definir'}>{event.local || 'Local a definir'}</span>
-      </div>
-
-
-      <div className="mt-auto pt-4 border-t border-neutral-600/10 flex items-center justify-end">
-        <button onClick={onOpen} className="text-xs font-semibold text-brand-800 hover:underline">Ver detalhes</button>
       </div>
     </div>
   )
