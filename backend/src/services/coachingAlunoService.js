@@ -778,9 +778,15 @@ async function validarConclusaoSessao(id_aluno, id_marcacao) {
 
     // Verifica prazo de 48 horas (RF-COA-04)
     const agora = new Date();
-    // Nota: usamos data_a_realizar + hora_inicio como referência temporal da aula
+    // Combinamos a data e hora de início para ter a referência exata da aula
     const dataHoraAula = new Date(marcacao.data_a_realizar);
-    if (agora - dataHoraAula > PRAZO_DUPLA_VALIDACAO_MS) {
+    if (marcacao.hora_inicio) {
+      const hr = new Date(marcacao.hora_inicio);
+      dataHoraAula.setUTCHours(hr.getUTCHours(), hr.getUTCMinutes(), 0, 0);
+    }
+    const duracaoMinutos = Number(marcacao.duracao_minutos) || 0;
+    const dataHoraFim = new Date(dataHoraAula.getTime() + duracaoMinutos * 60 * 1000);
+    if (agora - dataHoraFim > PRAZO_DUPLA_VALIDACAO_MS) {
       throw new Error('O prazo de 48 horas para validação da sessão já expirou.');
     }
 

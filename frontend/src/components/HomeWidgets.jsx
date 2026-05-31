@@ -251,7 +251,7 @@ export function ConfirmedCard({ aula, onOpen, role }) {
 
 export function RequisicaoCard({ item, onAccept, onReject, loading, onVerPerfil }) {
   return (
-    <div className="bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex relative min-w-[340px] hover:scale-[1.01] hover:shadow-md transition-all duration-300 group">
+    <div className="bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex relative min-w-[340px]">
       <div className="flex-1 flex flex-col gap-1.5">
         <p className="text-sm"><span className="text-neutral-500 font-medium">Modalidade: </span>
           <span className="text-neutral-800 font-semibold">{item.modalidade}</span></p>
@@ -314,7 +314,7 @@ export function PresencaDocenteCard({ item, onConfirm, onReject, loading }) {
           <span className="text-neutral-800 font-semibold">Individual</span></p>
         <div className="flex items-center gap-1.5 mt-1">
           <Clock size={16} className="text-amber-600" />
-          <span className="text-xs font-semibold text-amber-700">A expirar nas próximas 48h</span>
+          <span className="text-xs font-semibold text-amber-700">{item.tempoRestante || 'A expirar nas próximas 48h'}</span>
         </div>
       </div>
       <div className="flex flex-col items-end justify-end gap-2">
@@ -322,12 +322,12 @@ export function PresencaDocenteCard({ item, onConfirm, onReject, loading }) {
           ? <RefreshCw size={18} className="text-brand-800 animate-spin" />
           : <div className="flex gap-2">
             <button onClick={() => onReject(item.id)}
-              className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
-              <X size={22} strokeWidth={3} className="text-white" />
+              className="w-14 h-14 bg-feedback-error border border-feedback-error-dark rounded-full flex items-center justify-center hover:opacity-90 transition-opacity">
+              <X size={26} strokeWidth={3} className="text-white" />
             </button>
             <button onClick={() => onConfirm(item.id)}
-              className="w-12 h-12 bg-feedback-success border border-feedback-success-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
-              <Check size={22} strokeWidth={3} className="text-white" />
+              className="w-14 h-14 bg-feedback-success border border-feedback-success-dark rounded-full flex items-center justify-center hover:opacity-90 transition-opacity">
+              <Check size={26} strokeWidth={3} className="text-white" />
             </button>
           </div>
         }

@@ -191,7 +191,7 @@ const ESTADO_CFG = {
     5: { label: 'Cancelada',    color: 'text-red-600    bg-red-50     border-red-200'   },
 }
 
-export function HistoricoModal({ onClose, initialFiltro = 'todos' }) {
+export function HistoricoModal({ onClose, initialFiltro = 'todos', onlyToday = false }) {
     const [aulas, setAulas] = useState([])
     const [loading, setLoading] = useState(true)
     const [filtroEstado, setFiltroEstado] = useState(initialFiltro)
@@ -207,10 +207,20 @@ export function HistoricoModal({ onClose, initialFiltro = 'todos' }) {
     const filtered = (filtroEstado === 'todos'
         ? aulas
         : aulas.filter(a => String(a.id_estado) === filtroEstado)
-    ).sort((a, b) => new Date(b.data ?? 0) - new Date(a.data ?? 0))
+    ).filter(a => {
+        if (!onlyToday) return true
+        if (!a.data) return false
+        const today = new Date()
+        const yyyy = today.getFullYear()
+        const mm = String(today.getMonth() + 1).padStart(2, '0')
+        const dd = String(today.getDate()).padStart(2, '0')
+        const todayStr = `${yyyy}-${mm}-${dd}`
+        const datePart = String(a.data).includes('T') ? String(a.data).split('T')[0] : String(a.data)
+        return datePart === todayStr
+    }).sort((a, b) => new Date(b.data ?? 0) - new Date(a.data ?? 0))
 
     return (
-        <ModalWrapper title="Histórico de Aulas" onClose={onClose} wide>
+        <ModalWrapper title={onlyToday ? "Aulas de Hoje" : "Histórico de Aulas"} onClose={onClose} wide>
             {!loading && aulas.length > 0 && (
                 <div className="flex items-center gap-3 mb-4">
                     <select

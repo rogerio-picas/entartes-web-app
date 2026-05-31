@@ -29,7 +29,7 @@ import ItemDetailModal from '../components/ItemDetailModal'
 // ── Presence confirmation card (aluno confirma a SUA presença) ──
 function PresencaAlunoCard({ item, onConfirm, onReject, loading }) {
   return (
-    <div className="bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex relative min-w-[340px] hover:scale-[1.01] hover:shadow-md transition-all duration-300 group">
+    <div className="bg-white border border-neutral-600/20 shadow-sm rounded-xl p-5 flex relative min-w-[340px]">
       <div className="flex-1 flex flex-col gap-1.5">
         <p className="text-sm"><span className="text-neutral-500 font-medium">Modalidade: </span>
           <span className="text-neutral-800 font-semibold">{item.modalidade}</span></p>
@@ -49,12 +49,12 @@ function PresencaAlunoCard({ item, onConfirm, onReject, loading }) {
       <div className="flex flex-col items-end justify-end gap-2">
         <div className="flex gap-2">
           <button onClick={() => onReject(item.id)} disabled={loading === item.id}
-            className="w-12 h-12 bg-feedback-error border border-feedback-error-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
-            <X size={22} strokeWidth={3} className="text-white" />
+            className="w-14 h-14 bg-feedback-error border border-feedback-error-dark rounded-full flex items-center justify-center hover:opacity-90 transition-opacity">
+            <X size={26} strokeWidth={3} className="text-white" />
           </button>
           <button onClick={() => onConfirm(item.id)} disabled={loading === item.id}
-            className="w-12 h-12 bg-feedback-success border border-feedback-success-dark rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
-            <Check size={22} strokeWidth={3} className="text-white" />
+            className="w-14 h-14 bg-feedback-success border border-feedback-success-dark rounded-full flex items-center justify-center hover:opacity-90 transition-opacity">
+            <Check size={26} strokeWidth={3} className="text-white" />
           </button>
         </div>
       </div>
@@ -217,10 +217,11 @@ export default function Home() {
 
         const hoje = todas.filter(a => new Date(a._data_raw).toDateString() === now.toDateString())
         const confirmadasHoje = hoje.filter(a => a.id_estado === 3)
+        const concluidasHoje = hoje.filter(a => a.id_estado === 4)
         setStats({
           hoje: confirmadasHoje.length,
-          porValidar: pendentes48h.length,
-          concluidas: todas.filter(a => a.id_estado === 4).length
+          porValidar: pedPendentes.length,
+          concluidas: concluidasHoje.length
         })
         const sortAsc = (a, b) => new Date(a._data_raw) - new Date(b._data_raw);
 
@@ -241,13 +242,35 @@ export default function Home() {
         }).sort(sortAsc))
 
         // Aulas que o docente tem de "concluir" (validar presença pós-aula)
-        // Só marcacoes CONFIRMADA mas no passado (aulas dadas recentement). Ou seja, < now
-        // Apenas mostramos se for nas últimas 48h
-        const limit48h = new Date(now.getTime() - 48 * 60 * 60 * 1000)
-        setPresencasDocente(minhasAulas.filter(a => {
-          const d = new Date(a._data_raw)
-          return a.id_estado === 3 && d < now && d >= limit48h && !a.ja_validou
-        }))
+        // Apenas mostramos se for nas últimas 48h após o fim da aula
+        setPresencasDocente(
+          minhasAulas
+            .filter(a => {
+              const d = new Date(a._data_raw)
+              const duracaoMinutos = Number(a.duracao_minutos) || 0
+              const dataFim = new Date(d.getTime() + duracaoMinutos * 60 * 1000)
+              const limite48h = new Date(dataFim.getTime() + 48 * 60 * 60 * 1000)
+              return a.id_estado === 3 && dataFim <= now && now <= limite48h && !a.ja_validou
+            })
+            .map(a => {
+              const d = new Date(a._data_raw)
+              const duracaoMinutos = Number(a.duracao_minutos) || 0
+              const dataFim = new Date(d.getTime() + duracaoMinutos * 60 * 1000)
+              const limite48h = new Date(dataFim.getTime() + 48 * 60 * 60 * 1000)
+              const diffMs = limite48h.getTime() - now.getTime()
+              const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+              const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+              let tempoRestante = 'A expirar nas próximas 48h'
+              if (diffMs > 0) {
+                if (diffHours > 0) {
+                  tempoRestante = `${diffHours}h ${diffMins}m restantes`
+                } else {
+                  tempoRestante = `${diffMins}m restantes`
+                }
+              }
+              return { ...a, tempoRestante }
+            })
+        )
 
       } else if (isAluno) {
         const res = await coachingService.listarMeusPedidos().catch(() => [])
@@ -265,12 +288,35 @@ export default function Home() {
         }).sort(sortAsc))
 
         // Aulas dadas, à espera da validação dupla (CONFIRMADAS no passado)
-        // Apenas mostramos se for nas últimas 48h
-        const limit48h = new Date(now.getTime() - 48 * 60 * 60 * 1000)
-        setPresencasAluno(meusPedidos.filter(a => {
-          const d = new Date(a._data_raw)
-          return a.id_estado === 3 && d < now && d >= limit48h && !a.ja_validou
-        }))
+        // Apenas mostramos se for nas últimas 48h após o fim da aula
+        setPresencasAluno(
+          meusPedidos
+            .filter(a => {
+              const d = new Date(a._data_raw)
+              const duracaoMinutos = Number(a.duracao_minutos) || 0
+              const dataFim = new Date(d.getTime() + duracaoMinutos * 60 * 1000)
+              const limite48h = new Date(dataFim.getTime() + 48 * 60 * 60 * 1000)
+              return a.id_estado === 3 && dataFim <= now && now <= limite48h && !a.ja_validou
+            })
+            .map(a => {
+              const d = new Date(a._data_raw)
+              const duracaoMinutos = Number(a.duracao_minutos) || 0
+              const dataFim = new Date(d.getTime() + duracaoMinutos * 60 * 1000)
+              const limite48h = new Date(dataFim.getTime() + 48 * 60 * 60 * 1000)
+              const diffMs = limite48h.getTime() - now.getTime()
+              const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+              const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+              let tempoRestante = 'Nas próximas 48h'
+              if (diffMs > 0) {
+                if (diffHours > 0) {
+                  tempoRestante = `${diffHours}h ${diffMins}m restantes`
+                } else {
+                  tempoRestante = `${diffMins}m restantes`
+                }
+              }
+              return { ...a, tempoRestante }
+            })
+        )
       }
 
     } catch (e) {
@@ -610,11 +656,11 @@ export default function Home() {
       )}
 
       {showConcluidasModal && (
-        <HistoricoModal initialFiltro="4" onClose={() => setShowConcluidasModal(false)} />
+        <HistoricoModal initialFiltro="4" onlyToday onClose={() => setShowConcluidasModal(false)} />
       )}
 
       {showAulasHojeModal && (
-        <HistoricoModal initialFiltro="3" onClose={() => setShowAulasHojeModal(false)} />
+        <HistoricoModal initialFiltro="3" onlyToday onClose={() => setShowAulasHojeModal(false)} />
       )}
     </>
   )
