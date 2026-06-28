@@ -244,8 +244,8 @@ O frontend faz proxy de `/api` para `http://localhost:3000` via Vite — ambos o
 
 ## Contas de Desenvolvimento
 
-| Role         | Username |          Password           |
-| ------------ | -------- | --------------------------- |
-| Coordenadora | admin    |   admin123456789LOCKONE@    |
-| Docente      | docente  |   docente123456789LOCKONE   |
-| Aluno        | aluno    |       alunoalunoaluno       |
+| Role         | Username |           Password           |
+| ------------ | -------- | ---------------------------- |
+| Coordenadora | admin    |    admin123456789LOCKONE@    |
+| Docente      | docente  |   docente123456789LOCKONE@   |
+| Aluno        | aluno    |        alunoalunoaluno       |
