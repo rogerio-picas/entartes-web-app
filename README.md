@@ -1,22 +1,22 @@
-# Ent'artes — Aplicação Web de Gestão de Escola de Dança
+# Ent'artes — Dance School Management Web Application
 
-Aplicação web full-stack para gestão de uma escola de dança, cobrindo alunos, docentes, horários, eventos, sessões de coaching e notificações.
-
----
-
-## Tecnologias
-
-| Camada        | Stack                              |
-| ------------- | ---------------------------------- |
-| Frontend      | React 18, React Router v6, Vite    |
-| Estilos       | Tailwind CSS, PostCSS              |
-| Backend       | Node.js, Express                   |
-| Base de dados | PostgreSQL (NeonDB) via Prisma ORM |
-| Autenticação  | JWT (8h), RBAC com 3 roles         |
+A full-stack web application for managing a dance school, covering students, teachers, schedules, events, coaching sessions, and notifications.
 
 ---
 
-## Arquitetura
+## Technologies
+
+| Layer        | Stack                              |
+| ------------ | ---------------------------------- |
+| Frontend     | React 18, React Router v6, Vite    |
+| Styling      | Tailwind CSS, PostCSS              |
+| Backend      | Node.js, Express                   |
+| Database     | PostgreSQL (NeonDB) via Prisma ORM |
+| Auth         | JWT (8h expiration), RBAC (3 roles)|
+
+---
+
+## Architecture
 
 ### Backend
 
@@ -24,9 +24,9 @@ Aplicação web full-stack para gestão de uma escola de dança, cobrindo alunos
 Route → Middleware (auth/role) → Controller → Service → Prisma → Response
 ```
 
-- Todas as rotas estão montadas sob `/api/`
-- Documentação interativa da API disponível em `/api-docs` (Swagger)
-- Módulo de coaching dividido por papel: `coachingAlunoService`, `coachingDocenteService`, `coachingCoordenacaoService`
+- All routes are mounted under `/api/`
+- Interactive API documentation is available at `/api-docs` (Swagger)
+- The coaching module is decoupled by role: `coachingAlunoService`, `coachingDocenteService`, `coachingCoordenacaoService`
 
 ### Frontend
 
@@ -34,59 +34,59 @@ Route → Middleware (auth/role) → Controller → Service → Prisma → Respo
 View → Service file → services/api.js (injeta JWT) → Backend API
 ```
 
-- `services/api.js` é o cliente HTTP central — injeta o token Bearer em todos os pedidos e redireciona para login em caso de 401
-- `DashboardLayout` fornece `NotificationContext` com polling de notificações a cada 60 segundos
-- Rotas autenticadas protegidas por `<ProtectedRoute>` que valida a expiração do JWT antes de renderizar
+- `services/api.js` acts as the central HTTP client — it automatically injects the Bearer token into all requests and redirects the user to the login page upon encountering a 401 status code.
+- `DashboardLayout` provides a `NotificationContext` that handles notification polling every 60 seconds.
+- Authenticated routes are secured using a `<ProtectedRoute>` component, which validates JWT expiration prior to rendering.
 
-### Modelos principais da base de dados
+### Core Database Models
 
-- `utilizador` — registo base; estendido por `aluno`, `docente` ou `coordenadora`
-- `marcacao` — sessões de coaching com máquina de estados (`marcacao_estado_historico`)
-- `evento` + `evento_aluno` / `evento_docente` — eventos com participantes tipados
-- `horario_letivo` / `disponibilidade` — horários e disponibilidade dos docentes
-- `notificacao` / `anuncio` — notificações por utilizador e anúncios de grupo
+- `utilizador` — Base user record; extended by `aluno` (student), `docente` (teacher), or `coordenadora` (coordinator).
+- `marcacao` — Coaching sessions featuring a state machine mechanism (`marcacao_estado_historico`).
+- `evento` + `evento_aluno` / `evento_docente` — Events associated with strictly typed participants.
+- `horario_letivo` / `disponibilidade` — Academic schedules and teacher availability slots.
+- `notificacao` / `anuncio` — Individual user notifications and targeted group announcements.
 
 ---
 
-## Testes
+## Testing
 
-| Camada   | Framework | Tipo                    | Ficheiro                    |
+| Layer    | Framework | Type                    | File                        |
 | -------- | --------- | ----------------------- | --------------------------- |
-| Backend  | Jest      | Unitário (serviço)      | `modalidadeService.test.js` |
-| Backend  | Jest      | Unitário (middleware)   | `authMiddleware.test.js`    |
-| Frontend | Vitest    | Integração (serviço)    | `horarioService.test.js`    |
-| Frontend | Vitest    | Unitário (utilitário)   | `dateUtils.test.js`         |
-| Frontend | Vitest    | Unitário (cliente HTTP) | `api.test.js`               |
+| Backend  | Jest      | Unit (Service)          | `modalidadeService.test.js` |
+| Backend  | Jest      | Unit (Middleware)       | `authMiddleware.test.js`    |
+| Frontend | Vitest    | Integration (Service)   | `horarioService.test.js`    |
+| Frontend | Vitest    | Unit (Utility)          | `dateUtils.test.js`         |
+| Frontend | Vitest    | Unit (HTTP Client)      | `api.test.js`               |
 
 ---
 
-## Principais Bibliotecas
+## Key Libraries
 
-| Biblioteca                             | Uso                              |
+| Library                                | Purpose                          |
 | -------------------------------------- | -------------------------------- |
-| `prisma`                               | ORM e acesso à base de dados     |
-| `jsonwebtoken` + `bcrypt`              | Autenticação e hash de passwords |
-| `express-rate-limit`                   | Proteção contra brute-force      |
-| `swagger-jsdoc` + `swagger-ui-express` | Documentação da API              |
-| `react-big-calendar` + `date-fns`      | Calendário de horários           |
-| `lucide-react`                         | Ícones                           |
+| `prisma`                               | ORM and database access layer    |
+| `jsonwebtoken` + `bcrypt`              | Authentication and password hashing |
+| `express-rate-limit`                   | Brute-force protection middleware |
+| `swagger-jsdoc` + `swagger-ui-express` | API documentation engine         |
+| `react-big-calendar` + `date-fns`      | Scheduling calendar components   |
+| `lucide-react`                         | Icon system                      |
 
 ---
 
-## Rotas e Permissões
+## Routes and Permissions
 
-Roles: **C** = Coordenadora · **D** = Docente · **A** = Aluno
+Roles: **C** = Coordinator · **D** = Teacher (Docente) · **A** = Student (Aluno)
 
 ### Auth
 
-| Método | Rota              | Acesso  |
-| ------ | ----------------- | ------- |
-| POST   | `/api/auth/login` | Público |
-| GET    | `/api/auth/me`    | Público |
+| Method | Route             | Access |
+| ------ | ----------------- | ------ |
+| POST   | `/api/auth/login` | Public |
+| GET    | `/api/auth/me`    | Public |
 
-### Utilizadores
+### Users
 
-| Método | Rota                                   | Acesso  |
+| Method | Route                                  | Access  |
 | ------ | -------------------------------------- | ------- |
 | GET    | `/api/users/`                          | C       |
 | POST   | `/api/users/`                          | C       |
@@ -96,9 +96,9 @@ Roles: **C** = Coordenadora · **D** = Docente · **A** = Aluno
 | PUT    | `/api/users/perfil/password/:id`       | C, D, A |
 | PUT    | `/api/users/perfil/dados-pessoais/:id` | C, D, A |
 
-### Horários
+### Schedules
 
-| Método | Rota                            | Acesso  |
+| Method | Route                           | Access  |
 | ------ | ------------------------------- | ------- |
 | GET    | `/api/horario/minhas-aulas`     | C, D, A |
 | GET    | `/api/horario/disponiveis`      | C, D, A |
@@ -107,7 +107,7 @@ Roles: **C** = Coordenadora · **D** = Docente · **A** = Aluno
 
 ### Coaching
 
-| Método | Rota                                         | Acesso |
+| Method | Route                                        | Access |
 | ------ | -------------------------------------------- | ------ |
 | GET    | `/api/coaching/disponibilidades/consultar`   | A      |
 | POST   | `/api/coaching/marcacao/solicitar`           | A      |
@@ -128,18 +128,18 @@ Roles: **C** = Coordenadora · **D** = Docente · **A** = Aluno
 | GET    | `/api/coaching/salas-disponiveis`            | C      |
 | GET    | `/api/coaching/historico-marcacao/:id`       | C      |
 
-### Disponibilidade (Docente)
+### Availability (Teacher)
 
-| Método | Rota                    | Acesso |
+| Method | Route                   | Access |
 | ------ | ----------------------- | ------ |
 | GET    | `/api/availability/`    | D      |
 | POST   | `/api/availability/`    | D      |
 | PUT    | `/api/availability/:id` | D      |
 | DELETE | `/api/availability/:id` | D      |
 
-### Eventos & Grupos
+### Events & Groups
 
-| Método | Rota                                          | Acesso  |
+| Method | Route                                         | Access  |
 | ------ | --------------------------------------------- | ------- |
 | GET    | `/api/events/`                                | C, D, A |
 | GET    | `/api/events/meus-eventos`                    | D, A    |
@@ -160,9 +160,9 @@ Roles: **C** = Coordenadora · **D** = Docente · **A** = Aluno
 | POST   | `/api/events/:id/grupos/:gid/docentes/:did`   | C       |
 | DELETE | `/api/events/:id/grupos/:gid/docentes/:did`   | C       |
 
-### Modalidades
+### Dance Styles / Disciplines (Modalidades)
 
-| Método | Rota                                        | Acesso  |
+| Method | Route                                       | Access  |
 | ------ | ------------------------------------------- | ------- |
 | GET    | `/api/modalidades/`                         | C, D, A |
 | GET    | `/api/modalidades/:id`                      | C, D, A |
@@ -172,28 +172,28 @@ Roles: **C** = Coordenadora · **D** = Docente · **A** = Aluno
 | POST   | `/api/modalidades/:id/docentes`             | C       |
 | DELETE | `/api/modalidades/:id/docentes/:id_docente` | C       |
 
-### Notificações
+### Notifications
 
-| Método | Rota                         | Acesso  |
+| Method | Route                        | Access  |
 | ------ | ---------------------------- | ------- |
 | GET    | `/api/notificacoes/`         | C, D, A |
 | PATCH  | `/api/notificacoes/:id/lida` | C, D, A |
 
-### Anúncios
+### Announcements
 
-| Método | Rota                                | Acesso  |
+| Method | Route                               | Access  |
 | ------ | ----------------------------------- | ------- |
 | GET    | `/api/anuncios/`                    | C, D, A |
 | POST   | `/api/anuncios/`                    | C       |
 | GET    | `/api/anuncios/:id`                 | C, D, A |
-| PUT    | `/api/anuncios/:id`                 | C       |
+| PUT    | `/api/anuncios/:id`                 | C, D, A |
 | DELETE | `/api/anuncios/:id`                 | C       |
 | GET    | `/api/anuncios/anuncios/:id_evento` | C, D, A |
 | GET    | `/api/anuncios/grupo/:id_grupo`     | C, D, A |
 
-### Relatórios
+### Reports
 
-| Método | Rota                            | Acesso |
+| Method | Route                           | Access |
 | ------ | ------------------------------- | ------ |
 | GET    | `/api/relatorios/sessoes`       | C      |
 | GET    | `/api/relatorios/horas-docente` | C      |
@@ -201,26 +201,26 @@ Roles: **C** = Coordenadora · **D** = Docente · **A** = Aluno
 | GET    | `/api/relatorios/docentes`      | C      |
 | GET    | `/api/relatorios/exportar`      | C      |
 
-### Salas
+### Rooms (Salas)
 
-| Método | Rota             | Acesso |
+| Method | Route            | Access |
 | ------ | ---------------- | ------ |
 | GET    | `/api/salas/`    | C      |
 | DELETE | `/api/salas/:id` | C      |
 
 ---
 
-## Configuração Local
+## Local Setup
 
-### Pré-requisitos
+### Prerequisites
 
 - Node.js v20+
 
-### Backend (`backend/`)
+### Backend Environment (`backend/`)
 
-Criar o ficheiro `backend/.env`:
+Create a `backend/.env` file:
 
-```
+```env
 DATABASE_URL='postgresql://...'
 JWT_SECRET="..."
 ```
